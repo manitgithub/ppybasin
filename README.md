@@ -1,0 +1,54 @@
+# SMART BASIN - ระบบอัจฉริยะลุ่มน้ำป่าพะยอม
+
+Next.js dashboard สำหรับติดตามสถานการณ์น้ำ ศูนย์พักพิง และพื้นที่เฝ้าระวังน้ำท่วมในลุ่มน้ำป่าพะยอม
+
+## การรันในเครื่อง
+
+```bash
+npm install
+npm run dev
+```
+
+เปิดหน้าเว็บที่ [http://localhost:3000](http://localhost:3000)
+
+## Environment
+
+คัดลอก `.env.example` เป็น `.env.local` แล้วตั้งค่า:
+
+```bash
+DATABASE_URL="postgresql://..."
+```
+
+ระบบจะอ่านข้อมูลศูนย์พักพิงจากตาราง `public.shelters` และแปลงพิกัด `geom` ด้วย PostGIS (`ST_X`, `ST_Y`) ผ่าน route `/api/dashboard`
+
+## Sensor Webhook
+
+สร้างตารางสำหรับรับข้อมูลเซ็นเซอร์:
+
+```bash
+npm run db:migrate:sensors
+```
+
+ตั้งค่าฝั่ง IoT sender:
+
+```http
+POST /api/sensor
+Content-Type: application/json
+```
+
+```json
+{
+  "device_id": "WS001",
+  "temperature": 31.5,
+  "humidity": 75,
+  "wind_speed": 3.2,
+  "battery": 4.1,
+  "timestamp": "2026-05-26T12:30:00"
+}
+```
+
+ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices`
+
+## หมายเหตุข้อมูล
+
+ฐานข้อมูลปัจจุบันมีตารางหลักคือ `public.shelters` ยังไม่พบตาราง telemetry/ระดับน้ำจริง จึงใช้ข้อมูลสถานีตรวจวัดและพื้นที่น้ำท่วมจำลองใน dashboard ระหว่างรอ schema จริง

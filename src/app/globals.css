@@ -1,0 +1,65 @@
+@import "leaflet/dist/leaflet.css";
+@import "tailwindcss";
+
+:root {
+  --background: #f4f8fb;
+  --foreground: #172033;
+  --panel: #ffffff;
+  --panel-soft: #eef6ff;
+  --border: #dce6f1;
+  --muted: #63718a;
+  --navy: #0d1729;
+  --blue: #1976dc;
+  --cyan: #17a6d6;
+  --green: #20bf82;
+  --amber: #f7b84b;
+  --red: #e8334c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-noto-thai);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 76% -8%, rgba(25, 118, 220, 0.11), transparent 28rem),
+    linear-gradient(180deg, #fbfdff 0%, var(--background) 52%, #eef4f9 100%);
+  color: var(--foreground);
+  font-family: var(--font-noto-thai), ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #edf4f2;
+  font-family: var(--font-noto-thai), ui-sans-serif, system-ui, sans-serif;
+}
+
+.leaflet-control-layers {
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+.leaflet-control-zoom a {
+  color: #193050 !important;
+}
