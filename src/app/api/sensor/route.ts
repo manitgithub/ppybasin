@@ -28,7 +28,7 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
   const errors: string[] = [];
   const deviceId = typeof body.device_id === "string" ? body.device_id.trim() : "";
   const timestamp = typeof body.timestamp === "string" ? body.timestamp.trim() : "";
-  const recordedAt = timestamp ? new Date(timestamp) : null;
+  const recordedAt = timestamp ? new Date(timestamp) : new Date();
 
   if (!deviceId) {
     errors.push("device_id is required");
@@ -52,7 +52,7 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
     errors.push("battery must be a number between 0 and 30");
   }
 
-  if (!recordedAt || Number.isNaN(recordedAt.getTime())) {
+  if (timestamp && Number.isNaN(recordedAt.getTime())) {
     errors.push("timestamp must be a valid ISO 8601 datetime");
   }
 
@@ -67,7 +67,7 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
       humidity: body.humidity as number,
       windSpeed: body.wind_speed as number,
       battery: body.battery as number,
-      recordedAt: recordedAt as Date,
+      recordedAt,
     },
   };
 }

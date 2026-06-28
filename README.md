@@ -42,12 +42,11 @@ Content-Type: application/json
   "temperature": 31.5,
   "humidity": 75,
   "wind_speed": 3.2,
-  "battery": 4.1,
-  "timestamp": "2026-05-26T12:30:00"
+  "battery": 4.1
 }
 ```
 
-ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices`
+ไม่ต้องส่ง `timestamp` ระบบจะใช้เวลาของ server ตอนรับข้อมูลเป็นเวลาอ้างอิงให้เอง ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices`
 
 ## หมายเหตุข้อมูล
 

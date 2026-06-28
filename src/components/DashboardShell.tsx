@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Clock3,
   CloudRain,
+  Copy,
   Database,
   Droplets,
   FileChartColumn,
@@ -19,8 +20,11 @@ import {
   Map,
   MapPinned,
   Menu,
+  PlusCircle,
   Radio,
+  Save,
   Settings,
+  Server,
   ShieldAlert,
   Siren,
   TestTubeDiagonal,
@@ -30,7 +34,7 @@ import {
   Wifi,
   Wind,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
 
 const BasinMap = dynamic(() => import("@/components/BasinMap"), {
@@ -42,7 +46,7 @@ type DashboardShellProps = {
   initialData: DashboardPayload;
 };
 
-type ViewId = "dashboard" | "sensors";
+type ViewId = "dashboard" | "sensors" | "sensor-devices";
 
 type SensorReading = {
   id: string;
@@ -53,6 +57,28 @@ type SensorReading = {
   battery: string | number;
   recorded_at: string;
   received_at: string;
+};
+
+type SensorDevice = {
+  device_id: string;
+  name: string | null;
+  location_name: string | null;
+  latitude: string | number | null;
+  longitude: string | number | null;
+  status: "active" | "inactive" | "maintenance";
+  last_seen_at: string | null;
+  last_battery: string | number | null;
+  updated_at: string;
+  readings_count: number;
+};
+
+type SensorDeviceForm = {
+  device_id: string;
+  name: string;
+  location_name: string;
+  latitude: string;
+  longitude: string;
+  status: "active" | "inactive" | "maintenance";
 };
 
 const navSections = [
@@ -69,6 +95,7 @@ const navSections = [
     items: [
       { label: "ข้อมูลระดับน้ำ", icon: Droplets },
       { id: "sensors", label: "ข้อมูลเซ็นเซอร์ IoT (สด)", icon: Activity },
+      { id: "sensor-devices", label: "จัดการสถานีเซ็นเซอร์", icon: Settings },
     ],
   },
   {
@@ -118,6 +145,107 @@ function sensorAgeLabel(value?: string) {
   if (diffHours < 24) return `${diffHours.toLocaleString("th-TH")} ชั่วโมงที่แล้ว`;
 
   return `${Math.floor(diffHours / 24).toLocaleString("th-TH")} วันที่แล้ว`;
+}
+
+const senderJson = `{
+  "device_id": "WS001",
+  "temperature": 31.5,
+  "humidity": 75,
+  "wind_speed": 3.2,
+  "battery": 4.1
+}`;
+
+function SensorSenderGuide() {
+  const [copied, setCopied] = useState<string | null>(null);
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const webhookUrl = `${origin || "https://your-domain.example"}/api/sensor`;
+  const curlCommand = `curl -X POST ${webhookUrl} \\
+  -H 'Content-Type: application/json' \\
+  -d '${senderJson.replace(/\n/g, "")}'`;
+
+  const copyText = async (label: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(label);
+      window.setTimeout(() => setCopied(null), 1600);
+    } catch {
+      setCopied(null);
+    }
+  };
+
+  return (
+    <section className="overflow-hidden rounded-[8px] border border-blue-100 bg-white shadow-lg shadow-slate-200/60">
+      <div className="grid gap-0 xl:grid-cols-[330px_1fr]">
+        <div className="bg-[#0f2746] p-5 text-white">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-[8px] bg-white/12">
+              <Server size={19} />
+            </span>
+            <div>
+              <h3 className="text-base font-extrabold">วิธีส่งข้อมูลเข้า Server</h3>
+              <p className="text-xs font-semibold text-blue-100">IoT Sender Setup</p>
+            </div>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-blue-200">Webhook URL</p>
+              <button
+                className="mt-1 flex w-full items-center justify-between gap-2 rounded-[8px] bg-white/10 px-3 py-2 text-left text-xs font-bold text-white"
+                onClick={() => void copyText("url", webhookUrl)}
+              >
+                <span className="truncate">{webhookUrl}</span>
+                <Copy size={15} />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-[8px] bg-white/10 px-3 py-2">
+                <p className="text-[11px] font-extrabold text-blue-200">Method</p>
+                <p className="font-extrabold">POST</p>
+              </div>
+              <div className="rounded-[8px] bg-white/10 px-3 py-2">
+                <p className="text-[11px] font-extrabold text-blue-200">Header</p>
+                <p className="truncate font-extrabold">application/json</p>
+              </div>
+            </div>
+            {copied && <p className="text-xs font-bold text-emerald-200">คัดลอกแล้ว: {copied}</p>}
+          </div>
+        </div>
+
+        <div className="grid gap-4 p-5 lg:grid-cols-2">
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-extrabold text-slate-800">JSON Body</p>
+              <button
+                className="inline-flex items-center gap-1 rounded-[8px] bg-slate-100 px-2.5 py-1 text-xs font-extrabold text-slate-600 hover:bg-slate-200"
+                onClick={() => void copyText("json", senderJson)}
+              >
+                <Copy size={14} />
+                Copy
+              </button>
+            </div>
+            <pre className="min-h-[190px] overflow-x-auto rounded-[8px] bg-slate-950 p-4 text-xs font-semibold leading-6 text-blue-50">
+              <code>{senderJson}</code>
+            </pre>
+          </div>
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-extrabold text-slate-800">ทดสอบด้วย curl</p>
+              <button
+                className="inline-flex items-center gap-1 rounded-[8px] bg-slate-100 px-2.5 py-1 text-xs font-extrabold text-slate-600 hover:bg-slate-200"
+                onClick={() => void copyText("curl", curlCommand)}
+              >
+                <Copy size={14} />
+                Copy
+              </button>
+            </div>
+            <pre className="min-h-[190px] overflow-x-auto rounded-[8px] bg-slate-100 p-4 text-xs font-bold leading-6 text-slate-700">
+              <code>{curlCommand}</code>
+            </pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function SensorDataView() {
@@ -229,6 +357,8 @@ function SensorDataView() {
         </div>
       )}
 
+      <SensorSenderGuide />
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
           <article key={metric.label} className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/60">
@@ -331,6 +461,299 @@ function SensorDataView() {
           </div>
         )}
       </section>
+    </section>
+  );
+}
+
+function emptyDeviceForm(): SensorDeviceForm {
+  return {
+    device_id: "",
+    name: "",
+    location_name: "",
+    latitude: "",
+    longitude: "",
+    status: "active",
+  };
+}
+
+function SensorDeviceManager() {
+  const [devices, setDevices] = useState<SensorDevice[]>([]);
+  const [form, setForm] = useState<SensorDeviceForm>(emptyDeviceForm);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDevices = useCallback(async () => {
+    try {
+      setError(null);
+      const response = await fetch("/api/sensor/devices", { cache: "no-store" });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "โหลดสถานีไม่สำเร็จ");
+      }
+
+      setDevices(payload.devices ?? []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "โหลดสถานีไม่สำเร็จ");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadDevices(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadDevices]);
+
+  const setField = (key: keyof SensorDeviceForm, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }) as SensorDeviceForm);
+  };
+
+  const editDevice = (device: SensorDevice) => {
+    setForm({
+      device_id: device.device_id,
+      name: device.name ?? "",
+      location_name: device.location_name ?? "",
+      latitude: device.latitude === null ? "" : String(device.latitude),
+      longitude: device.longitude === null ? "" : String(device.longitude),
+      status: device.status,
+    });
+  };
+
+  const saveDevice = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/sensor/devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.details?.join(", ") ?? payload.error ?? "บันทึกสถานีไม่สำเร็จ");
+      }
+
+      setMessage(`บันทึกสถานี ${payload.device_id} แล้ว`);
+      setForm(emptyDeviceForm());
+      await loadDevices();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "บันทึกสถานีไม่สำเร็จ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const activeCount = devices.filter((device) => device.status === "active").length;
+
+  return (
+    <section className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+        <div>
+          <h2 className="text-2xl font-extrabold text-slate-800 md:text-3xl">จัดการสถานีเซ็นเซอร์</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            เพิ่มหรือแก้ไขรหัสอุปกรณ์ ตำแหน่งติดตั้ง สถานะ และใช้ติดตามจำนวน readings ของแต่ละสถานี
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-500 shadow-sm">
+            ทั้งหมด {devices.length.toLocaleString("th-TH")} สถานี / active {activeCount.toLocaleString("th-TH")}
+          </span>
+        </div>
+      </div>
+
+      {(error || message) && (
+        <div
+          className={[
+            "rounded-[8px] border px-5 py-4 text-sm font-semibold",
+            error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700",
+          ].join(" ")}
+        >
+          {error ?? message}
+        </div>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[390px_1fr]">
+        <form className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/60" onSubmit={saveDevice}>
+          <div className="mb-5 flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-[8px] bg-blue-50 text-blue-700">
+              <PlusCircle size={20} />
+            </span>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-800">เพิ่ม / แก้ไขสถานี</h3>
+              <p className="text-xs font-medium text-slate-500">ใช้ device_id เดิมเพื่อแก้ไขข้อมูล</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-xs font-extrabold text-slate-500">Device ID</span>
+              <input
+                className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-bold uppercase outline-none focus:border-blue-400"
+                placeholder="WS007"
+                value={form.device_id}
+                onChange={(event) => setField("device_id", event.target.value.toUpperCase())}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-extrabold text-slate-500">ชื่อสถานี</span>
+              <input
+                className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
+                placeholder="สถานีอากาศ..."
+                value={form.name}
+                onChange={(event) => setField("name", event.target.value)}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-extrabold text-slate-500">พื้นที่ติดตั้ง</span>
+              <input
+                className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
+                placeholder="บ้าน / คลอง / ศูนย์ประสานงาน"
+                value={form.location_name}
+                onChange={(event) => setField("location_name", event.target.value)}
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs font-extrabold text-slate-500">Latitude</span>
+                <input
+                  className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
+                  placeholder="7.7899"
+                  value={form.latitude}
+                  onChange={(event) => setField("latitude", event.target.value)}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-extrabold text-slate-500">Longitude</span>
+                <input
+                  className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
+                  placeholder="100.2065"
+                  value={form.longitude}
+                  onChange={(event) => setField("longitude", event.target.value)}
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-xs font-extrabold text-slate-500">สถานะ</span>
+              <select
+                className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-400"
+                value={form.status}
+                onChange={(event) => setField("status", event.target.value as SensorDeviceForm["status"])}
+              >
+                <option value="active">active</option>
+                <option value="maintenance">maintenance</option>
+                <option value="inactive">inactive</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <button
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[8px] bg-[#0879df] px-4 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition hover:bg-[#076bc5] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={saving}
+            >
+              <Save size={17} />
+              {saving ? "กำลังบันทึก" : "บันทึกสถานี"}
+            </button>
+            <button
+              type="button"
+              className="h-11 rounded-[8px] border border-slate-200 px-4 text-sm font-extrabold text-slate-600 hover:bg-slate-50"
+              onClick={() => setForm(emptyDeviceForm())}
+            >
+              ล้าง
+            </button>
+          </div>
+        </form>
+
+        <section className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5">
+            <div>
+              <h3 className="text-base font-extrabold text-slate-800">รายการสถานีเซ็นเซอร์</h3>
+              <p className="text-xs font-medium text-slate-500">ข้อมูลจาก public.sensor_devices</p>
+            </div>
+            <button
+              className="rounded-[8px] bg-slate-100 px-3 py-2 text-xs font-extrabold text-slate-600 hover:bg-slate-200"
+              onClick={() => {
+                setLoading(true);
+                void loadDevices();
+              }}
+            >
+              รีเฟรช
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[880px] border-collapse text-left">
+              <thead className="bg-slate-50 text-xs font-extrabold text-slate-500">
+                <tr>
+                  <th className="px-5 py-3">Device</th>
+                  <th className="px-5 py-3">สถานี</th>
+                  <th className="px-5 py-3">ตำแหน่ง</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Last Seen</th>
+                  <th className="px-5 py-3">Readings</th>
+                  <th className="px-5 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {devices.map((device) => (
+                  <tr key={device.device_id} className="hover:bg-blue-50/45">
+                    <td className="px-5 py-4">
+                      <span className="rounded-[8px] bg-slate-900 px-2.5 py-1 text-xs font-extrabold text-white">{device.device_id}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="font-extrabold text-slate-800">{device.name}</p>
+                      <p className="text-xs font-semibold text-slate-500">{device.location_name ?? "-"}</p>
+                    </td>
+                    <td className="px-5 py-4 text-xs font-semibold text-slate-500">
+                      {device.latitude && device.longitude ? `${Number(device.latitude).toFixed(4)}, ${Number(device.longitude).toFixed(4)}` : "-"}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={[
+                          "rounded-full px-2.5 py-1 text-xs font-extrabold",
+                          device.status === "active"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : device.status === "maintenance"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-slate-100 text-slate-600",
+                        ].join(" ")}
+                      >
+                        {device.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-xs font-semibold text-slate-500">
+                      {device.last_seen_at ? sensorAgeLabel(device.last_seen_at) : "ยังไม่ส่งข้อมูล"}
+                    </td>
+                    <td className="px-5 py-4 font-extrabold text-slate-700">{device.readings_count.toLocaleString("th-TH")}</td>
+                    <td className="px-5 py-4">
+                      <button
+                        className="rounded-[8px] bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 hover:bg-blue-100"
+                        onClick={() => editDevice(device)}
+                      >
+                        แก้ไข
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {devices.length === 0 && !loading && (
+                  <tr>
+                    <td className="px-5 py-10 text-center text-sm font-semibold text-slate-500" colSpan={7}>
+                      ยังไม่มีสถานีเซ็นเซอร์
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </section>
   );
 }
@@ -506,6 +929,8 @@ export default function DashboardShell({ initialData }: DashboardShellProps) {
 
           {activeView === "sensors" ? (
             <SensorDataView />
+          ) : activeView === "sensor-devices" ? (
+            <SensorDeviceManager />
           ) : (
             <>
               <section className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
