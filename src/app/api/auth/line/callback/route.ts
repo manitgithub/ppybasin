@@ -102,6 +102,16 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/?login_error=invalid_state", request.url));
   }
 
+  // debug: log env presence to help diagnose config issues in development
+  try {
+    // eslint-disable-next-line no-console
+    console.debug("LINE callback: LINE_CHANNEL_ID present?", Boolean(process.env.LINE_CHANNEL_ID));
+    // eslint-disable-next-line no-console
+    console.debug("LINE callback: LINE_CHANNEL_SECRET present?", Boolean(process.env.LINE_CHANNEL_SECRET));
+  } catch (e) {
+    /* ignore */
+  }
+
   if (!process.env.LINE_CHANNEL_ID || !process.env.LINE_CHANNEL_SECRET) {
     return NextResponse.redirect(new URL("/?login_error=line_config", request.url));
   }
