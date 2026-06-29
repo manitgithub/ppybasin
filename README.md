@@ -17,6 +17,10 @@ npm run dev
 
 ```bash
 DATABASE_URL="postgresql://..."
+AUTH_SECRET="replace-with-32-byte-random-secret"
+LINE_CHANNEL_ID=""
+LINE_CHANNEL_SECRET=""
+LINE_CALLBACK_URL="https://hpor.horusai.pro/api/auth/line/callback"
 ```
 
 ระบบจะอ่านข้อมูลศูนย์พักพิงจากตาราง `public.shelters` และแปลงพิกัด `geom` ด้วย PostGIS (`ST_X`, `ST_Y`) ผ่าน route `/api/dashboard`
@@ -51,3 +55,19 @@ Content-Type: application/json
 ## หมายเหตุข้อมูล
 
 ฐานข้อมูลปัจจุบันมีตารางหลักคือ `public.shelters` ยังไม่พบตาราง telemetry/ระดับน้ำจริง จึงใช้ข้อมูลสถานีตรวจวัดและพื้นที่น้ำท่วมจำลองใน dashboard ระหว่างรอ schema จริง
+
+## LINE Login และสิทธิ์ผู้ใช้
+
+สร้างตารางผู้ใช้และ session:
+
+```bash
+npm run db:migrate:auth
+```
+
+ตั้งค่า URL ใน LINE Developers:
+
+- Callback URL: `https://hpor.horusai.pro/api/auth/line/callback`
+- Privacy policy URL: `https://hpor.horusai.pro/privacy`
+- Terms of use URL: `https://hpor.horusai.pro/terms`
+
+ผู้ใช้ LINE คนแรกที่เข้าสู่ระบบสำเร็จจะได้รับ role `admin` อัตโนมัติ และสามารถจัดการ role, status, permissions ของผู้ใช้คนอื่นได้จากเมนู “จัดการสิทธิ์ผู้ใช้”

@@ -1,0 +1,14 @@
+import { NextResponse } from "next/server";
+import { destroySession } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
+  await destroySession();
+  return NextResponse.redirect(new URL("/", request.url));
+}
+
+export async function GET(request: Request) {
+  await destroySession();
+  return NextResponse.redirect(new URL("/", request.url));
+}
