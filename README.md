@@ -66,8 +66,6 @@ npm run db:migrate:auth
 
 ตั้งค่า URL ใน LINE Developers:
 
-- Callback URL: `https://hpor.horusai.pro/api/auth/line/callback`
-- Privacy policy URL: `https://hpor.horusai.pro/privacy`
-- Terms of use URL: `https://hpor.horusai.pro/terms`
-
-ผู้ใช้ LINE คนแรกที่เข้าสู่ระบบสำเร็จจะได้รับ role `admin` อัตโนมัติ และสามารถจัดการ role, status, permissions ของผู้ใช้คนอื่นได้จากเมนู “จัดการสิทธิ์ผู้ใช้”
+- Callback URL: `https://basinuat.horusai.pro/api/auth/line/callback`
+- Privacy policy URL: `https://basinuat.horusai.pro/privacy`
+- Terms of use URL: `https://basinuat.horusai.pro/terms`
