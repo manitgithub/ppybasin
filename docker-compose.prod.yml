@@ -25,7 +25,7 @@ services:
     # ports:
     #   - "${APP_PORT:-3010}:3010"
     networks:
-      - proxy
+      - ubuntu-setup_proxy
     volumes:
       - app_uploads:/app/public/uploads
       - app_storage:/app/storage
@@ -41,5 +41,5 @@ volumes:
   app_storage:
 
 networks:
-  proxy:
+  ubuntu-setup_proxy:
     external: true
