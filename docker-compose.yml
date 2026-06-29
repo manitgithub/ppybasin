@@ -1,0 +1,39 @@
+# Production deploy to VPS: builds and runs the PPybasin Next.js app in a
+# container, connecting to the existing external MySQL (see .env.prod).
+# No DB or reverse proxy here — point your VPS's existing Nginx/Caddy at
+# APP_PORT (default 3010) for basinuat.horusai.pro .
+#
+# CLI usage on the VPS:
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#
+# Portainer usage:
+#   Stacks > Add stack > paste this file (or "Repository") > in
+#   "Environment variables" click "Load variables from .env file" and
+#   upload .env.prod (or paste its contents). Portainer substitutes the
+#   ${VAR} placeholders below at deploy time — no env_file on disk needed.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ppybasin-app:latest
+    container_name: ppybasin-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "${APP_PORT:-3010}:3010"
+    volumes:
+      - app_uploads:/app/public/uploads
+      - app_storage:/app/storage
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3010/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  app_uploads:
+  app_storage:
