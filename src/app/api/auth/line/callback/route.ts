@@ -33,6 +33,14 @@ function callbackUrl(request: Request) {
   return process.env.LINE_CALLBACK_URL || new URL("/api/auth/line/callback", request.url).toString();
 }
 
+function appUrl(path: string, request: Request) {
+  const baseUrl = process.env.LINE_CALLBACK_URL
+    ? new URL(process.env.LINE_CALLBACK_URL).origin
+    : new URL(request.url).origin;
+
+  return new URL(path, baseUrl);
+}
+
 function decodeJwtPayload(token: string): LineIdTokenPayload {
   const payload = token.split(".")[1];
   if (!payload) return {};
@@ -95,11 +103,11 @@ export async function GET(request: Request) {
   cookieStore.delete(STATE_COOKIE);
 
   if (error) {
-    return NextResponse.redirect(new URL(`/?login_error=${encodeURIComponent(error)}`, request.url));
+    return NextResponse.redirect(appUrl(`/?login_error=${encodeURIComponent(error)}`, request));
   }
 
   if (!code || !state || state !== storedState || !storedNonce) {
-    return NextResponse.redirect(new URL("/?login_error=invalid_state", request.url));
+    return NextResponse.redirect(appUrl("/?login_error=invalid_state", request));
   }
 
   // debug: log env presence to help diagnose config issues in development
@@ -113,7 +121,7 @@ export async function GET(request: Request) {
   }
 
   if (!process.env.LINE_CHANNEL_ID || !process.env.LINE_CHANNEL_SECRET) {
-    return NextResponse.redirect(new URL("/?login_error=line_config", request.url));
+    return NextResponse.redirect(appUrl("/?login_error=line_config", request));
   }
 
   try {
@@ -134,13 +142,13 @@ export async function GET(request: Request) {
     });
 
     if (user.status !== "active") {
-      return NextResponse.redirect(new URL("/?login_error=disabled", request.url));
+      return NextResponse.redirect(appUrl("/?login_error=disabled", request));
     }
 
     await createSession(user.id);
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(appUrl("/", request));
   } catch (callbackError) {
     console.error("LINE login failed", callbackError);
-    return NextResponse.redirect(new URL("/?login_error=line_failed", request.url));
+    return NextResponse.redirect(appUrl("/?login_error=line_failed", request));
   }
 }
