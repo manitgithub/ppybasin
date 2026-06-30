@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  allowedDevOrigins: ["hardness-ducking-kindred.ngrok-free.dev"],
 };
 
 export default nextConfig;
