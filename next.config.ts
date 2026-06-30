@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["hardness-ducking-kindred.ngrok-free.dev"],
+  allowedDevOrigins: ["basinuat.horusai.pro"],
 };
 
 export default nextConfig;
