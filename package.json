@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql",
+    "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql db/migrations/003_sensor_reading_details.sql",
     "db:migrate:auth": "node scripts/run-migration.mjs db/migrations/002_auth_line.sql",
     "lint": "eslint"
   },

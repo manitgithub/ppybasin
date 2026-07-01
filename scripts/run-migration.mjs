@@ -20,10 +20,10 @@ async function loadLocalEnv() {
   }
 }
 
-const migrationFile = process.argv[2];
+const migrationFiles = process.argv.slice(2);
 
-if (!migrationFile) {
-  console.error("Usage: node scripts/run-migration.mjs <path-to-sql>");
+if (migrationFiles.length === 0) {
+  console.error("Usage: node scripts/run-migration.mjs <path-to-sql> [path-to-sql...]");
   process.exit(1);
 }
 
@@ -34,7 +34,6 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-const sql = await readFile(resolve(migrationFile), "utf8");
 const client = new pg.Client({
   connectionString: process.env.DATABASE_URL,
   connectionTimeoutMillis: 8_000,
@@ -42,8 +41,12 @@ const client = new pg.Client({
 
 try {
   await client.connect();
-  await client.query(sql);
-  console.log(`Applied migration: ${migrationFile}`);
+
+  for (const migrationFile of migrationFiles) {
+    const sql = await readFile(resolve(migrationFile), "utf8");
+    await client.query(sql);
+    console.log(`Applied migration: ${migrationFile}`);
+  }
 } finally {
   await client.end();
 }

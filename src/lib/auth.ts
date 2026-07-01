@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getPool } from "@/lib/db";
 
 export const SESSION_COOKIE = "ppybasin_session";
+const bypassPermissions = ["dashboard:view", "users:manage", "sensors:manage", "alerts:manage"];
 
 export type UserRole = "admin" | "operator" | "viewer";
 export type UserStatus = "active" | "disabled";
@@ -76,13 +77,40 @@ function isConfiguredAdmin(lineUserId: string) {
     .includes(lineUserId);
 }
 
+function isAuthBypassEnabled() {
+  return ["1", "true", "yes", "on"].includes((process.env.AUTH_BYPASS ?? "").trim().toLowerCase());
+}
+
+function bypassUser(): AppUser {
+  const now = new Date().toISOString();
+
+  return {
+    id: "auth-bypass-user",
+    lineUserId: "auth-bypass",
+    displayName: process.env.AUTH_BYPASS_DISPLAY_NAME || "Dev Admin",
+    pictureUrl: null,
+    email: null,
+    role: "admin",
+    status: "active",
+    permissions: bypassPermissions,
+    lastLoginAt: now,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export function authConfigError() {
+  if (isAuthBypassEnabled()) return null;
   if (!process.env.DATABASE_URL) return "DATABASE_URL is not configured";
   if (!process.env.AUTH_SECRET) return "AUTH_SECRET is not configured";
   return null;
 }
 
 export async function getCurrentUser(): Promise<AppUser | null> {
+  if (isAuthBypassEnabled()) {
+    return bypassUser();
+  }
+
   const db = getPool();
   if (!db) return null;
 

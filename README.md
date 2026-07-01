@@ -21,9 +21,12 @@ AUTH_SECRET="replace-with-32-byte-random-secret"
 LINE_CHANNEL_ID=""
 LINE_CHANNEL_SECRET=""
 LINE_CALLBACK_URL="https://hpor.horusai.pro/api/auth/line/callback"
+AUTH_BYPASS="false"
 ```
 
 ระบบจะอ่านข้อมูลศูนย์พักพิงจากตาราง `public.shelters` และแปลงพิกัด `geom` ด้วย PostGIS (`ST_X`, `ST_Y`) ผ่าน route `/api/dashboard`
+
+ต้องการปิดหน้า login ชั่วคราวใน dev ให้ตั้ง `AUTH_BYPASS=true` ใน `.env.local` ระบบจะสร้างผู้ใช้จำลองสิทธิ์ admin โดยไม่ต้องผ่าน LINE Login
 
 ## Sensor Webhook
 
@@ -43,14 +46,20 @@ Content-Type: application/json
 ```json
 {
   "device_id": "WS001",
-  "temperature": 31.5,
-  "humidity": 75,
-  "wind_speed": 3.2,
-  "battery": 4.1
+  "wind_speed": 1.10,
+  "direction": "Northeast",
+  "humidity": 50.40,
+  "temperature": 27.40,
+  "rainfall": 0.00,
+  "water_level": 7.413,
+  "battery_1": 11.05,
+  "battery_2": 11.16,
+  "packet_count": 0,
+  "heap": 323212
 }
 ```
 
-ไม่ต้องส่ง `timestamp` ระบบจะใช้เวลาของ server ตอนรับข้อมูลเป็นเวลาอ้างอิงให้เอง ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices`
+ไม่ต้องส่ง `timestamp` ระบบจะใช้เวลาของ server ตอนรับข้อมูลเป็นเวลาอ้างอิงให้เอง ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices` โดยระบบยังรองรับ payload เก่าที่ส่ง `battery` แทน `battery_1`
 
 ## หมายเหตุข้อมูล
 
