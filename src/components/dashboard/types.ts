@@ -27,7 +27,14 @@ export type SensorReading = {
   temperature: string | number;
   humidity: string | number;
   wind_speed: string | number;
+  direction: string | null;
+  rainfall: string | number | null;
+  water_level: string | number | null;
   battery: string | number;
+  battery_1: string | number | null;
+  battery_2: string | number | null;
+  packet_count: string | number | null;
+  heap: string | number | null;
   recorded_at: string;
   received_at: string;
 };

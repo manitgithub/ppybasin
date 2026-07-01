@@ -11,21 +11,19 @@ function callbackUrl(request: Request) {
   return process.env.LINE_CALLBACK_URL || new URL("/api/auth/line/callback", request.url).toString();
 }
 
+function appUrl(path: string, request: Request) {
+  const baseUrl = process.env.LINE_CALLBACK_URL
+    ? new URL(process.env.LINE_CALLBACK_URL).origin
+    : new URL(request.url).origin;
+
+  return new URL(path, baseUrl);
+}
+
 export async function GET(request: Request) {
   const channelId = process.env.LINE_CHANNEL_ID;
 
-  // debug: log env presence to help diagnose config issues in development
-  try {
-    // eslint-disable-next-line no-console
-    console.debug("LINE start: LINE_CHANNEL_ID present?", Boolean(process.env.LINE_CHANNEL_ID));
-    // eslint-disable-next-line no-console
-    console.debug("LINE start: NODE_ENV", process.env.NODE_ENV);
-  } catch (e) {
-    /* ignore */
-  }
-
   if (!channelId) {
-    return NextResponse.redirect(new URL("/?login_error=line_config", request.url));
+    return NextResponse.redirect(appUrl("/?login_error=line_config", request));
   }
 
   const state = crypto.randomBytes(24).toString("base64url");

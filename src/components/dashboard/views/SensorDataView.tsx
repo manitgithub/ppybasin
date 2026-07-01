@@ -7,11 +7,39 @@ import { formatDate, sensorAgeLabel, toNumber } from "@/components/dashboard/uti
 
 const senderJson = `{
   "device_id": "WS001",
-  "temperature": 31.5,
-  "humidity": 75,
-  "wind_speed": 3.2,
-  "battery": 4.1
+  "wind_speed": 1.10,
+  "direction": "Northeast",
+  "humidity": 50.40,
+  "temperature": 27.40,
+  "rainfall": 0.00,
+  "water_level": 7.413,
+  "battery_1": 11.05,
+  "battery_2": 11.16,
+  "packet_count": 0,
+  "heap": 323212
 }`;
+
+function optionalMetric(value: string | number | null, digits: number, unit = "") {
+  if (value === null || typeof value === "undefined") {
+    return "-";
+  }
+
+  const numeric = toNumber(value);
+  return Number.isFinite(numeric) ? `${numeric.toFixed(digits)}${unit}` : "-";
+}
+
+function integerMetric(value: string | number | null, unit = "") {
+  if (value === null || typeof value === "undefined") {
+    return "-";
+  }
+
+  const numeric = toNumber(value);
+  return Number.isFinite(numeric) ? `${numeric.toLocaleString("th-TH")}${unit}` : "-";
+}
+
+function readingBattery(reading: SensorReading) {
+  return reading.battery_1 ?? reading.battery;
+}
 
 function SensorSenderGuide() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -144,7 +172,7 @@ export default function SensorDataView() {
   const latest = readings[0];
   const uniqueDevices = new Set(readings.map((reading) => reading.device_id)).size;
   const averageBattery = readings.length
-    ? readings.reduce((sum, reading) => sum + toNumber(reading.battery), 0) / readings.length
+    ? readings.reduce((sum, reading) => sum + toNumber(readingBattery(reading)), 0) / readings.length
     : 0;
 
   const metrics = [
@@ -173,9 +201,17 @@ export default function SensorDataView() {
       bg: "bg-cyan-50",
     },
     {
+      label: "ระดับน้ำล่าสุด",
+      value: latest ? optionalMetric(latest.water_level, 3, " m") : "-",
+      detail: latest ? `ฝนสะสม ${optionalMetric(latest.rainfall, 2, " mm")}` : "ยังไม่มีข้อมูล",
+      icon: BatteryMedium,
+      color: "text-blue-700",
+      bg: "bg-blue-50",
+    },
+    {
       label: "แบตเตอรี่เฉลี่ย",
       value: readings.length ? `${averageBattery.toFixed(2)}V` : "-",
-      detail: "คำนวณจากรายการที่โหลดล่าสุด",
+      detail: "คำนวณจาก Battery 1 ของรายการที่โหลดล่าสุด",
       icon: BatteryMedium,
       color: "text-emerald-700",
       bg: "bg-emerald-50",
@@ -262,14 +298,20 @@ export default function SensorDataView() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] border-collapse text-left">
+            <table className="w-full min-w-[1280px] border-collapse text-left">
               <thead className="bg-slate-50 text-xs font-extrabold text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Device</th>
                   <th className="px-5 py-3">Temperature</th>
                   <th className="px-5 py-3">Humidity</th>
                   <th className="px-5 py-3">Wind</th>
-                  <th className="px-5 py-3">Battery</th>
+                  <th className="px-5 py-3">Direction</th>
+                  <th className="px-5 py-3">Rainfall</th>
+                  <th className="px-5 py-3">Water Level</th>
+                  <th className="px-5 py-3">Battery 1</th>
+                  <th className="px-5 py-3">Battery 2</th>
+                  <th className="px-5 py-3">Packet</th>
+                  <th className="px-5 py-3">Heap</th>
                   <th className="px-5 py-3">Recorded</th>
                   <th className="px-5 py-3">Received</th>
                 </tr>
@@ -293,18 +335,35 @@ export default function SensorDataView() {
                         {toNumber(reading.wind_speed).toFixed(1)} m/s
                       </span>
                     </td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{reading.direction ?? "-"}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{optionalMetric(reading.rainfall, 2, " mm")}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{optionalMetric(reading.water_level, 3, " m")}</td>
                     <td className="px-5 py-4">
                       <span
                         className={[
                           "rounded-full px-2.5 py-1 text-xs font-extrabold",
-                          toNumber(reading.battery) >= 3.7
+                          toNumber(readingBattery(reading)) >= 3.7
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-amber-100 text-amber-700",
                         ].join(" ")}
                       >
-                        {toNumber(reading.battery).toFixed(2)}V
+                        {optionalMetric(readingBattery(reading), 2, "V")}
                       </span>
                     </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={[
+                          "rounded-full px-2.5 py-1 text-xs font-extrabold",
+                          reading.battery_2 !== null && toNumber(reading.battery_2) >= 3.7
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-amber-100 text-amber-700",
+                        ].join(" ")}
+                      >
+                        {optionalMetric(reading.battery_2, 2, "V")}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{integerMetric(reading.packet_count)}</td>
+                    <td className="px-5 py-4 font-bold text-slate-700">{integerMetric(reading.heap, " bytes")}</td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-500">
                       <span className="inline-flex items-center gap-2">
                         <Clock3 size={15} />
