@@ -30,7 +30,7 @@ function readingBattery(reading: SensorReading) {
   return reading.battery_1 ?? reading.battery;
 }
 
-function SensorSenderGuide() {
+export function SensorSenderGuide() {
   const [copied, setCopied] = useState<string | null>(null);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const webhookUrl = `${origin || "https://your-domain.example"}/api/sensor`;

@@ -10,6 +10,7 @@ export type ViewId =
   | "shelters"
   | "sensor-devices"
   | "village-basics"
+  | "shelter-data"
   | "announcements"
   | "users"
   | "sensors"
@@ -60,4 +61,52 @@ export type SensorDeviceForm = {
   latitude: string;
   longitude: string;
   status: "active" | "inactive" | "maintenance";
+};
+
+export type VillageRiskStatus = "normal" | "watch" | "high";
+
+export type Village = {
+  id: string;
+  code: string | null;
+  name: string;
+  tambon: string;
+  households: number;
+  population: number;
+  risk_status: VillageRiskStatus;
+  primary_shelter: string | null;
+  updated_at: string;
+};
+
+export type VillageForm = {
+  id?: string;
+  code: string;
+  name: string;
+  tambon: string;
+  households: string;
+  population: string;
+  risk_status: VillageRiskStatus;
+  primary_shelter: string;
+};
+
+export type ShelterStatus = "open" | "full" | "closed";
+
+export type ShelterRecord = {
+  id: string;
+  code: string | null;
+  name: string;
+  capacity: number;
+  status: ShelterStatus;
+  lat: number;
+  lng: number;
+  updated_at: string;
+};
+
+export type ShelterForm = {
+  id?: string;
+  code: string;
+  name: string;
+  capacity: string;
+  status: ShelterStatus;
+  lat: string;
+  lng: string;
 };

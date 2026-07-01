@@ -54,7 +54,7 @@ function DashboardContent({
     return <SensorDeviceManager />;
   }
 
-  if (activeView === "village-basics" || activeView === "announcements") {
+  if (activeView === "village-basics" || activeView === "shelter-data" || activeView === "announcements") {
     return <DataWarehouseCategoryView viewId={activeView} data={data} />;
   }
 

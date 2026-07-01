@@ -10,6 +10,7 @@ const viewPermissions: Record<ViewId, string[]> = {
   shelters: ["dashboard:view"],
   "sensor-devices": ["sensors:manage"],
   "village-basics": ["sensors:manage"],
+  "shelter-data": ["sensors:manage"],
   announcements: ["sensors:manage"],
   users: ["users:manage"],
   sensors: ["dashboard:view"],

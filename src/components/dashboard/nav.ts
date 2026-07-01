@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ChartNoAxesCombined,
   Database,
-  FileChartColumn,
   FileText,
   Home,
   Hospital,
@@ -28,10 +27,10 @@ export const navItems: NavItem[] = [
     children: [
       { id: "sensor-devices", label: "สถานีตรวจวัด", icon: RadioTower },
       { id: "village-basics", label: "ข้อมูลพื้นฐานหมู่บ้าน", icon: Home },
+      { id: "shelter-data", label: "ข้อมูลศูนย์อพยพ", icon: Hospital },
       { id: "announcements", label: "ประกาศข่าว", icon: FileText },
     ],
   },
   { id: "users", label: "จัดการสิทธิ์ผู้ใช้", icon: Users },
-  { id: "sensors", label: "รายงานสถานการณ์", icon: FileChartColumn },
   { id: "settings", label: "ตั้งค่าระบบ", icon: Settings },
 ];

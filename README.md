@@ -28,6 +28,18 @@ AUTH_BYPASS="false"
 
 ต้องการปิดหน้า login ชั่วคราวใน dev ให้ตั้ง `AUTH_BYPASS=true` ใน `.env.local` ระบบจะสร้างผู้ใช้จำลองสิทธิ์ admin โดยไม่ต้องผ่าน LINE Login
 
+เพิ่มหรืออัปเดตข้อมูลศูนย์อพยพพื้นที่ป่าพะยอมพร้อมจำนวนรองรับ:
+
+```bash
+npm run db:migrate:shelters
+```
+
+สร้าง/อัปเดตตารางข้อมูลพื้นฐานหมู่บ้าน:
+
+```bash
+npm run db:migrate:villages
+```
+
 ## Sensor Webhook
 
 สร้างตารางสำหรับรับข้อมูลเซ็นเซอร์:

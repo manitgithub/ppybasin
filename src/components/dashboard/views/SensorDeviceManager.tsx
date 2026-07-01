@@ -1,9 +1,16 @@
 "use client";
 
-import { PlusCircle, Save } from "lucide-react";
+import dynamic from "next/dynamic";
+import { BookOpen, PlusCircle, Save, X } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { SensorDevice, SensorDeviceForm } from "@/components/dashboard/types";
 import { sensorAgeLabel } from "@/components/dashboard/utils";
+import { SensorSenderGuide } from "@/components/dashboard/views/SensorDataView";
+
+const ShelterLocationPicker = dynamic(() => import("@/components/dashboard/ShelterLocationPicker"), {
+  ssr: false,
+  loading: () => <div className="grid h-[330px] place-items-center rounded-[8px] border border-slate-200 bg-slate-50 text-sm font-bold text-slate-500">กำลังโหลดแผนที่...</div>,
+});
 
 function emptyDeviceForm(): SensorDeviceForm {
   return {
@@ -21,6 +28,7 @@ export default function SensorDeviceManager() {
   const [form, setForm] = useState<SensorDeviceForm>(emptyDeviceForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +57,14 @@ export default function SensorDeviceManager() {
 
   const setField = (key: keyof SensorDeviceForm, value: string) => {
     setForm((current) => ({ ...current, [key]: value }) as SensorDeviceForm);
+  };
+
+  const setPosition = (position: { lat: number; lng: number }) => {
+    setForm((current) => ({
+      ...current,
+      latitude: position.lat.toFixed(6),
+      longitude: position.lng.toFixed(6),
+    }));
   };
 
   const editDevice = (device: SensorDevice) => {
@@ -101,12 +117,27 @@ export default function SensorDeviceManager() {
             เพิ่มหรือแก้ไขรหัสอุปกรณ์ ตำแหน่งติดตั้ง สถานะ และใช้ติดตามจำนวน readings ของแต่ละสถานี
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={[
+              "inline-flex h-10 items-center gap-2 rounded-[8px] px-4 text-xs font-extrabold shadow-sm transition",
+              guideOpen
+                ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                : "bg-[#0879df] text-white shadow-blue-200 hover:bg-[#076bc5]",
+            ].join(" ")}
+            onClick={() => setGuideOpen((current) => !current)}
+          >
+            {guideOpen ? <X size={15} /> : <BookOpen size={15} />}
+            {guideOpen ? "ปิดวิธีส่งข้อมูล" : "อ่านวิธีส่งข้อมูลเข้า Server"}
+          </button>
           <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-500 shadow-sm">
             ทั้งหมด {devices.length.toLocaleString("th-TH")} สถานี / active {activeCount.toLocaleString("th-TH")}
           </span>
         </div>
       </div>
+
+      {guideOpen && <SensorSenderGuide />}
 
       {(error || message) && (
         <div
@@ -178,6 +209,16 @@ export default function SensorDeviceManager() {
                   onChange={(event) => setField("longitude", event.target.value)}
                 />
               </label>
+            </div>
+            <div>
+              <span className="mb-2 block text-xs font-extrabold text-slate-500">ตำแหน่งสถานีบนแผนที่</span>
+              <ShelterLocationPicker
+                lat={form.latitude}
+                lng={form.longitude}
+                markerLabel="●"
+                helperText="คลิกบนแผนที่หรือเลื่อนหมุดเพื่อกำหนดพิกัดสถานีตรวจวัด"
+                onChange={setPosition}
+              />
             </div>
             <label className="block">
               <span className="text-xs font-extrabold text-slate-500">สถานะ</span>
