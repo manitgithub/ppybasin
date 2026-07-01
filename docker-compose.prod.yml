@@ -22,6 +22,14 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      LINE_CHANNEL_ID: ${LINE_CHANNEL_ID}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
+      LINE_CALLBACK_URL: ${LINE_CALLBACK_URL}
+      LINE_ADMIN_USER_IDS: ${LINE_ADMIN_USER_IDS}
+      AUTH_BYPASS: ${AUTH_BYPASS}
+      AUTH_BYPASS_DISPLAY_NAME: ${AUTH_BYPASS_DISPLAY_NAME}
+      
     # ports:
     #   - "${APP_PORT:-3010}:3010"
     networks:
