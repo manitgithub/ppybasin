@@ -13,8 +13,6 @@ type SensorRequestBody = {
   battery?: unknown;
   battery_1?: unknown;
   battery_2?: unknown;
-  packet_count?: unknown;
-  heap?: unknown;
   timestamp?: unknown;
 };
 
@@ -29,8 +27,6 @@ type ValidSensorPayload = {
   battery: number;
   battery1: number | null;
   battery2: number | null;
-  packetCount: number | null;
-  heap: number | null;
   recordedAt: Date;
   rawPayload: SensorRequestBody;
 };
@@ -42,16 +38,6 @@ function optionalNumber(value: unknown) {
 
   const numeric = typeof value === "number" ? value : Number(value);
   return Number.isFinite(numeric) ? numeric : undefined;
-}
-
-function optionalInteger(value: unknown) {
-  const numeric = optionalNumber(value);
-
-  if (numeric === null || typeof numeric === "undefined") {
-    return numeric;
-  }
-
-  return Number.isInteger(numeric) ? numeric : undefined;
 }
 
 function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensorPayload; errors?: string[] } {
@@ -68,8 +54,6 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
   const battery1 = optionalNumber(body.battery_1);
   const battery2 = optionalNumber(body.battery_2);
   const battery = optionalNumber(body.battery) ?? battery1;
-  const packetCount = optionalInteger(body.packet_count);
-  const heap = optionalInteger(body.heap);
 
   if (!deviceId) {
     errors.push("device_id is required");
@@ -113,14 +97,6 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
     errors.push("battery_2 must be empty or a number between 0 and 30");
   }
 
-  if (packetCount === undefined || (packetCount !== null && packetCount < 0)) {
-    errors.push("packet_count must be empty or a positive integer");
-  }
-
-  if (heap === undefined || (heap !== null && heap < 0)) {
-    errors.push("heap must be empty or a positive integer");
-  }
-
   if (timestamp && Number.isNaN(recordedAt.getTime())) {
     errors.push("timestamp must be a valid ISO 8601 datetime");
   }
@@ -143,8 +119,6 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
       battery: normalizedBattery,
       battery1: battery1 ?? normalizedBattery,
       battery2: battery2 ?? null,
-      packetCount: packetCount ?? null,
-      heap: heap ?? null,
       recordedAt,
       rawPayload: body,
     },
@@ -212,12 +186,10 @@ export async function POST(request: Request) {
             battery,
             battery_1,
             battery_2,
-            packet_count,
-            heap,
             recorded_at,
             raw_payload
           )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           on conflict (device_id, recorded_at) do update set
             temperature = excluded.temperature,
             humidity = excluded.humidity,
@@ -228,8 +200,6 @@ export async function POST(request: Request) {
             battery = excluded.battery,
             battery_1 = excluded.battery_1,
             battery_2 = excluded.battery_2,
-            packet_count = excluded.packet_count,
-            heap = excluded.heap,
             raw_payload = excluded.raw_payload,
             received_at = now()
           returning id::text
@@ -245,8 +215,6 @@ export async function POST(request: Request) {
           payload.battery,
           payload.battery1,
           payload.battery2,
-          payload.packetCount,
-          payload.heap,
           payload.recordedAt,
           payload.rawPayload,
         ],
@@ -302,8 +270,6 @@ export async function GET() {
         r.battery,
         r.battery_1,
         r.battery_2,
-        r.packet_count,
-        r.heap,
         r.recorded_at,
         r.received_at
       from public.sensor_readings r

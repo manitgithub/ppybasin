@@ -53,9 +53,7 @@ Content-Type: application/json
   "rainfall": 0.00,
   "water_level": 7.413,
   "battery_1": 11.05,
-  "battery_2": 11.16,
-  "packet_count": 0,
-  "heap": 323212
+  "battery_2": 11.16
 }
 ```
 
