@@ -14,9 +14,7 @@ const senderJson = `{
   "rainfall": 0.00,
   "water_level": 7.413,
   "battery_1": 11.05,
-  "battery_2": 11.16,
-  "packet_count": 0,
-  "heap": 323212
+  "battery_2": 11.16
 }`;
 
 function optionalMetric(value: string | number | null, digits: number, unit = "") {
@@ -26,15 +24,6 @@ function optionalMetric(value: string | number | null, digits: number, unit = ""
 
   const numeric = toNumber(value);
   return Number.isFinite(numeric) ? `${numeric.toFixed(digits)}${unit}` : "-";
-}
-
-function integerMetric(value: string | number | null, unit = "") {
-  if (value === null || typeof value === "undefined") {
-    return "-";
-  }
-
-  const numeric = toNumber(value);
-  return Number.isFinite(numeric) ? `${numeric.toLocaleString("th-TH")}${unit}` : "-";
 }
 
 function readingBattery(reading: SensorReading) {
@@ -298,7 +287,7 @@ export default function SensorDataView() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1280px] border-collapse text-left">
+            <table className="w-full min-w-[1120px] border-collapse text-left">
               <thead className="bg-slate-50 text-xs font-extrabold text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Device</th>
@@ -310,8 +299,6 @@ export default function SensorDataView() {
                   <th className="px-5 py-3">Water Level</th>
                   <th className="px-5 py-3">Battery 1</th>
                   <th className="px-5 py-3">Battery 2</th>
-                  <th className="px-5 py-3">Packet</th>
-                  <th className="px-5 py-3">Heap</th>
                   <th className="px-5 py-3">Recorded</th>
                   <th className="px-5 py-3">Received</th>
                 </tr>
@@ -362,8 +349,6 @@ export default function SensorDataView() {
                         {optionalMetric(reading.battery_2, 2, "V")}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-bold text-slate-700">{integerMetric(reading.packet_count)}</td>
-                    <td className="px-5 py-4 font-bold text-slate-700">{integerMetric(reading.heap, " bytes")}</td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-500">
                       <span className="inline-flex items-center gap-2">
                         <Clock3 size={15} />

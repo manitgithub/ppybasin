@@ -33,8 +33,6 @@ export type SensorReading = {
   battery: string | number;
   battery_1: string | number | null;
   battery_2: string | number | null;
-  packet_count: string | number | null;
-  heap: string | number | null;
   recorded_at: string;
   received_at: string;
 };
