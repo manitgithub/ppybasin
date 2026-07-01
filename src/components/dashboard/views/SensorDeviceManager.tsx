@@ -96,7 +96,7 @@ export default function SensorDeviceManager() {
     <section className="space-y-6">
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-800 md:text-3xl">จัดการสถานีเซ็นเซอร์</h2>
+          <h2 className="text-2xl font-extrabold text-slate-800 md:text-3xl">สถานีตรวจวัด</h2>
           <p className="mt-1 text-sm font-medium text-slate-500">
             เพิ่มหรือแก้ไขรหัสอุปกรณ์ ตำแหน่งติดตั้ง สถานะ และใช้ติดตามจำนวน readings ของแต่ละสถานี
           </p>

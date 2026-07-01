@@ -9,6 +9,8 @@ export type ViewId =
   | "evacuation-map"
   | "shelters"
   | "sensor-devices"
+  | "village-basics"
+  | "announcements"
   | "users"
   | "sensors"
   | "settings";
@@ -17,6 +19,7 @@ export type NavItem = {
   id: ViewId;
   label: string;
   icon: LucideIcon;
+  children?: NavItem[];
 };
 
 export type DashboardPermission = AppUser["permissions"][number];

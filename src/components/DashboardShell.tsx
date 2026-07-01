@@ -10,6 +10,7 @@ import type { ViewId } from "@/components/dashboard/types";
 import { roleLabel } from "@/components/dashboard/utils";
 import AccessDeniedView from "@/components/dashboard/views/AccessDeniedView";
 import DashboardHome from "@/components/dashboard/views/DashboardHome";
+import DataWarehouseCategoryView from "@/components/dashboard/views/DataWarehouseCategoryView";
 import LoginScreen from "@/components/dashboard/views/LoginScreen";
 import OperationalView from "@/components/dashboard/views/OperationalView";
 import SensorDataView from "@/components/dashboard/views/SensorDataView";
@@ -53,6 +54,10 @@ function DashboardContent({
     return <SensorDeviceManager />;
   }
 
+  if (activeView === "village-basics" || activeView === "announcements") {
+    return <DataWarehouseCategoryView viewId={activeView} data={data} />;
+  }
+
   if (activeView === "users") {
     return <UserAccessManager currentUser={currentUser} />;
   }
@@ -85,7 +90,12 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
 
   const visibleNavItems = useMemo(() => {
     if (!currentUser) return [];
-    return navItems.filter((item) => canAccessView(currentUser, item.id));
+    return navItems
+      .map((item) => {
+        const children = item.children?.filter((child) => canAccessView(currentUser, child.id));
+        return { ...item, children };
+      })
+      .filter((item) => canAccessView(currentUser, item.id) || Boolean(item.children?.length));
   }, [currentUser]);
 
   const openShelters = useMemo(
@@ -107,24 +117,54 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
       >
         <nav className="flex-1 space-y-2 px-2 py-5">
           <div className="space-y-1">
-            {visibleNavItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => {
-                  setActiveView(item.id);
-                  setSidebarOpen(false);
-                }}
-                className={[
-                  "flex h-11 w-full items-center gap-3 rounded-[7px] px-3 text-left text-[13px] font-extrabold transition",
-                  item.id === activeView
-                    ? "bg-[#0f80e8] text-white shadow-lg shadow-blue-950/25"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white",
-                ].join(" ")}
-              >
-                <item.icon size={17} />
-                <span className="truncate">{item.label}</span>
-              </button>
-            ))}
+            {visibleNavItems.map((item) =>
+              item.children?.length ? (
+                <div key={item.label} className="space-y-1">
+                  <div className="flex h-10 w-full items-center gap-3 rounded-[7px] px-3 text-[13px] font-extrabold text-slate-200">
+                    <item.icon size={17} />
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    <ChevronDown size={14} className="text-slate-400" />
+                  </div>
+                  <div className="space-y-1 border-l border-white/10 pl-4">
+                    {item.children.map((child) => (
+                      <button
+                        key={child.label}
+                        onClick={() => {
+                          setActiveView(child.id);
+                          setSidebarOpen(false);
+                        }}
+                        className={[
+                          "flex h-10 w-full items-center gap-2 rounded-[7px] px-3 text-left text-[12px] font-extrabold transition",
+                          child.id === activeView
+                            ? "bg-[#0f80e8] text-white shadow-lg shadow-blue-950/25"
+                            : "text-slate-300 hover:bg-white/10 hover:text-white",
+                        ].join(" ")}
+                      >
+                        <child.icon size={15} />
+                        <span className="truncate">{child.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    setActiveView(item.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={[
+                    "flex h-11 w-full items-center gap-3 rounded-[7px] px-3 text-left text-[13px] font-extrabold transition",
+                    item.id === activeView
+                      ? "bg-[#0f80e8] text-white shadow-lg shadow-blue-950/25"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white",
+                  ].join(" ")}
+                >
+                  <item.icon size={17} />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              ),
+            )}
           </div>
         </nav>
         <div className="m-3 rounded-[8px] bg-[#092844] p-3">

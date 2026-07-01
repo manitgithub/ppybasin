@@ -9,6 +9,8 @@ const viewPermissions: Record<ViewId, string[]> = {
   "evacuation-map": ["dashboard:view"],
   shelters: ["dashboard:view"],
   "sensor-devices": ["sensors:manage"],
+  "village-basics": ["sensors:manage"],
+  announcements: ["sensors:manage"],
   users: ["users:manage"],
   sensors: ["dashboard:view"],
   settings: ["users:manage"],
