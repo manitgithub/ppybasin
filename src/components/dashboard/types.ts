@@ -34,9 +34,8 @@ export type SensorReading = {
   direction: string | null;
   rainfall: string | number | null;
   water_level: string | number | null;
-  battery: string | number;
-  battery_1: string | number | null;
-  battery_2: string | number | null;
+  batteryVoltage: string | number;
+  switchingVoltage: string | number | null;
   recorded_at: string;
   received_at: string;
 };

@@ -64,12 +64,12 @@ Content-Type: application/json
   "temperature": 27.40,
   "rainfall": 0.00,
   "water_level": 7.413,
-  "battery_1": 11.05,
-  "battery_2": 11.16
+  "batteryVoltage": 11.05,
+  "switchingVoltage": 11.16
 }
 ```
 
-ไม่ต้องส่ง `timestamp` ระบบจะใช้เวลาของ server ตอนรับข้อมูลเป็นเวลาอ้างอิงให้เอง ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices` โดยระบบยังรองรับ payload เก่าที่ส่ง `battery` แทน `battery_1`
+ไม่ต้องส่ง `timestamp` ระบบจะใช้เวลาของ server ตอนรับข้อมูลเป็นเวลาอ้างอิงให้เอง ข้อมูลจะถูกบันทึกที่ `public.sensor_readings` และอัปเดตสถานะล่าสุดของอุปกรณ์ที่ `public.sensor_devices`
 
 ## หมายเหตุข้อมูล
 

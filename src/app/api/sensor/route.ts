@@ -13,6 +13,8 @@ type SensorRequestBody = {
   battery?: unknown;
   battery_1?: unknown;
   battery_2?: unknown;
+  batteryVoltage?: unknown;
+  switchingVoltage?: unknown;
   timestamp?: unknown;
 };
 
@@ -51,8 +53,8 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
   const windSpeed = optionalNumber(body.wind_speed);
   const rainfall = optionalNumber(body.rainfall);
   const waterLevel = optionalNumber(body.water_level);
-  const battery1 = optionalNumber(body.battery_1);
-  const battery2 = optionalNumber(body.battery_2);
+  const battery1 = optionalNumber(body.batteryVoltage) ?? optionalNumber(body.battery_1);
+  const battery2 = optionalNumber(body.switchingVoltage) ?? optionalNumber(body.battery_2);
   const battery = optionalNumber(body.battery) ?? battery1;
 
   if (!deviceId) {
@@ -86,15 +88,15 @@ function validateSensorPayload(body: SensorRequestBody): { payload?: ValidSensor
   }
 
   if (battery === undefined || battery === null || battery < 0 || battery > 30) {
-    errors.push("battery or battery_1 must be a number between 0 and 30");
+    errors.push("batteryVoltage must be a number between 0 and 30");
   }
 
   if (battery1 === undefined || (battery1 !== null && (battery1 < 0 || battery1 > 30))) {
-    errors.push("battery_1 must be empty or a number between 0 and 30");
+    errors.push("batteryVoltage must be empty or a number between 0 and 30");
   }
 
   if (battery2 === undefined || (battery2 !== null && (battery2 < 0 || battery2 > 30))) {
-    errors.push("battery_2 must be empty or a number between 0 and 30");
+    errors.push("switchingVoltage must be empty or a number between 0 and 30");
   }
 
   if (timestamp && Number.isNaN(recordedAt.getTime())) {
@@ -267,9 +269,8 @@ export async function GET() {
         r.direction,
         r.rainfall,
         r.water_level,
-        r.battery,
-        r.battery_1,
-        r.battery_2,
+        coalesce(r.battery_1, r.battery) as "batteryVoltage",
+        r.battery_2 as "switchingVoltage",
         r.recorded_at,
         r.received_at
       from public.sensor_readings r

@@ -13,8 +13,8 @@ const senderJson = `{
   "temperature": 27.40,
   "rainfall": 0.00,
   "water_level": 7.413,
-  "battery_1": 11.05,
-  "battery_2": 11.16
+  "batteryVoltage": 11.05,
+  "switchingVoltage": 11.16
 }`;
 
 function optionalMetric(value: string | number | null, digits: number, unit = "") {
@@ -27,7 +27,7 @@ function optionalMetric(value: string | number | null, digits: number, unit = ""
 }
 
 function readingBattery(reading: SensorReading) {
-  return reading.battery_1 ?? reading.battery;
+  return reading.batteryVoltage;
 }
 
 export function SensorSenderGuide() {
@@ -200,7 +200,7 @@ export default function SensorDataView() {
     {
       label: "แบตเตอรี่เฉลี่ย",
       value: readings.length ? `${averageBattery.toFixed(2)}V` : "-",
-      detail: "คำนวณจาก Battery 1 ของรายการที่โหลดล่าสุด",
+      detail: "คำนวณจาก batteryVoltage ของรายการที่โหลดล่าสุด",
       icon: BatteryMedium,
       color: "text-emerald-700",
       bg: "bg-emerald-50",
@@ -297,8 +297,8 @@ export default function SensorDataView() {
                   <th className="px-5 py-3">Direction</th>
                   <th className="px-5 py-3">Rainfall</th>
                   <th className="px-5 py-3">Water Level</th>
-                  <th className="px-5 py-3">Battery 1</th>
-                  <th className="px-5 py-3">Battery 2</th>
+                  <th className="px-5 py-3">batteryVoltage</th>
+                  <th className="px-5 py-3">switchingVoltage</th>
                   <th className="px-5 py-3">Recorded</th>
                   <th className="px-5 py-3">Received</th>
                 </tr>
@@ -341,12 +341,12 @@ export default function SensorDataView() {
                       <span
                         className={[
                           "rounded-full px-2.5 py-1 text-xs font-extrabold",
-                          reading.battery_2 !== null && toNumber(reading.battery_2) >= 3.7
+                          reading.switchingVoltage !== null && toNumber(reading.switchingVoltage) >= 3.7
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-amber-100 text-amber-700",
                         ].join(" ")}
                       >
-                        {optionalMetric(reading.battery_2, 2, "V")}
+                        {optionalMetric(reading.switchingVoltage, 2, "V")}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-500">
