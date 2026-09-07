@@ -30,6 +30,10 @@ function readingBattery(reading: SensorReading) {
   return reading.batteryVoltage;
 }
 
+function rawPayloadText(reading: SensorReading) {
+  return JSON.stringify(reading.raw_payload ?? {}, null, 2);
+}
+
 export function SensorSenderGuide() {
   const [copied, setCopied] = useState<string | null>(null);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -287,10 +291,11 @@ export default function SensorDataView() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse text-left">
+            <table className="w-full min-w-[1280px] border-collapse text-left">
               <thead className="bg-slate-50 text-xs font-extrabold text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Device</th>
+                  <th className="px-5 py-3">สถานี / พื้นที่</th>
                   <th className="px-5 py-3">Temperature</th>
                   <th className="px-5 py-3">Humidity</th>
                   <th className="px-5 py-3">Wind</th>
@@ -301,6 +306,7 @@ export default function SensorDataView() {
                   <th className="px-5 py-3">switchingVoltage</th>
                   <th className="px-5 py-3">Recorded</th>
                   <th className="px-5 py-3">Received</th>
+                  <th className="px-5 py-3">Raw JSON</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -308,6 +314,10 @@ export default function SensorDataView() {
                   <tr key={reading.id} className="hover:bg-blue-50/45">
                     <td className="px-5 py-4">
                       <span className="rounded-[8px] bg-slate-900 px-2.5 py-1 text-xs font-extrabold text-white">{reading.device_id}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="max-w-[210px] truncate font-extrabold text-slate-800">{reading.device_name ?? "-"}</p>
+                      <p className="max-w-[210px] truncate text-xs font-semibold text-slate-500">{reading.location_name ?? "-"}</p>
                     </td>
                     <td className="px-5 py-4 font-extrabold text-slate-800">
                       <span className="inline-flex items-center gap-2">
@@ -356,6 +366,16 @@ export default function SensorDataView() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-500">{sensorAgeLabel(reading.received_at)}</td>
+                    <td className="px-5 py-4">
+                      <details className="group max-w-[260px]">
+                        <summary className="cursor-pointer rounded-[8px] bg-slate-100 px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-200">
+                          ดู JSON
+                        </summary>
+                        <pre className="mt-2 max-h-44 overflow-auto rounded-[8px] bg-slate-950 p-3 text-[11px] font-semibold leading-5 text-blue-50">
+                          <code>{rawPayloadText(reading)}</code>
+                        </pre>
+                      </details>
+                    </td>
                   </tr>
                 ))}
               </tbody>

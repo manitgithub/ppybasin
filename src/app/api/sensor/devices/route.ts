@@ -93,6 +93,7 @@ export async function GET() {
         count(r.id)::int as readings_count
       from public.sensor_devices d
       left join public.sensor_readings r on r.device_id = d.device_id
+      where coalesce(d.metadata->>'excluded_from_installation_list', 'false') <> 'true'
       group by d.device_id
       order by d.device_id
     `);

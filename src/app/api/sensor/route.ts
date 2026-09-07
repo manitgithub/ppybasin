@@ -263,6 +263,8 @@ export async function GET() {
       select
         r.id::text,
         r.device_id,
+        d.name as device_name,
+        d.location_name,
         r.temperature,
         r.humidity,
         r.wind_speed,
@@ -272,8 +274,10 @@ export async function GET() {
         coalesce(r.battery_1, r.battery) as "batteryVoltage",
         r.battery_2 as "switchingVoltage",
         r.recorded_at,
-        r.received_at
+        r.received_at,
+        r.raw_payload
       from public.sensor_readings r
+      left join public.sensor_devices d on d.device_id = r.device_id
       order by r.recorded_at desc, r.received_at desc
       limit 50
     `);

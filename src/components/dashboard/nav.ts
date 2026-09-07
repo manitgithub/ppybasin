@@ -26,6 +26,7 @@ export const navItems: NavItem[] = [
     icon: Database,
     children: [
       { id: "sensor-devices", label: "สถานีตรวจวัด", icon: RadioTower },
+      { id: "sensors", label: "ข้อมูลที่รับเข้า", icon: Activity },
       { id: "village-basics", label: "ข้อมูลพื้นฐานหมู่บ้าน", icon: Home },
       { id: "shelter-data", label: "ข้อมูลศูนย์อพยพ", icon: Hospital },
       { id: "announcements", label: "ประกาศข่าว", icon: FileText },

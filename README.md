@@ -48,6 +48,8 @@ npm run db:migrate:villages
 npm run db:migrate:sensors
 ```
 
+คำสั่งนี้จะเพิ่ม/อัปเดตจุดติดตั้งเซ็นเซอร์ 6 จุดล่าสุด และตัด `TSL11` กับ `TX83` ออกจากรายการจุดติดตั้ง
+
 ตั้งค่าฝั่ง IoT sender:
 
 ```http

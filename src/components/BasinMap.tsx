@@ -9,10 +9,10 @@ type BasinMapProps = {
   data: DashboardPayload;
 };
 
-const center: [number, number] = [7.7892, 100.2035];
+const center: [number, number] = [7.807, 100.025];
 const paPhayomBounds: [[number, number], [number, number]] = [
-  [7.71, 100.12],
-  [7.86, 100.29],
+  [7.72, 99.82],
+  [7.89, 100.23],
 ];
 
 function isInPaPhayom(lat: number, lng: number) {
@@ -112,7 +112,9 @@ function BasinMap({ data }: BasinMapProps) {
           <Popup>
             <strong>{station.name}</strong>
             <br />
-            ระดับน้ำ {station.level.toFixed(2)} ม. ({station.id})
+            {station.waterway} อ.{station.district} จ.{station.province}
+            <br />
+            พิกัด {station.lat.toFixed(6)}, {station.lng.toFixed(6)} ({station.id})
           </Popup>
         </CircleMarker>
       ))}

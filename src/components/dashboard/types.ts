@@ -28,6 +28,8 @@ export type DashboardPermission = AppUser["permissions"][number];
 export type SensorReading = {
   id: string;
   device_id: string;
+  device_name: string | null;
+  location_name: string | null;
   temperature: string | number;
   humidity: string | number;
   wind_speed: string | number;
@@ -38,6 +40,7 @@ export type SensorReading = {
   switchingVoltage: string | number | null;
   recorded_at: string;
   received_at: string;
+  raw_payload: Record<string, unknown> | null;
 };
 
 export type SensorDevice = {

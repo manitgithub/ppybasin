@@ -13,6 +13,9 @@ export type Shelter = {
 export type TelemetryStation = {
   id: string;
   name: string;
+  waterway: string;
+  district: string;
+  province: string;
   lat: number;
   lng: number;
   level: number;
@@ -36,43 +39,69 @@ export type DashboardPayload = {
 
 const stations: TelemetryStation[] = [
   {
-    id: "PY-01",
-    name: "สถานีบ้านป่าพะยอม",
-    lat: 7.7773,
-    lng: 100.1992,
-    level: 5.15,
-    status: "watch",
-  },
-  {
-    id: "PY-02",
-    name: "สถานีคลองป่าพะยอม",
-    lat: 7.7871,
-    lng: 100.1865,
-    level: 3.84,
+    id: "PPY-01",
+    name: "ท่าอ่างป่าพะยอม",
+    waterway: "คลองป่าพะยอม",
+    district: "ป่าพะยอม",
+    province: "พัทลุง",
+    lat: 7.775364,
+    lng: 99.841004,
+    level: 0,
     status: "normal",
   },
   {
-    id: "PY-03",
-    name: "สถานีท้ายฝาย",
-    lat: 7.7694,
-    lng: 100.2104,
-    level: 4.32,
+    id: "PPY-02",
+    name: "บ้านใต้สะท่อม",
+    waterway: "คลองคสังขัน",
+    district: "ป่าพะยอม",
+    province: "พัทลุง",
+    lat: 7.759851,
+    lng: 99.891585,
+    level: 0,
     status: "normal",
   },
   {
-    id: "PY-04",
-    name: "สถานีสะพานชุมชน",
-    lat: 7.8031,
-    lng: 100.2056,
-    level: 5.02,
-    status: "watch",
+    id: "PPY-03",
+    name: "บ้านพร้าว",
+    waterway: "คลองปันแต",
+    district: "ป่าพะยอม",
+    province: "พัทลุง",
+    lat: 7.80145,
+    lng: 99.954751,
+    level: 0,
+    status: "normal",
   },
   {
-    id: "PY-05",
-    name: "สถานีทุ่งนาเหนือ",
-    lat: 7.7605,
-    lng: 100.1797,
-    level: 2.91,
+    id: "PPY-04",
+    name: "บ้านปากคลองเก่า",
+    waterway: "คลองกระถิน",
+    district: "ควนขนุน",
+    province: "พัทลุง",
+    lat: 7.74688,
+    lng: 100.087279,
+    level: 0,
+    status: "normal",
+  },
+  {
+    id: "PPY-05",
+    name: "บ้านห้วยน้ำดำ",
+    waterway: "คลองห้วยกรวด",
+    district: "ป่าพะยอม",
+    province: "พัทลุง",
+    lat: 7.86748,
+    lng: 99.845137,
+    level: 0,
+    status: "normal",
+  },
+  {
+    id: "PPY-06",
+    name: "บ้านแหลมโตนด",
+    waterway: "คลองแม่ไสย่านหนัก",
+    district: "ควนขนุน",
+    province: "พัทลุง",
+    lat: 7.817655,
+    lng: 100.047455,
+    level: 0,
     status: "normal",
   },
 ];
@@ -116,9 +145,9 @@ function buildPayload(shelters: Shelter[], source: DashboardPayload["source"]): 
     floodArea,
     summary: {
       stationsOnline: stations.length,
-      latestWaterLevel: 5.15,
+      latestWaterLevel: 0,
       rainfall24h: 0,
-      warningAreas: 2,
+      warningAreas: stations.filter((station) => station.status !== "normal").length,
       shelters: shelters.length,
     },
   };
