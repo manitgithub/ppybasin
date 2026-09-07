@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { AlertTriangle, ChevronDown, CircleUser, Clock3, LogOut, Menu, Waves } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { AppUser } from "@/lib/auth";
@@ -10,19 +11,38 @@ import type { ViewId } from "@/components/dashboard/types";
 import { roleLabel } from "@/components/dashboard/utils";
 import AccessDeniedView from "@/components/dashboard/views/AccessDeniedView";
 import DashboardHome from "@/components/dashboard/views/DashboardHome";
-import DataWarehouseCategoryView from "@/components/dashboard/views/DataWarehouseCategoryView";
 import LoginScreen from "@/components/dashboard/views/LoginScreen";
-import OperationalView from "@/components/dashboard/views/OperationalView";
-import SensorDataView from "@/components/dashboard/views/SensorDataView";
-import SensorDeviceManager from "@/components/dashboard/views/SensorDeviceManager";
-import UserAccessManager from "@/components/dashboard/views/UserAccessManager";
+
+const ViewLoader = () => (
+  <div className="grid min-h-[360px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
+    กำลังโหลดข้อมูล...
+  </div>
+);
+
+const DataWarehouseCategoryView = dynamic(() => import("@/components/dashboard/views/DataWarehouseCategoryView"), {
+  loading: ViewLoader,
+});
+const OperationalView = dynamic(() => import("@/components/dashboard/views/OperationalView"), {
+  loading: ViewLoader,
+});
+const SensorDataView = dynamic(() => import("@/components/dashboard/views/SensorDataView"), {
+  loading: ViewLoader,
+});
+const SensorDeviceManager = dynamic(() => import("@/components/dashboard/views/SensorDeviceManager"), {
+  loading: ViewLoader,
+});
+const UserAccessManager = dynamic(() => import("@/components/dashboard/views/UserAccessManager"), {
+  loading: ViewLoader,
+});
+
+type OperationalViewId = "tracking" | "forecast" | "risk" | "evacuation-map" | "shelters" | "settings";
 
 type DashboardShellProps = {
   initialData: DashboardPayload;
   initialUser: AppUser | null;
 };
 
-const operationalViews = new Set<ViewId>([
+const operationalViews = new Set<OperationalViewId>([
   "tracking",
   "forecast",
   "risk",
@@ -62,8 +82,8 @@ function DashboardContent({
     return <UserAccessManager currentUser={currentUser} />;
   }
 
-  if (operationalViews.has(activeView)) {
-    return <OperationalView viewId={activeView as Parameters<typeof OperationalView>[0]["viewId"]} data={data} />;
+  if (operationalViews.has(activeView as OperationalViewId)) {
+    return <OperationalView viewId={activeView as OperationalViewId} data={data} />;
   }
 
   return <DashboardHome data={data} openShelters={openShelters} />;
@@ -78,14 +98,24 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
   });
 
   useEffect(() => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
     const controller = new AbortController();
+    const refresh = () => {
+      fetch("/api/dashboard", { signal: controller.signal })
+        .then((response) => response.json())
+        .then((payload: DashboardPayload) => setData(payload))
+        .catch(() => undefined);
+    };
 
-    fetch("/api/dashboard", { signal: controller.signal })
-      .then((response) => response.json())
-      .then((payload: DashboardPayload) => setData(payload))
-      .catch(() => undefined);
+    const timer = window.setTimeout(refresh, 60_000);
 
-    return () => controller.abort();
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, []);
 
   const visibleNavItems = useMemo(() => {

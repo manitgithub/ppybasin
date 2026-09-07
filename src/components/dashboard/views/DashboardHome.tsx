@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -21,7 +22,7 @@ import type { DashboardPayload } from "@/lib/dashboard-data";
 
 const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   ssr: false,
-  loading: () => <div className="flex h-full items-center justify-center text-sm font-semibold text-slate-500">กำลังโหลดแผนที่...</div>,
+  loading: () => <MapPlaceholder />,
 });
 
 const alertItems = [
@@ -81,6 +82,14 @@ function MiniSparkline() {
   );
 }
 
+function MapPlaceholder() {
+  return (
+    <div className="flex h-full items-center justify-center bg-slate-100 text-sm font-semibold text-slate-500">
+      กำลังโหลดแผนที่...
+    </div>
+  );
+}
+
 export default function DashboardHome({
   data,
   openShelters,
@@ -88,48 +97,61 @@ export default function DashboardHome({
   data: DashboardPayload;
   openShelters: number;
 }) {
-  const cards = [
-    {
-      label: "ปริมาณฝนวันนี้",
-      value: "128.5",
-      suffix: "มม.",
-      detail: "↑ 26% จากเมื่อวาน",
-      icon: CloudRain,
-      className: "from-[#2f8ee8] to-[#0b5fbe]",
-    },
-    {
-      label: "ระดับน้ำลุ่มน้ำป่าพะยอม",
-      value: data.summary.latestWaterLevel.toFixed(2),
-      suffix: "ม.",
-      detail: "↑ สูงกว่าปกติ 1.25 ม.",
-      icon: Droplets,
-      className: "from-[#51c9c6] to-[#07979d]",
-    },
-    {
-      label: "พื้นที่เสี่ยงน้ำท่วม",
-      value: "18",
-      suffix: "หมู่บ้าน",
-      detail: "3,245 ครัวเรือน",
-      icon: Home,
-      className: "from-[#ffb23b] to-[#ed7708]",
-    },
-    {
-      label: "ศูนย์พักพิงเปิดดำเนินการ",
-      value: "6",
-      suffix: "ศูนย์",
-      detail: "รองรับได้ 2,450 คน",
-      icon: Siren,
-      className: "from-[#ff675e] to-[#e12624]",
-    },
-    {
-      label: "ประชาชนได้รับผลกระทบ",
-      value: "1,247",
-      suffix: "คน",
-      detail: "จาก 18 หมู่บ้าน",
-      icon: Users,
-      className: "from-[#b387ea] to-[#7b4bd0]",
-    },
-  ];
+  const [mapReady, setMapReady] = useState(false);
+
+  useEffect(() => {
+    const scheduleMap = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(callback, 250));
+    const cancelMap = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = scheduleMap(() => setMapReady(true), { timeout: 900 });
+
+    return () => cancelMap(handle);
+  }, []);
+
+  const cards = useMemo(
+    () => [
+      {
+        label: "ปริมาณฝนวันนี้",
+        value: "128.5",
+        suffix: "มม.",
+        detail: "↑ 26% จากเมื่อวาน",
+        icon: CloudRain,
+        className: "from-[#2f8ee8] to-[#0b5fbe]",
+      },
+      {
+        label: "ระดับน้ำลุ่มน้ำป่าพะยอม",
+        value: data.summary.latestWaterLevel.toFixed(2),
+        suffix: "ม.",
+        detail: "↑ สูงกว่าปกติ 1.25 ม.",
+        icon: Droplets,
+        className: "from-[#51c9c6] to-[#07979d]",
+      },
+      {
+        label: "พื้นที่เสี่ยงน้ำท่วม",
+        value: "18",
+        suffix: "หมู่บ้าน",
+        detail: "3,245 ครัวเรือน",
+        icon: Home,
+        className: "from-[#ffb23b] to-[#ed7708]",
+      },
+      {
+        label: "ศูนย์พักพิงเปิดดำเนินการ",
+        value: "6",
+        suffix: "ศูนย์",
+        detail: "รองรับได้ 2,450 คน",
+        icon: Siren,
+        className: "from-[#ff675e] to-[#e12624]",
+      },
+      {
+        label: "ประชาชนได้รับผลกระทบ",
+        value: "1,247",
+        suffix: "คน",
+        detail: "จาก 18 หมู่บ้าน",
+        icon: Users,
+        className: "from-[#b387ea] to-[#7b4bd0]",
+      },
+    ],
+    [data.summary.latestWaterLevel],
+  );
 
   return (
     <div className="space-y-3">
@@ -154,7 +176,7 @@ export default function DashboardHome({
       <section className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.62fr)_minmax(300px,0.62fr)]">
         <Panel title="แผนที่สถานการณ์ น้ำท่วมแบบเรียลไทม์">
           <div className="relative h-[470px] overflow-hidden rounded-b-[8px]">
-            <BasinMap data={data} />
+            {mapReady ? <BasinMap data={data} /> : <MapPlaceholder />}
             <div className="absolute left-4 top-4 w-[160px] rounded-[8px] bg-[#102130]/92 p-4 text-white shadow-xl">
               <div className="mb-3 flex items-center justify-between text-xs font-extrabold">
                 ชั้นข้อมูล
@@ -257,7 +279,7 @@ export default function DashboardHome({
         </div>
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-[1.1fr_0.72fr_0.86fr]">
+      <section className="grid gap-3 [contain-intrinsic-size:430px] [content-visibility:auto] xl:grid-cols-[1.1fr_0.72fr_0.86fr]">
         <Panel title={`ศูนย์อพยพที่เปิดดำเนินการ (${openShelters} แห่ง)`} action="ดูทั้งหมด">
           <div className="flex gap-3 overflow-x-auto p-4">
             {shelterCards.map((shelter) => (

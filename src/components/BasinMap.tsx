@@ -1,7 +1,7 @@
 "use client";
 
 import L from "leaflet";
-import { useEffect } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { CircleMarker, MapContainer, Marker, Polygon, Popup, TileLayer, useMap } from "react-leaflet";
 import type { DashboardPayload, Shelter, TelemetryStation } from "@/lib/dashboard-data";
 
@@ -30,16 +30,26 @@ function stationColor(status: TelemetryStation["status"]) {
   return "#1976dc";
 }
 
-function shelterIcon(status: Shelter["status"]) {
-  const color = status === "open" ? "#20bf82" : status === "full" ? "#e8334c" : "#f7b84b";
-
-  return L.divIcon({
+const shelterIcons: Record<Shelter["status"], L.DivIcon> = {
+  open: L.divIcon({
     className: "shelter-marker",
-    html: `<span style="display:grid;place-items:center;width:27px;height:27px;border-radius:999px;background:${color};border:3px solid white;box-shadow:0 8px 20px rgba(15,23,42,.32);color:white;font-size:15px;font-weight:900">⌂</span>`,
+    html: '<span style="display:grid;place-items:center;width:27px;height:27px;border-radius:999px;background:#20bf82;border:3px solid white;box-shadow:0 8px 20px rgba(15,23,42,.32);color:white;font-size:15px;font-weight:900">⌂</span>',
     iconSize: [27, 27],
     iconAnchor: [13, 13],
-  });
-}
+  }),
+  full: L.divIcon({
+    className: "shelter-marker",
+    html: '<span style="display:grid;place-items:center;width:27px;height:27px;border-radius:999px;background:#e8334c;border:3px solid white;box-shadow:0 8px 20px rgba(15,23,42,.32);color:white;font-size:15px;font-weight:900">⌂</span>',
+    iconSize: [27, 27],
+    iconAnchor: [13, 13],
+  }),
+  closed: L.divIcon({
+    className: "shelter-marker",
+    html: '<span style="display:grid;place-items:center;width:27px;height:27px;border-radius:999px;background:#f7b84b;border:3px solid white;box-shadow:0 8px 20px rgba(15,23,42,.32);color:white;font-size:15px;font-weight:900">⌂</span>',
+    iconSize: [27, 27],
+    iconAnchor: [13, 13],
+  }),
+};
 
 function BoundsUpdater() {
   const map = useMap();
@@ -51,9 +61,15 @@ function BoundsUpdater() {
   return null;
 }
 
-export default function BasinMap({ data }: BasinMapProps) {
-  const stations = data.stations.filter((station) => isInPaPhayom(station.lat, station.lng));
-  const shelters = data.shelters.filter((shelter) => isInPaPhayom(shelter.lat, shelter.lng));
+function BasinMap({ data }: BasinMapProps) {
+  const stations = useMemo(
+    () => data.stations.filter((station) => isInPaPhayom(station.lat, station.lng)),
+    [data.stations],
+  );
+  const shelters = useMemo(
+    () => data.shelters.filter((shelter) => isInPaPhayom(shelter.lat, shelter.lng)),
+    [data.shelters],
+  );
 
   return (
     <MapContainer
@@ -102,7 +118,7 @@ export default function BasinMap({ data }: BasinMapProps) {
       ))}
 
       {shelters.map((shelter) => (
-        <Marker key={shelter.id} position={[shelter.lat, shelter.lng]} icon={shelterIcon(shelter.status)}>
+        <Marker key={shelter.id} position={[shelter.lat, shelter.lng]} icon={shelterIcons[shelter.status]}>
           <Popup>
             <strong>{shelter.name}</strong>
             <br />
@@ -115,3 +131,5 @@ export default function BasinMap({ data }: BasinMapProps) {
     </MapContainer>
   );
 }
+
+export default memo(BasinMap);
