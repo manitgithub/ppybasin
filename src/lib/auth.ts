@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { getPool } from "@/lib/db";
 
 export const SESSION_COOKIE = "ppybasin_session";
@@ -81,6 +81,25 @@ function isAuthBypassEnabled() {
   return ["1", "true", "yes", "on"].includes((process.env.AUTH_BYPASS ?? "").trim().toLowerCase());
 }
 
+function isLocalhostHost(host: string | null) {
+  if (!host) return false;
+
+  const normalizedHost = host.trim().toLowerCase();
+  const hostname = normalizedHost.startsWith("[")
+    ? normalizedHost.slice(1, normalizedHost.indexOf("]"))
+    : normalizedHost.split(":")[0];
+
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+async function isLocalhostRequest() {
+  const headerStore = await headers();
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const host = forwardedHost?.split(",")[0]?.trim() || headerStore.get("host");
+
+  return isLocalhostHost(host);
+}
+
 function bypassUser(): AppUser {
   const now = new Date().toISOString();
 
@@ -107,7 +126,7 @@ export function authConfigError() {
 }
 
 export async function getCurrentUser(): Promise<AppUser | null> {
-  if (isAuthBypassEnabled()) {
+  if (isAuthBypassEnabled() || (await isLocalhostRequest())) {
     return bypassUser();
   }
 

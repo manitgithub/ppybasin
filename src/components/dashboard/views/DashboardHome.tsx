@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -62,6 +63,8 @@ const newsItems = [
   ["19 พ.ค. 2567 10:15", "เปิดศูนย์อพยพเพิ่ม 2 แห่ง ใน อ.ตะโหมด"],
 ];
 
+const rainLoopUrl = "https://semet.uk/loop/PTLLoop.gif";
+
 function Panel({ title, action, children }: { title: string; action?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
@@ -71,14 +74,6 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
       </div>
       {children}
     </section>
-  );
-}
-
-function MiniSparkline() {
-  return (
-    <svg viewBox="0 0 90 22" className="h-6 w-24 text-sky-400" aria-hidden="true">
-      <path d="M2 14 C14 13 17 7 28 10 S44 18 55 11 70 7 88 13" fill="none" stroke="currentColor" strokeWidth="2.2" />
-    </svg>
   );
 }
 
@@ -173,7 +168,25 @@ export default function DashboardHome({
         ))}
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.62fr)_minmax(300px,0.62fr)]">
+      <Panel title="การแจ้งเตือนล่าสุด" action="ดูทั้งหมด">
+        <div className="grid gap-2 p-3 md:grid-cols-3">
+          {alertItems.map((item) => (
+            <article key={item.title} className="flex items-center gap-3 rounded-[8px] bg-orange-50/80 p-3">
+              <span className={["grid size-9 place-items-center rounded-[8px] text-white", item.tone === "red" ? "bg-red-500" : item.tone === "orange" ? "bg-orange-500" : "bg-amber-500"].join(" ")}>
+                <AlertTriangle size={19} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={["truncate text-sm font-extrabold", item.tone === "red" ? "text-red-600" : "text-orange-600"].join(" ")}>{item.title}</p>
+                <p className="truncate text-xs font-bold text-slate-600">{item.area}</p>
+                <p className="text-[11px] font-semibold text-slate-400">{item.time}</p>
+              </div>
+              <ChevronRight size={16} className="text-slate-400" />
+            </article>
+          ))}
+        </div>
+      </Panel>
+
+      <section className="grid gap-3 xl:grid-cols-2">
         <Panel title="แผนที่สถานการณ์ น้ำท่วมแบบเรียลไทม์">
           <div className="relative h-[470px] overflow-hidden rounded-b-[8px]">
             {mapReady ? <BasinMap data={data} /> : <MapPlaceholder />}
@@ -199,54 +212,48 @@ export default function DashboardHome({
           </div>
         </Panel>
 
-        <div className="space-y-3">
-          <Panel title="การแจ้งเตือนล่าสุด" action="ดูทั้งหมด">
-            <div className="space-y-2 p-3">
-              {alertItems.map((item) => (
-                <article key={item.title} className="flex items-center gap-3 rounded-[8px] bg-orange-50/80 p-3">
-                  <span className={["grid size-9 place-items-center rounded-[8px] text-white", item.tone === "red" ? "bg-red-500" : item.tone === "orange" ? "bg-orange-500" : "bg-amber-500"].join(" ")}>
-                    <AlertTriangle size={19} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className={["truncate text-sm font-extrabold", item.tone === "red" ? "text-red-600" : "text-orange-600"].join(" ")}>{item.title}</p>
-                    <p className="truncate text-xs font-bold text-slate-600">{item.area}</p>
-                    <p className="text-[11px] font-semibold text-slate-400">{item.time}</p>
-                  </div>
-                  <ChevronRight size={16} className="text-slate-400" />
-                </article>
-              ))}
+        <div className="grid gap-3 md:grid-cols-2">
+          <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง">
+            <div className="relative h-[185px] overflow-hidden rounded-b-[8px] bg-slate-900">
+              <Image
+                src={rainLoopUrl}
+                alt="ภาพวนซ้ำเรดาร์ฝนพื้นที่พัทลุง"
+                fill
+                unoptimized
+                sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
+                className="object-contain"
+              />
             </div>
           </Panel>
 
           <Panel title="ระดับน้ำในลำน้ำสำคัญ">
             <div className="p-3">
-              <div className="mb-2 flex justify-end gap-3 text-[10px] font-bold text-slate-500">
+              <div className="mb-1 flex flex-wrap justify-end gap-2 text-[10px] font-bold text-slate-500">
                 <span className="text-sky-500">● ระดับน้ำ</span>
-                <span className="text-orange-500">● ระดับเฝ้าระวัง</span>
-                <span className="text-red-500">● ระดับวิกฤต</span>
+                <span className="text-orange-500">● เฝ้าระวัง</span>
+                <span className="text-red-500">● วิกฤต</span>
               </div>
               {waterRows.map((row) => (
-                <div key={row[0]} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-t border-slate-100 py-2 text-xs">
-                  <span className="font-extrabold text-[#284069]">{row[0]}</span>
+                <div key={row[0]} className="grid grid-cols-[1fr_auto] items-center gap-2 border-t border-slate-100 py-2 text-xs">
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold text-[#284069]">{row[0]}</p>
+                    <p className={row[3] === "orange" ? "mt-0.5 font-bold text-orange-500" : "mt-0.5 font-bold text-teal-600"}>● {row[2]}</p>
+                  </div>
                   <span className="font-extrabold text-[#5370a0]">{row[1]}</span>
-                  <MiniSparkline />
-                  <span className={row[3] === "orange" ? "font-bold text-orange-500" : "font-bold text-teal-600"}>● {row[2]}</span>
                 </div>
               ))}
             </div>
           </Panel>
-        </div>
 
-        <div className="space-y-3">
           <Panel title="พยากรณ์อากาศ">
-            <div className="p-4">
-              <div className="mb-3 flex items-start justify-between">
+            <div className="p-3">
+              <div className="mb-2 flex items-start justify-between">
                 <div>
                   <p className="text-xs font-bold text-[#63718a]">7 วันข้างหน้า</p>
-                  <p className="mt-2 flex items-center gap-2 text-sm font-extrabold text-[#2267c7]"><CloudSun size={17} /> ฝนตกหนัก</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-[#2267c7]"><CloudSun size={17} /> ฝนตกหนัก</p>
                 </div>
                 <div className="text-right text-[#2c72d9]">
-                  <CloudRain size={50} className="ml-auto opacity-60" />
+                  <CloudRain size={38} className="ml-auto opacity-60" />
                   <p className="text-xs font-extrabold">80%</p>
                 </div>
               </div>
@@ -264,11 +271,11 @@ export default function DashboardHome({
           </Panel>
 
           <Panel title="พื้นที่เสี่ยงน้ำท่วม">
-            <div className="grid grid-cols-[120px_1fr] items-center gap-3 p-4">
+            <div className="grid grid-cols-[96px_1fr] items-center gap-3 p-3">
               <div className="relative grid aspect-square place-items-center rounded-full bg-[conic-gradient(#1e88e5_0_35%,#05a587_35%_60%,#ffaf23_60%_80%,#ff6b35_80%_92%,#5dade2_92%_100%)]">
-                <div className="grid size-16 place-items-center rounded-full bg-white text-xs font-extrabold text-[#20325c]">รวม</div>
+                <div className="grid size-14 place-items-center rounded-full bg-white text-xs font-extrabold text-[#20325c]">รวม</div>
               </div>
-              <div className="space-y-2 text-xs font-bold text-[#40577f]">
+              <div className="space-y-1.5 text-xs font-bold text-[#40577f]">
                 {["ป่าพะยอม 35%", "ตะโหมด 25%", "ศรีบรรพต 20%", "ควนขนุน 12%", "นาแก้ว 8%"].map((item) => (
                   <p key={item}>{item}</p>
                 ))}
@@ -279,7 +286,7 @@ export default function DashboardHome({
         </div>
       </section>
 
-      <section className="grid gap-3 [contain-intrinsic-size:430px] [content-visibility:auto] xl:grid-cols-[1.1fr_0.72fr_0.86fr]">
+      <section className="grid gap-3 [contain-intrinsic-size:430px] [content-visibility:auto] md:grid-cols-2 xl:grid-cols-[1.1fr_0.72fr_0.86fr]">
         <Panel title={`ศูนย์อพยพที่เปิดดำเนินการ (${openShelters} แห่ง)`} action="ดูทั้งหมด">
           <div className="flex gap-3 overflow-x-auto p-4">
             {shelterCards.map((shelter) => (
