@@ -1,7 +1,6 @@
 import {
   Activity,
   AlertTriangle,
-  ChartNoAxesCombined,
   Database,
   FileText,
   Home,
@@ -17,7 +16,6 @@ export const navItems: NavItem[] = [
   { id: "dashboard", label: "หน้าหลัก", icon: Home },
   { id: "tracking", label: "ติดตามสถานการณ์", icon: Activity },
   { id: "forecast", label: "คาดการณ์และแจ้งเตือน", icon: AlertTriangle },
-  { id: "risk", label: "วิเคราะห์ความเสี่ยง", icon: ChartNoAxesCombined },
   { id: "evacuation-map", label: "แผนที่และเส้นทางอพยพ", icon: Map },
   { id: "shelters", label: "ศูนย์อพยพ", icon: Hospital },
   {

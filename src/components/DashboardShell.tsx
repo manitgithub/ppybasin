@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { AlertTriangle, ChevronDown, CircleUser, Clock3, LogOut, Menu, Waves } from "lucide-react";
+import { ChevronDown, CircleUser, Clock3, LogOut, Menu, Waves } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { AppUser } from "@/lib/auth";
 import type { DashboardPayload } from "@/lib/dashboard-data";
@@ -41,6 +41,21 @@ type DashboardShellProps = {
   initialData: DashboardPayload;
   initialUser: AppUser | null;
 };
+
+const thaiTimeFormatter = new Intl.DateTimeFormat("th-TH", {
+  timeZone: "Asia/Bangkok",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+const thaiDateFormatter = new Intl.DateTimeFormat("th-TH", {
+  timeZone: "Asia/Bangkok",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
 
 const operationalViews = new Set<OperationalViewId>([
   "tracking",
@@ -93,9 +108,19 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
   const [data, setData] = useState(initialData);
   const [currentUser] = useState(initialUser);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
   const [activeView, setActiveView] = useState<ViewId>(() => {
     return initialUser ? firstAllowedView(initialUser, navItems.map((item) => item.id)) : "dashboard";
   });
+
+  useEffect(() => {
+    const updateCurrentDateTime = () => setCurrentDateTime(new Date());
+
+    updateCurrentDateTime();
+    const timer = window.setInterval(updateCurrentDateTime, 1_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (document.visibilityState !== "visible") {
@@ -132,6 +157,8 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
     () => data.shelters.filter((shelter) => shelter.status === "open").length,
     [data.shelters],
   );
+  const currentTimeText = currentDateTime ? thaiTimeFormatter.format(currentDateTime) : "--:--:--";
+  const currentDateText = currentDateTime ? thaiDateFormatter.format(currentDateTime) : "-- --- ----";
 
   if (!currentUser) {
     return <LoginScreen />;
@@ -247,18 +274,11 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
           </div>
 
           <div className="flex shrink-0 items-center gap-5">
-            <button className="hidden h-14 items-center gap-3 rounded-[8px] bg-[#dc2b24] px-5 text-left shadow-lg shadow-red-950/20 xl:flex">
-              <AlertTriangle size={31} fill="white" className="text-white" />
-              <span>
-                <span className="block text-sm font-extrabold">แจ้งเตือนวิกฤต</span>
-                <span className="block text-xs font-bold">ระดับความเสี่ยง : สูงมาก</span>
-              </span>
-            </button>
             <div className="hidden h-14 items-center gap-3 border-l border-white/18 pl-5 md:flex">
               <Clock3 size={32} />
               <span>
-                <span className="block text-lg font-extrabold leading-none">10:30:45</span>
-                <span className="mt-1 block text-xs font-bold text-white/80">20 พ.ค. 2567</span>
+                <span className="block text-lg font-extrabold leading-none">{currentTimeText}</span>
+                <span className="mt-1 block text-xs font-bold text-white/80">{currentDateText}</span>
               </span>
             </div>
             <button className="hidden h-14 items-center gap-3 border-l border-white/18 pl-5 md:flex">

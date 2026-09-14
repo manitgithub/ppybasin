@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { CalendarDays, FileText, Home, Hospital, MapPin, Pencil, Plus, RadioTower, Save, Trash2, Users, X } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileText, Home, Hospital, MapPin, Pencil, Plus, RadioTower, Save, Trash2, Users, X } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
+import type { DisasterNoticeSummary, SourceStatus } from "@/lib/situation/adapters";
 import type { ShelterForm, ShelterRecord, ShelterStatus, ViewId, Village, VillageForm, VillageRiskStatus } from "@/components/dashboard/types";
 import { formatDate } from "@/components/dashboard/utils";
 
@@ -45,27 +46,6 @@ const shelterStatusLabels: Record<ShelterStatus, string> = {
   closed: "ปิด",
 };
 
-const announcementRows = [
-  {
-    title: "ประกาศเตือนภัยน้ำท่วมฉับพลันในพื้นที่ อ.ป่าพะยอม",
-    category: "เตือนภัย",
-    status: "เผยแพร่แล้ว",
-    publishedAt: "2026-07-01T09:00:00.000Z",
-  },
-  {
-    title: "เฝ้าระวังระดับน้ำเพิ่มขึ้นในลำน้ำสายหลัก",
-    category: "เฝ้าระวัง",
-    status: "เผยแพร่แล้ว",
-    publishedAt: "2026-06-30T16:30:00.000Z",
-  },
-  {
-    title: "เปิดศูนย์อพยพสำรองเพิ่มเติมในเขตพื้นที่เสี่ยง",
-    category: "ปฏิบัติการ",
-    status: "ร่างประกาศ",
-    publishedAt: "2026-06-30T10:15:00.000Z",
-  },
-];
-
 const categoryMeta = {
   "village-basics": {
     icon: Home,
@@ -86,6 +66,20 @@ const categoryMeta = {
     detail: "รายการศูนย์อพยพจากฐานข้อมูล พร้อมสถานะเปิดใช้งาน พิกัด และจำนวนคนที่รองรับได้",
   },
 } satisfies Record<CategoryViewId, { icon: typeof Home; eyebrow: string; title: string; detail: string }>;
+
+const sourceStatusLabels: Record<SourceStatus, string> = {
+  ok: "พบข้อมูลที่ค้นคืนได้",
+  unavailable: "เรียกข้อมูลไม่ได้",
+  schema_changed: "รูปแบบข้อมูลเปลี่ยน",
+  no_confirmed_data: "ไม่มีข้อมูลยืนยัน",
+};
+
+const sourceStatusClassNames: Record<SourceStatus, string> = {
+  ok: "bg-sky-100 text-sky-700",
+  unavailable: "bg-rose-100 text-rose-700",
+  schema_changed: "bg-amber-100 text-amber-700",
+  no_confirmed_data: "bg-slate-100 text-slate-600",
+};
 
 function StatCard({
   label,
@@ -452,35 +446,135 @@ function VillageBasics({ data }: { data: DashboardPayload }) {
   );
 }
 
+function SourceStatusBadge({ status }: { status: SourceStatus }) {
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${sourceStatusClassNames[status]}`}>{sourceStatusLabels[status]}</span>;
+}
+
+function DisasterNoticeCard({
+  title,
+  notice,
+}: {
+  title: string;
+  notice: DisasterNoticeSummary;
+}) {
+  return (
+    <article className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3">
+          <span className={notice.status === "ok" ? "grid size-10 place-items-center rounded-[8px] bg-sky-50 text-sky-700" : "grid size-10 place-items-center rounded-[8px] bg-amber-50 text-amber-700"}>
+            <AlertTriangle size={20} />
+          </span>
+          <div>
+            <h3 className="text-base font-extrabold text-slate-800">{title}</h3>
+            <a className="mt-1 inline-flex max-w-full items-center gap-1 truncate text-xs font-extrabold text-[#2c72d9]" href={notice.sourceUrl} target="_blank" rel="noreferrer">
+              <ExternalLink size={13} />
+              {notice.sourceUrl}
+            </a>
+          </div>
+        </div>
+        <SourceStatusBadge status={notice.status} />
+      </div>
+
+      <p className="rounded-[8px] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">{notice.message}</p>
+
+      <div className="mt-4">
+        <p className="mb-2 text-xs font-extrabold text-slate-500">ข้อความที่ค้นคืนได้</p>
+        {notice.matchedItems.length ? (
+          <div className="space-y-2">
+            {notice.matchedItems.map((item, index) => (
+              <div key={`${notice.sourceUrl}-${index}`} className="rounded-[8px] border border-slate-100 bg-white px-4 py-3 text-xs font-semibold text-slate-600">
+                {item}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[8px] border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-xs font-bold text-slate-500">
+            ไม่พบประกาศที่ค้นคืนได้จากหน้านี้ในรอบตรวจล่าสุด
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function Announcements() {
+  const [disaster, setDisaster] = useState<{
+    central: DisasterNoticeSummary;
+    phatthalung: DisasterNoticeSummary;
+    gistdaFloodBoundary: DisasterNoticeSummary;
+  } | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch("/api/situation", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((payload) => {
+        setDisaster(payload.disaster ?? null);
+        setUpdatedAt(typeof payload.updatedAt === "string" ? payload.updatedAt : null);
+        setError(null);
+      })
+      .catch((caught: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(caught instanceof Error ? caught.message : "โหลดข้อมูลประกาศไม่สำเร็จ");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  const notices = disaster ? [disaster.central, disaster.phatthalung, disaster.gistdaFloodBoundary] : [];
+  const matchedCount = notices.reduce((sum, notice) => sum + notice.matchedItems.length, 0);
+  const unavailableCount = notices.filter((notice) => notice.status === "unavailable" || notice.status === "schema_changed").length;
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="ประกาศทั้งหมด" value={`${announcementRows.length.toLocaleString("th-TH")} รายการ`} icon={FileText} />
-        <StatCard label="เผยแพร่แล้ว" value={`${announcementRows.filter((row) => row.status === "เผยแพร่แล้ว").length.toLocaleString("th-TH")} รายการ`} icon={CalendarDays} />
-        <StatCard label="พื้นที่เชื่อมโยง" value="ลุ่มน้ำป่าพะยอม" icon={MapPin} />
+        <StatCard label="แหล่งที่ตรวจ" value={loading ? "..." : `${notices.length.toLocaleString("th-TH")} แหล่ง`} icon={FileText} />
+        <StatCard label="ข้อความที่ค้นคืนได้" value={loading ? "..." : `${matchedCount.toLocaleString("th-TH")} รายการ`} icon={AlertTriangle} />
+        <StatCard label="แหล่งที่ต้องตรวจซ้ำ" value={loading ? "..." : `${unavailableCount.toLocaleString("th-TH")} แหล่ง`} icon={MapPin} />
       </div>
 
-      <section className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h3 className="text-base font-extrabold text-slate-800">รายการประกาศข่าว</h3>
-          <p className="text-xs font-medium text-slate-500">แยกหมวดหมู่และสถานะเพื่อใช้ตรวจสอบก่อนเผยแพร่</p>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {announcementRows.map((row) => (
-            <article key={row.title} className="grid gap-3 px-5 py-4 md:grid-cols-[1fr_auto] md:items-center">
-              <div>
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-extrabold text-blue-700">{row.category}</span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-extrabold text-slate-600">{row.status}</span>
-                </div>
-                <h4 className="text-sm font-extrabold text-slate-800">{row.title}</h4>
-              </div>
-              <p className="text-xs font-bold text-slate-500">{formatDate(row.publishedAt)}</p>
-            </article>
-          ))}
+      <section className="rounded-[8px] border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-700" />
+          <div>
+            <h3 className="text-sm font-extrabold text-amber-900">หลักการรายงานผลประกาศและพื้นที่น้ำท่วม</h3>
+            <p className="mt-1 text-xs font-bold text-amber-800">
+              “ไม่พบประกาศที่ค้นคืนได้” ไม่เท่ากับ “ยืนยันว่าไม่มีอุทกภัย” และหากไม่มี polygon จาก GISTDA ที่อ่านยืนยันได้ ระบบจะรายงานว่า “ไม่มีข้อมูลขอบเขตน้ำท่วมที่ยืนยันได้” โดยไม่แสดงพื้นที่น้ำท่วมเป็น 0 ไร่
+            </p>
+            {updatedAt && <p className="mt-2 text-[11px] font-extrabold text-amber-700">ตรวจล่าสุด: {formatDate(updatedAt)}</p>}
+          </div>
         </div>
       </section>
+
+      {loading ? (
+        <div className="grid min-h-40 place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-bold text-slate-500 shadow-sm">
+          กำลังตรวจสอบประกาศจาก ปภ. และ GISTDA...
+        </div>
+      ) : error ? (
+        <div className="rounded-[8px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700 shadow-sm">
+          {error}
+        </div>
+      ) : disaster ? (
+        <div className="grid gap-4 xl:grid-cols-3">
+          <DisasterNoticeCard title="ปภ.ส่วนกลาง" notice={disaster.central} />
+          <DisasterNoticeCard title="ปภ.พัทลุง" notice={disaster.phatthalung} />
+          <DisasterNoticeCard title="GISTDA Flood Platform" notice={disaster.gistdaFloodBoundary} />
+        </div>
+      ) : (
+        <div className="rounded-[8px] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-500 shadow-sm">
+          ไม่พบ payload ประกาศจากระบบติดตามสถานการณ์
+        </div>
+      )}
     </>
   );
 }

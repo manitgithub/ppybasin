@@ -20,6 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
+import type { SituationPayload } from "@/lib/situation/adapters";
 
 const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   ssr: false,
@@ -41,13 +42,6 @@ const shelterCards = [
   ["ศ.พยพบ้านนาท่อม", "อ.นาแก้ว", "500", "90"],
 ];
 
-const waterRows = [
-  ["สถานีบ้านหัวลำ", "7.35 ม.", "เฝ้าระวัง", "orange"],
-  ["สถานีคลองทรายขาว", "6.80 ม.", "เฝ้าระวัง", "orange"],
-  ["สถานีบ้านแม่ขรี", "5.20 ม.", "ปกติ", "teal"],
-  ["สถานีบ้านโตนดด้วน", "3.10 ม.", "ปกติ", "teal"],
-];
-
 const summaryRows = [
   ["หมู่บ้านได้รับผลกระทบ", "18 หมู่บ้าน", Users],
   ["ครัวเรือน", "3,245 ครัวเรือน", Database],
@@ -64,6 +58,38 @@ const newsItems = [
 ];
 
 const rainLoopUrl = "https://semet.uk/loop/PTLLoop.gif";
+const tmdForecastUrl = "https://www.tmd.go.th/weather/region/southerneastcoast";
+
+function formatNumber(value: number | null | undefined, digits = 2) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+  return value.toLocaleString("th-TH", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "-";
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("th-TH", {
+    timeZone: "Asia/Bangkok",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function waterSituationLabel(level: number | null | undefined) {
+  if (typeof level !== "number") return { label: "รอยืนยัน", className: "text-slate-500", dotClassName: "bg-slate-400" };
+  if (level >= 4) return { label: "วิกฤต", className: "text-red-600", dotClassName: "bg-red-500" };
+  if (level >= 3) return { label: "ควรจับตา", className: "text-orange-600", dotClassName: "bg-orange-500" };
+  if (level >= 2) return { label: "เฝ้าระวัง", className: "text-sky-600", dotClassName: "bg-sky-500" };
+  return { label: "ปกติ", className: "text-teal-600", dotClassName: "bg-teal-500" };
+}
 
 function Panel({ title, action, children }: { title: string; action?: string; children: React.ReactNode }) {
   return (
@@ -93,6 +119,7 @@ export default function DashboardHome({
   openShelters: number;
 }) {
   const [mapReady, setMapReady] = useState(false);
+  const [situation, setSituation] = useState<SituationPayload | null>(null);
 
   useEffect(() => {
     const scheduleMap = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(callback, 250));
@@ -101,6 +128,33 @@ export default function DashboardHome({
 
     return () => cancelMap(handle);
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch("/api/situation", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<SituationPayload>;
+      })
+      .then((payload) => setSituation(payload))
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  const importantWaterRows = useMemo(() => {
+    return [...(situation?.thaiWater.waterLevels ?? [])]
+      .filter((station) => station.waterLevelMsl !== null || station.waterLevelM !== null)
+      .sort((a, b) => {
+        const levelDiff = (b.situationLevel ?? 0) - (a.situationLevel ?? 0);
+        if (levelDiff !== 0) return levelDiff;
+        return (b.waterLevelMsl ?? b.waterLevelM ?? 0) - (a.waterLevelMsl ?? a.waterLevelM ?? 0);
+      })
+      .slice(0, 4);
+  }, [situation?.thaiWater.waterLevels]);
+
+  const latestRealWaterLevel = importantWaterRows[0] ?? null;
 
   const cards = useMemo(
     () => [
@@ -114,9 +168,9 @@ export default function DashboardHome({
       },
       {
         label: "ระดับน้ำลุ่มน้ำป่าพะยอม",
-        value: data.summary.latestWaterLevel.toFixed(2),
-        suffix: "ม.",
-        detail: "↑ สูงกว่าปกติ 1.25 ม.",
+        value: latestRealWaterLevel ? formatNumber(latestRealWaterLevel.waterLevelMsl ?? latestRealWaterLevel.waterLevelM, 2) : "-",
+        suffix: latestRealWaterLevel ? (latestRealWaterLevel.waterLevelMsl !== null ? "ม.รทก." : "ม.") : "",
+        detail: latestRealWaterLevel ? `${latestRealWaterLevel.name} • ${formatDateTime(latestRealWaterLevel.observedAt)}` : "รอข้อมูลจริงจาก ThaiWater/สสน.",
         icon: Droplets,
         className: "from-[#51c9c6] to-[#07979d]",
       },
@@ -145,7 +199,7 @@ export default function DashboardHome({
         className: "from-[#b387ea] to-[#7b4bd0]",
       },
     ],
-    [data.summary.latestWaterLevel],
+    [latestRealWaterLevel],
   );
 
   return (
@@ -214,7 +268,7 @@ export default function DashboardHome({
 
         <div className="grid gap-3 md:grid-cols-2">
           <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง">
-            <div className="relative h-[185px] overflow-hidden rounded-b-[8px] bg-slate-900">
+            <div className="relative h-[185px] overflow-hidden bg-slate-900">
               <Image
                 src={rainLoopUrl}
                 alt="ภาพวนซ้ำเรดาร์ฝนพื้นที่พัทลุง"
@@ -224,24 +278,52 @@ export default function DashboardHome({
                 className="object-contain"
               />
             </div>
+            <div className="border-t border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-500">
+              ที่มา:{" "}
+              <a className="font-extrabold text-[#2c72d9]" href={rainLoopUrl} target="_blank" rel="noreferrer">
+                SEMET PTL radar loop
+              </a>
+            </div>
           </Panel>
 
           <Panel title="ระดับน้ำในลำน้ำสำคัญ">
             <div className="p-3">
               <div className="mb-1 flex flex-wrap justify-end gap-2 text-[10px] font-bold text-slate-500">
-                <span className="text-sky-500">● ระดับน้ำ</span>
+                <span className="text-teal-600">● ปกติ</span>
                 <span className="text-orange-500">● เฝ้าระวัง</span>
                 <span className="text-red-500">● วิกฤต</span>
               </div>
-              {waterRows.map((row) => (
-                <div key={row[0]} className="grid grid-cols-[1fr_auto] items-center gap-2 border-t border-slate-100 py-2 text-xs">
-                  <div className="min-w-0">
-                    <p className="truncate font-extrabold text-[#284069]">{row[0]}</p>
-                    <p className={row[3] === "orange" ? "mt-0.5 font-bold text-orange-500" : "mt-0.5 font-bold text-teal-600"}>● {row[2]}</p>
-                  </div>
-                  <span className="font-extrabold text-[#5370a0]">{row[1]}</span>
+              {importantWaterRows.length ? (
+                <>
+                  <p className="mb-2 text-[11px] font-bold text-slate-500">ข้อมูลจริงจาก ThaiWater/สสน. จังหวัดพัทลุง</p>
+                  {importantWaterRows.map((station) => {
+                    const situationLabel = waterSituationLabel(station.situationLevel);
+                    const waterLevel = station.waterLevelMsl ?? station.waterLevelM;
+                    const unit = station.waterLevelMsl !== null ? "ม.รทก." : "ม.";
+
+                    return (
+                      <div key={station.id} className="grid grid-cols-[1fr_auto] items-center gap-2 border-t border-slate-100 py-2 text-xs">
+                        <div className="min-w-0">
+                          <p className="truncate font-extrabold text-[#284069]">{station.name}</p>
+                          <p className="truncate text-[11px] font-semibold text-slate-500">{station.river} • {formatDateTime(station.observedAt)}</p>
+                          <p className={`mt-0.5 flex items-center gap-1 font-bold ${situationLabel.className}`}>
+                            <span className={`size-2 rounded-full ${situationLabel.dotClassName}`} />
+                            {situationLabel.label}
+                          </p>
+                        </div>
+                        <span className="text-right font-extrabold text-[#5370a0]">
+                          {formatNumber(waterLevel, 2)}
+                          <span className="ml-1 text-[10px] font-bold text-slate-500">{unit}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <div className="border-t border-slate-100 py-4 text-xs font-bold text-slate-500">
+                  ยังไม่มีข้อมูลระดับน้ำจริงที่ยืนยันได้จาก ThaiWater/สสน. จึงไม่แสดงรายการ mockup
                 </div>
-              ))}
+              )}
             </div>
           </Panel>
 
@@ -249,38 +331,56 @@ export default function DashboardHome({
             <div className="p-3">
               <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-bold text-[#63718a]">7 วันข้างหน้า</p>
-                  <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-[#2267c7]"><CloudSun size={17} /> ฝนตกหนัก</p>
+                  <p className="text-xs font-bold text-[#63718a]">กรมอุตุนิยมวิทยา</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-[#2267c7]">
+                    <CloudSun size={17} />
+                    {situation?.tmd.daily.heavyRainText ?? situation?.tmd.daily.probabilityPercent ?? "รอข้อมูลจริง"}
+                  </p>
                 </div>
                 <div className="text-right text-[#2c72d9]">
                   <CloudRain size={38} className="ml-auto opacity-60" />
-                  <p className="text-xs font-extrabold">80%</p>
+                  <p className="text-xs font-extrabold">{situation?.tmd.daily.probabilityPercent ?? "-"}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center">
-                {weatherDays.map((day, index) => (
-                  <div key={day} className="rounded-[8px] bg-slate-50 py-2">
-                    <p className="text-xs font-extrabold text-slate-600">{day}</p>
-                    <CloudRain className="mx-auto my-1 size-5 text-sky-500" />
-                    <p className="text-xs font-extrabold text-[#20325c]">{index === 3 ? "30°" : index > 4 ? "32°" : "31°"}</p>
-                    <p className="text-[11px] font-bold text-[#2c72d9]">{index > 4 ? "25°" : "24°"}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Panel>
 
-          <Panel title="พื้นที่เสี่ยงน้ำท่วม">
-            <div className="grid grid-cols-[96px_1fr] items-center gap-3 p-3">
-              <div className="relative grid aspect-square place-items-center rounded-full bg-[conic-gradient(#1e88e5_0_35%,#05a587_35%_60%,#ffaf23_60%_80%,#ff6b35_80%_92%,#5dade2_92%_100%)]">
-                <div className="grid size-14 place-items-center rounded-full bg-white text-xs font-extrabold text-[#20325c]">รวม</div>
-              </div>
-              <div className="space-y-1.5 text-xs font-bold text-[#40577f]">
-                {["ป่าพะยอม 35%", "ตะโหมด 25%", "ศรีบรรพต 20%", "ควนขนุน 12%", "นาแก้ว 8%"].map((item) => (
-                  <p key={item}>{item}</p>
-                ))}
-                <p className="border-t border-slate-100 pt-2 font-extrabold">รวม 100%</p>
-              </div>
+              {situation ? (
+                <div className="space-y-2">
+                  {[situation.tmd.daily, situation.tmd.sevenDay].map((forecast, index) => (
+                    <div key={forecast.sourceUrl} className="rounded-[8px] bg-slate-50 px-3 py-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-extrabold text-slate-700">{index === 0 ? "24 ชั่วโมง" : "แนวโน้ม 7 วัน"}</p>
+                        <span className={forecast.status === "ok" ? "text-[11px] font-extrabold text-emerald-700" : "text-[11px] font-extrabold text-amber-700"}>
+                          {forecast.status === "ok" ? "ข้อมูลจริง" : "ตรวจสอบแหล่งข้อมูล"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-bold text-slate-600">{forecast.evidence}</p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold">
+                        <span className="rounded-[7px] bg-sky-100 px-2 py-1 text-sky-700">โอกาสฝน {forecast.probabilityPercent ?? "-"}</span>
+                        <span className="rounded-[7px] bg-amber-100 px-2 py-1 text-amber-800">{forecast.heavyRainText ?? "ไม่พบคำฝนหนัก"}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <a className="block text-[11px] font-extrabold text-[#2c72d9]" href={tmdForecastUrl} target="_blank" rel="noreferrer">
+                    ที่มา: กรมอุตุนิยมวิทยา ภาคใต้ฝั่งตะวันออก
+                  </a>
+                </div>
+              ) : (
+                <div className="rounded-[8px] bg-slate-50 px-3 py-4 text-xs font-bold text-slate-500">
+                  กำลังโหลดข้อมูลพยากรณ์อากาศจริงจากเมนูติดตามสถานการณ์...
+                </div>
+              )}
+
+              {!situation && (
+                <div className="mt-3 grid grid-cols-7 gap-1 text-center">
+                  {weatherDays.map((day) => (
+                    <div key={day} className="rounded-[8px] bg-slate-50 py-2">
+                      <p className="text-xs font-extrabold text-slate-600">{day}</p>
+                      <CloudRain className="mx-auto my-1 size-5 text-sky-500" />
+                      <p className="text-xs font-extrabold text-[#20325c]">-</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Panel>
         </div>
