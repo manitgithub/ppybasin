@@ -1,23 +1,14 @@
 "use client";
 
 import L from "leaflet";
-import { AlertTriangle, Database, Gauge, Hospital, MapPinned, Route, Waves } from "lucide-react";
+import { AlertTriangle, Database, Gauge, Hospital, LocateFixed, MapPinned, Waves } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import type { DashboardPayload, Shelter } from "@/lib/dashboard-data";
 import type { SituationPayload, WaterLevelStation } from "@/lib/situation/adapters";
 
 type EvacuationMapViewProps = {
   data: DashboardPayload;
-};
-
-type RouteCandidate = {
-  id: string;
-  station: WaterLevelStation;
-  shelter: Shelter;
-  distanceM: number | null;
-  durationS: number | null;
-  coordinates: [number, number][];
 };
 
 const mapCenter: [number, number] = [7.807, 100.025];
@@ -32,16 +23,6 @@ function formatNumber(value: number | null | undefined, digits = 1) {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
-}
-
-function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const radius = 6371;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-  const lat1 = (a.lat * Math.PI) / 180;
-  const lat2 = (b.lat * Math.PI) / 180;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * radius * Math.asin(Math.sqrt(h));
 }
 
 function toneForWaterStation(station: WaterLevelStation) {
@@ -81,41 +62,8 @@ function MapBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
-function nearestShelter(station: WaterLevelStation, shelters: Shelter[]) {
-  if (station.lat === null || station.lng === null || shelters.length === 0) return null;
-
-  return shelters.reduce<Shelter | null>((nearest, shelter) => {
-    if (!nearest) return shelter;
-    const stationPoint = { lat: station.lat ?? 0, lng: station.lng ?? 0 };
-    const currentDistance = distanceKm(stationPoint, { lat: shelter.lat, lng: shelter.lng });
-    const nearestDistance = distanceKm(stationPoint, { lat: nearest.lat, lng: nearest.lng });
-    return currentDistance < nearestDistance ? shelter : nearest;
-  }, null);
-}
-
-async function fetchRoute(station: WaterLevelStation, shelter: Shelter): Promise<RouteCandidate> {
-  const url = `https://router.project-osrm.org/route/v1/driving/${station.lng},${station.lat};${shelter.lng},${shelter.lat}?overview=full&geometries=geojson`;
-  const response = await fetch(url);
-  const payload = await response.json();
-  const route = payload?.routes?.[0];
-  const coordinates: [number, number][] = Array.isArray(route?.geometry?.coordinates)
-    ? route.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng])
-    : [];
-
-  return {
-    id: `${station.id}-${shelter.id}`,
-    station,
-    shelter,
-    distanceM: typeof route?.distance === "number" ? route.distance : null,
-    durationS: typeof route?.duration === "number" ? route.duration : null,
-    coordinates,
-  };
-}
-
 export default function EvacuationMapView({ data }: EvacuationMapViewProps) {
   const [situation, setSituation] = useState<SituationPayload | null>(null);
-  const [routes, setRoutes] = useState<RouteCandidate[]>([]);
-  const [routeStatus, setRouteStatus] = useState("ยังไม่ได้คำนวณเส้นทาง");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -135,49 +83,12 @@ export default function EvacuationMapView({ data }: EvacuationMapViewProps) {
     () => data.shelters.filter((shelter) => Number.isFinite(shelter.lat) && Number.isFinite(shelter.lng)),
     [data.shelters],
   );
-  const openShelters = useMemo(() => shelters.filter((shelter) => shelter.status === "open"), [shelters]);
   const waterStations = useMemo(() => {
     return [...(situation?.thaiWater.waterLevels ?? [])]
       .filter((station) => station.lat !== null && station.lng !== null)
       .sort((a, b) => (b.situationLevel ?? 0) - (a.situationLevel ?? 0))
       .slice(0, 8);
   }, [situation?.thaiWater.waterLevels]);
-
-  useEffect(() => {
-    const routeStations = waterStations.slice(0, 3);
-    const routeShelters = openShelters.length ? openShelters : shelters;
-
-    if (!routeStations.length || !routeShelters.length) {
-      setRoutes([]);
-      setRouteStatus("ยังไม่มีจุดต้นทางหรือศูนย์อพยพจริงเพียงพอสำหรับคำนวณเส้นทาง");
-      return;
-    }
-
-    let cancelled = false;
-    setRouteStatus("กำลังคำนวณเส้นทางถนนจริงจาก OSRM...");
-
-    Promise.all(
-      routeStations.map((station) => {
-        const shelter = nearestShelter(station, routeShelters);
-        return shelter ? fetchRoute(station, shelter) : Promise.resolve(null);
-      }),
-    )
-      .then((results) => {
-        if (cancelled) return;
-        const validRoutes = results.filter((route): route is RouteCandidate => Boolean(route && route.coordinates.length));
-        setRoutes(validRoutes);
-        setRouteStatus(validRoutes.length ? `คำนวณเส้นทางถนนได้ ${validRoutes.length.toLocaleString("th-TH")} เส้นทาง` : "OSRM ไม่ส่งคืนเส้นทางที่ยืนยันได้ จึงไม่วาดเส้นทาง");
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setRoutes([]);
-        setRouteStatus("เรียก OSRM ไม่สำเร็จ จึงไม่วาดเส้นทางจำลอง");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [openShelters, shelters, waterStations]);
 
   const mapPoints = useMemo(() => {
     const shelterPoints = shelters.map((shelter): [number, number] => [shelter.lat, shelter.lng]);
@@ -191,12 +102,12 @@ export default function EvacuationMapView({ data }: EvacuationMapViewProps) {
         <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-base font-extrabold text-slate-800">แผนที่จุดเฝ้าระวังและศูนย์อพยพ</h3>
-            <p className="text-xs font-semibold text-slate-500">ข้อมูลจริงจากฐานศูนย์อพยพ, ThaiWater/สสน. และเส้นทางถนนจาก OSRM เมื่อคำนวณได้</p>
+            <p className="text-xs font-semibold text-slate-500">ข้อมูลจริงจากฐานศูนย์อพยพและ ThaiWater/สสน. เส้นทางอพยพจะคำนวณจากตำแหน่งผู้ใช้ไปยังศูนย์ใกล้สุด</p>
           </div>
           <div className="flex flex-wrap gap-2 text-[11px] font-bold">
             <span className="rounded-[7px] bg-emerald-100 px-2 py-1 text-emerald-700">ศูนย์เปิด</span>
             <span className="rounded-[7px] bg-amber-100 px-2 py-1 text-amber-800">จุดเฝ้าระวัง</span>
-            <span className="rounded-[7px] bg-sky-100 px-2 py-1 text-sky-700">เส้นทาง OSRM</span>
+            <span className="rounded-[7px] bg-sky-100 px-2 py-1 text-sky-700">รอตำแหน่งผู้ใช้</span>
           </div>
         </div>
         <div className="h-[620px]">
@@ -233,10 +144,6 @@ export default function EvacuationMapView({ data }: EvacuationMapViewProps) {
                 </CircleMarker>
               );
             })}
-
-            {routes.map((route) => (
-              <Polyline key={route.id} positions={route.coordinates} pathOptions={{ color: "#2563eb", weight: 5, opacity: 0.78 }} />
-            ))}
           </MapContainer>
         </div>
       </section>
@@ -263,10 +170,10 @@ export default function EvacuationMapView({ data }: EvacuationMapViewProps) {
           </article>
           <article className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-1">
             <div className="flex items-center gap-3">
-              <Route className="size-8 text-blue-700" />
+              <LocateFixed className="size-8 text-blue-700" />
               <div>
-                <p className="text-xs font-extrabold text-slate-500">เส้นทางถนน</p>
-                <p className="text-sm font-extrabold text-slate-800">{routeStatus}</p>
+                <p className="text-xs font-extrabold text-slate-500">หลักการหาเส้นทาง</p>
+                <p className="text-sm font-extrabold text-slate-800">จากตำแหน่งปัจจุบันไปศูนย์อพยพใกล้ที่สุด</p>
               </div>
             </div>
           </article>
@@ -274,25 +181,13 @@ export default function EvacuationMapView({ data }: EvacuationMapViewProps) {
 
         <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
-            <h3 className="text-base font-extrabold text-slate-800">เส้นทางที่คำนวณได้</h3>
-            <p className="text-xs font-semibold text-slate-500">จากจุดเฝ้าระวังไปศูนย์อพยพใกล้สุด</p>
+            <h3 className="text-base font-extrabold text-slate-800">เส้นทางอพยพ</h3>
+            <p className="text-xs font-semibold text-slate-500">จะใช้ตำแหน่งผู้ใช้เป็นต้นทาง ไม่ใช้สถานีระดับน้ำเป็นต้นทาง</p>
           </div>
-          <div className="space-y-3 p-5">
-            {routes.length ? (
-              routes.map((route) => (
-                <div key={route.id} className="rounded-[8px] bg-slate-50 px-4 py-3">
-                  <p className="text-sm font-extrabold text-slate-800">{route.station.name}</p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">ไป {route.shelter.name}</p>
-                  <p className="mt-2 text-xs font-extrabold text-blue-700">
-                    {formatNumber((route.distanceM ?? 0) / 1000, 1)} กม. · {formatNumber((route.durationS ?? 0) / 60, 0)} นาที
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-[8px] border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold text-slate-500">
-                ยังไม่มีเส้นทางถนนที่ยืนยันได้ จึงไม่แสดงเส้นทาง mockup
-              </div>
-            )}
+          <div className="p-5">
+            <div className="rounded-[8px] border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold text-slate-500">
+              ยังไม่แสดงรายการเส้นทางล่วงหน้า ขั้นถัดไปควรเพิ่มปุ่มใช้ตำแหน่งปัจจุบัน แล้วคำนวณไปศูนย์อพยพเปิดใช้งานที่ใกล้ที่สุด
+            </div>
           </div>
         </section>
 

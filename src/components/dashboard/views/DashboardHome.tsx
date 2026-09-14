@@ -4,9 +4,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle,
   ChevronDown,
-  ChevronRight,
   Clock3,
   CloudRain,
   CloudSun,
@@ -26,12 +24,6 @@ const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   ssr: false,
   loading: () => <MapPlaceholder />,
 });
-
-const alertItems = [
-  { title: "น้ำท่วมฉับพลัน", area: "อ.ป่าพะยอม ต.คลองทรายขาว", time: "20 พ.ค. 2567 10:15", tone: "red" },
-  { title: "ระดับน้ำเพิ่มขึ้นรวดเร็ว", area: "อ.ตะโหมด ต.แม่ขรี", time: "20 พ.ค. 2567 09:45", tone: "orange" },
-  { title: "ฝนตกหนักต่อเนื่อง", area: "อ.ศรีบรรพต", time: "20 พ.ค. 2567 09:30", tone: "amber" },
-];
 
 const weatherDays = ["อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา.", "จ."];
 const shelterCards = [
@@ -222,24 +214,6 @@ export default function DashboardHome({
         ))}
       </section>
 
-      <Panel title="การแจ้งเตือนล่าสุด" action="ดูทั้งหมด">
-        <div className="grid gap-2 p-3 md:grid-cols-3">
-          {alertItems.map((item) => (
-            <article key={item.title} className="flex items-center gap-3 rounded-[8px] bg-orange-50/80 p-3">
-              <span className={["grid size-9 place-items-center rounded-[8px] text-white", item.tone === "red" ? "bg-red-500" : item.tone === "orange" ? "bg-orange-500" : "bg-amber-500"].join(" ")}>
-                <AlertTriangle size={19} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className={["truncate text-sm font-extrabold", item.tone === "red" ? "text-red-600" : "text-orange-600"].join(" ")}>{item.title}</p>
-                <p className="truncate text-xs font-bold text-slate-600">{item.area}</p>
-                <p className="text-[11px] font-semibold text-slate-400">{item.time}</p>
-              </div>
-              <ChevronRight size={16} className="text-slate-400" />
-            </article>
-          ))}
-        </div>
-      </Panel>
-
       <section className="grid gap-3 xl:grid-cols-2">
         <Panel title="แผนที่สถานการณ์ น้ำท่วมแบบเรียลไทม์">
           <div className="relative h-[470px] overflow-hidden rounded-b-[8px]">
@@ -266,27 +240,26 @@ export default function DashboardHome({
           </div>
         </Panel>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง">
-            <div className="relative h-[185px] overflow-hidden bg-slate-900">
-              <Image
-                src={rainLoopUrl}
-                alt="ภาพวนซ้ำเรดาร์ฝนพื้นที่พัทลุง"
-                fill
-                unoptimized
-                sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
-                className="object-contain"
-              />
-            </div>
-            <div className="border-t border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-500">
-              ที่มา:{" "}
-              <a className="font-extrabold text-[#2c72d9]" href={rainLoopUrl} target="_blank" rel="noreferrer">
-                SEMET PTL radar loop
-              </a>
-            </div>
-          </Panel>
+        <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง">
+          <div className="relative h-[470px] overflow-hidden bg-slate-900">
+            <Image
+              src={rainLoopUrl}
+              alt="ภาพวนซ้ำเรดาร์ฝนพื้นที่พัทลุง"
+              fill
+              unoptimized
+              sizes="(min-width: 1280px) 50vw, 100vw"
+              className="object-contain"
+            />
+          </div>
+          <div className="border-t border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-500">
+            ที่มา:{" "}
+            <a className="font-extrabold text-[#2c72d9]" href={rainLoopUrl} target="_blank" rel="noreferrer">
+              SEMET PTL radar loop
+            </a>
+          </div>
+        </Panel>
 
-          <Panel title="ระดับน้ำในลำน้ำสำคัญ">
+        <Panel title="ระดับน้ำในลำน้ำสำคัญ">
             <div className="p-3">
               <div className="mb-1 flex flex-wrap justify-end gap-2 text-[10px] font-bold text-slate-500">
                 <span className="text-teal-600">● ปกติ</span>
@@ -325,9 +298,9 @@ export default function DashboardHome({
                 </div>
               )}
             </div>
-          </Panel>
+        </Panel>
 
-          <Panel title="พยากรณ์อากาศ">
+        <Panel title="พยากรณ์อากาศ">
             <div className="p-3">
               <div className="mb-2 flex items-start justify-between">
                 <div>
@@ -382,8 +355,7 @@ export default function DashboardHome({
                 </div>
               )}
             </div>
-          </Panel>
-        </div>
+        </Panel>
       </section>
 
       <section className="grid gap-3 [contain-intrinsic-size:430px] [content-visibility:auto] md:grid-cols-2 xl:grid-cols-[1.1fr_0.72fr_0.86fr]">

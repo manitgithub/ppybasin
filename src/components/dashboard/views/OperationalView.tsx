@@ -81,6 +81,15 @@ const EvacuationMapView = dynamic(() => import("@/components/dashboard/views/Eva
   ),
 });
 
+const ShelterOpsView = dynamic(() => import("@/components/dashboard/views/ShelterOpsView"), {
+  ssr: false,
+  loading: () => (
+    <div className="grid min-h-[520px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
+      กำลังโหลดแผนที่ศูนย์อพยพ...
+    </div>
+  ),
+});
+
 const statusText: Record<SourceStatus, string> = {
   ok: "พร้อมใช้",
   unavailable: "เรียกไม่ได้",
@@ -1215,6 +1224,8 @@ export default function OperationalView({
         <ForecastView />
       ) : viewId === "evacuation-map" ? (
         <EvacuationMapView data={data} />
+      ) : viewId === "shelters" ? (
+        <ShelterOpsView data={data} />
       ) : (
       <div className="grid gap-3 md:grid-cols-3">
         <article className="rounded-[8px] bg-white p-5 shadow-sm">
