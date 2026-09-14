@@ -1213,6 +1213,8 @@ export default function OperationalView({
         <TrackingSituationView data={data} />
       ) : viewId === "forecast" ? (
         <ForecastView />
+      ) : viewId === "evacuation-map" ? (
+        <EvacuationMapView data={data} />
       ) : (
       <div className="grid gap-3 md:grid-cols-3">
         <article className="rounded-[8px] bg-white p-5 shadow-sm">
