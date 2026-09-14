@@ -247,6 +247,7 @@ export default function DashboardHome({
               alt="ภาพวนซ้ำเรดาร์ฝนพื้นที่พัทลุง"
               fill
               unoptimized
+              loading="eager"
               sizes="(min-width: 1280px) 50vw, 100vw"
               className="object-contain"
             />
