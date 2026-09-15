@@ -935,36 +935,6 @@ function ForecastView() {
         </section>
 
         <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div>
-              <h3 className="text-base font-extrabold text-slate-800">CLPP Radar / Nowcasting</h3>
-              <p className="text-xs font-semibold text-slate-500">เครื่องมือ radar composite ของ ONWR</p>
-            </div>
-            <ForecastStatusBadge status={forecast.clppRadar.status} />
-          </div>
-          <div className="p-5">
-            <div className="rounded-[8px] border border-slate-200 bg-[#0d1117] p-5 text-white">
-              <p className="text-xs font-extrabold text-sky-200">{forecast.clppRadar.title}</p>
-              <p className="mt-3 text-sm font-semibold text-slate-200">{forecast.clppRadar.message}</p>
-              <a
-                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-sky-500 px-4 text-sm font-extrabold text-white transition hover:bg-sky-400"
-                href={forecast.clppRadar.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ExternalLink size={17} />
-                เปิดหน้า CLPP Radar
-              </a>
-            </div>
-            <p className="mt-3 text-xs font-semibold text-slate-500">
-              ถ้าหน้านี้ตั้งค่า `x-frame-options` ห้ามฝัง ระบบจะเปิดเป็น tab ใหม่แทน เพื่อให้ใช้งานแผนที่และปุ่มควบคุมได้ครบ
-            </p>
-          </div>
-        </section>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.55fr)]">
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
             <h3 className="text-base font-extrabold text-slate-800">ตารางฝนคาดการณ์</h3>
           </div>
@@ -991,6 +961,36 @@ function ForecastView() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.55fr)]">
+        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div>
+              <h3 className="text-base font-extrabold text-slate-800">CLPP Radar / Nowcasting</h3>
+              <p className="text-xs font-semibold text-slate-500">เครื่องมือ radar composite ของ ONWR</p>
+            </div>
+            <ForecastStatusBadge status={forecast.clppRadar.status} />
+          </div>
+          <div className="p-5">
+            <div className="rounded-[8px] border border-slate-200 bg-[#0d1117] p-5 text-white">
+              <p className="text-xs font-extrabold text-sky-200">{forecast.clppRadar.title}</p>
+              <p className="mt-3 text-sm font-semibold text-slate-200">{forecast.clppRadar.message}</p>
+              <a
+                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-sky-500 px-4 text-sm font-extrabold text-white transition hover:bg-sky-400"
+                href={forecast.clppRadar.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <ExternalLink size={17} />
+                เปิดหน้า CLPP Radar
+              </a>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-slate-500">
+              ถ้าหน้านี้ตั้งค่า `x-frame-options` ห้ามฝัง ระบบจะเปิดเป็น tab ใหม่แทน เพื่อให้ใช้งานแผนที่และปุ่มควบคุมได้ครบ
+            </p>
           </div>
         </section>
 
