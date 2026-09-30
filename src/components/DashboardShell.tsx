@@ -98,7 +98,7 @@ function DashboardContent({
   }
 
   if (operationalViews.has(activeView as OperationalViewId)) {
-    return <OperationalView viewId={activeView as OperationalViewId} data={data} />;
+    return <OperationalView viewId={activeView as OperationalViewId} data={data} currentUser={currentUser} />;
   }
 
   return <DashboardHome data={data} openShelters={openShelters} />;

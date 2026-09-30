@@ -26,6 +26,7 @@ import {
   Waves,
 } from "lucide-react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
+import type { AppUser } from "@/lib/auth";
 import type { ForecastPayload, ForecastSourceStatus } from "@/lib/forecast/adapters";
 import type { SituationPayload, SourceStatus } from "@/lib/situation/adapters";
 import type { ViewId } from "@/components/dashboard/types";
@@ -1194,12 +1195,18 @@ function SettingsView({ data }: { data: DashboardPayload }) {
 export default function OperationalView({
   viewId,
   data,
+  currentUser,
 }: {
   viewId: OperationalViewId;
   data: DashboardPayload;
+  currentUser: AppUser;
 }) {
   const meta = viewMeta[viewId];
   const Icon = meta.icon;
+
+  if (viewId === "evacuation-map") {
+    return <EvacuationMapView data={data} currentUser={currentUser} />;
+  }
 
   return (
     <section className="space-y-4">
@@ -1222,8 +1229,6 @@ export default function OperationalView({
         <TrackingSituationView data={data} />
       ) : viewId === "forecast" ? (
         <ForecastView />
-      ) : viewId === "evacuation-map" ? (
-        <EvacuationMapView data={data} />
       ) : viewId === "shelters" ? (
         <ShelterOpsView data={data} />
       ) : (

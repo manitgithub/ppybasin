@@ -9,6 +9,7 @@
     "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql db/migrations/003_sensor_reading_details.sql db/migrations/006_seed_sensor_installation_points.sql",
     "db:migrate:shelters": "node scripts/run-migration.mjs db/migrations/004_seed_pa_phayom_shelters.sql",
     "db:migrate:villages": "node scripts/run-migration.mjs db/migrations/005_village_basics.sql",
+    "db:migrate:alerts": "node scripts/run-migration.mjs db/migrations/007_flood_alerts.sql db/migrations/008_resolve_flood_alerts.sql",
     "db:migrate:auth": "node scripts/run-migration.mjs db/migrations/002_auth_line.sql",
     "lint": "eslint"
   },

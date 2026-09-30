@@ -9,6 +9,12 @@ npm install
 npm run dev
 ```
 
+เมื่อต้องการใช้ workflow ประกาศเตือนน้ำท่วมและการอนุมัติ ให้รัน migration เพิ่มเติม:
+
+```bash
+npm run db:migrate:alerts
+```
+
 เปิดหน้าเว็บที่ [http://localhost:3000](http://localhost:3000)
 
 ## Environment
