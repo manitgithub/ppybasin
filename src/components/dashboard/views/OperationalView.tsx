@@ -42,7 +42,7 @@ const viewMeta = {
     icon: AlertTriangle,
     eyebrow: "FORECAST & ALERT",
     title: "คาดการณ์และแจ้งเตือน",
-    detail: "พื้นที่สำหรับกติกาแจ้งเตือน การคาดการณ์ล่วงหน้า และ workflow รับรองประกาศ",
+    detail: "จำลองผลกระทบจากฝนบนภูมิประเทศจริง ติดตามการคาดการณ์ และจัดการ workflow รับรองประกาศ",
   },
   risk: {
     icon: ChartNoAxesCombined,
@@ -87,6 +87,15 @@ const ShelterOpsView = dynamic(() => import("@/components/dashboard/views/Shelte
   loading: () => (
     <div className="grid min-h-[520px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
       กำลังโหลดแผนที่ศูนย์อพยพ...
+    </div>
+  ),
+});
+
+const FloodSimulation3D = dynamic(() => import("@/components/dashboard/FloodSimulation3D"), {
+  ssr: false,
+  loading: () => (
+    <div className="grid min-h-[680px] place-items-center bg-[#dce8e8] text-sm font-extrabold text-[#557278]">
+      กำลังสร้างภูมิประเทศสามมิติ...
     </div>
   ),
 });
@@ -774,16 +783,22 @@ function ForecastView() {
 
   if (error) {
     return (
-      <div className="rounded-[8px] border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-700">
-        โหลดข้อมูลคาดการณ์ไม่สำเร็จ: {error}
+      <div className="space-y-4">
+        <FloodSimulation3D />
+        <div className="rounded-[8px] border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-700">
+          โหลดข้อมูลคาดการณ์ไม่สำเร็จ: {error}
+        </div>
       </div>
     );
   }
 
   if (!forecast) {
     return (
-      <div className="grid min-h-[260px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
-        กำลังโหลดฝนคาดการณ์ 6 เดือนของ สสน. และตรวจสถานะ CLPP radar...
+      <div className="space-y-4">
+        <FloodSimulation3D />
+        <div className="grid min-h-[180px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
+          กำลังโหลดฝนคาดการณ์ 6 เดือนของ สสน. และตรวจสถานะ CLPP radar...
+        </div>
       </div>
     );
   }
@@ -814,6 +829,8 @@ function ForecastView() {
 
   return (
     <div className="space-y-4">
+      <FloodSimulation3D />
+
       <div className="grid gap-3 md:grid-cols-4">
         <MetricCard
           label="รอบคาดการณ์"

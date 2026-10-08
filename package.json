@@ -11,6 +11,9 @@
     "db:migrate:villages": "node scripts/run-migration.mjs db/migrations/005_village_basics.sql",
     "db:migrate:alerts": "node scripts/run-migration.mjs db/migrations/007_flood_alerts.sql db/migrations/008_resolve_flood_alerts.sql",
     "db:migrate:auth": "node scripts/run-migration.mjs db/migrations/002_auth_line.sql",
+    "terrain:build": "node scripts/build-terrain-dem.mjs",
+    "terrain:roads": "node scripts/build-terrain-roads.mjs",
+    "terrain:waterways": "node scripts/build-terrain-waterways.mjs",
     "lint": "eslint"
   },
   "dependencies": {
@@ -20,7 +23,8 @@
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -29,8 +33,10 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "playwright": "^1.63.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
