@@ -70,7 +70,7 @@ export default function PublicDashboard({ data, user }: { data: DashboardPayload
   return <div className={`citizen-app ${styles.root}`}>
     <header className="citizen-header"><Link href="/" className="citizen-brand"><Waves size={29} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link><div className="citizen-header-actions"><a href="tel:1784" className="hotline"><Phone size={16} />1784</a>{user ? <a href="/api/auth/logout">ออกจากระบบ</a> : <a href="/api/auth/line/start">เข้าสู่ระบบ</a>}</div></header>
     <div className="citizen-container">
-      <div className="citizen-topline"><span><ShieldCheck size={15} />ผู้ติดตามสถานการณ์{user ? ` · ${user.displayName}` : " · เข้าดูได้โดยไม่ต้องสมัคร"}</span><span>ลุ่มน้ำป่าพะยอม / พัทลุง</span></div>
+      <div className="citizen-topline"><span><ShieldCheck size={15} />ผู้ติดตามสถานการณ์{user ? ` · ${user.displayName}` : " ·"}</span><span>ลุ่มน้ำป่าพะยอม / พัทลุง</span></div>
       <nav className="citizen-desktop-nav" aria-label="เมนูหลัก">{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => navigate(id)} aria-current={tab === id ? "page" : undefined} className={tab === id ? "active" : ""}><Icon size={18} />{label}</button>)}</nav>
       <main id="citizen-main">
         {loginError && <p className="citizen-error" role="alert">{loginError}</p>}
