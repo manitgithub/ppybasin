@@ -1,5 +1,6 @@
 "use client";
 
+import styles from "./PublicDashboard.module.css";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -66,7 +67,7 @@ export default function PublicDashboard({ data, user }: { data: DashboardPayload
   const confirmedShelters = dashboard.source === "database" ? dashboard.shelters.filter((s) => s.status === "open" && s.updatedAt && now - Date.parse(s.updatedAt) <= 6 * 3600000 && Date.parse(s.updatedAt) <= now) : [];
   const waters = situation?.thaiWater.waterLevels ?? [];
   const fresh = waters.filter((s) => s.observedAt && Date.parse(s.observedAt) <= now && now - Date.parse(s.observedAt) <= 3 * 3600000);
-  return <div className="citizen-app">
+  return <div className={`citizen-app ${styles.root}`}>
     <header className="citizen-header"><Link href="/" className="citizen-brand"><Waves size={29} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link><div className="citizen-header-actions"><a href="tel:1784" className="hotline"><Phone size={16} />1784</a>{user ? <a href="/api/auth/logout">ออกจากระบบ</a> : <a href="/api/auth/line/start">เข้าสู่ระบบ</a>}</div></header>
     <div className="citizen-container">
       <div className="citizen-topline"><span><ShieldCheck size={15} />ผู้ติดตามสถานการณ์{user ? ` · ${user.displayName}` : " · เข้าดูได้โดยไม่ต้องสมัคร"}</span><span>ลุ่มน้ำป่าพะยอม / พัทลุง</span></div>

@@ -12,6 +12,7 @@ import { roleLabel } from "@/components/dashboard/utils";
 import AccessDeniedView from "@/components/dashboard/views/AccessDeniedView";
 import DashboardHome from "@/components/dashboard/views/DashboardHome";
 import PublicDashboard from "@/components/public/PublicDashboard";
+import reportStyles from "@/components/public/PublicDashboard.module.css";
 import ReportList from "@/components/public/ReportList";
 import ReportForm from "@/components/public/ReportForm";
 
@@ -84,7 +85,7 @@ function DashboardContent({
   }
 
   if (activeView === "reports") {
-    return <div className="citizen-app p-4"><ReportList user={currentUser} /><details className="mt-6"><summary>ส่งรายงานภาคสนาม</summary><ReportForm user={currentUser} /></details></div>;
+    return <div className={`citizen-app p-4 ${reportStyles.root}`}><ReportList user={currentUser} /><details className="mt-6"><summary>ส่งรายงานภาคสนาม</summary><ReportForm user={currentUser} /></details></div>;
   }
 
   if (activeView === "sensors") {
