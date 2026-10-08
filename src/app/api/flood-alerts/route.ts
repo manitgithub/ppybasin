@@ -47,16 +47,15 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
-  if (!user) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const db = getPool();
   if (!db) {
     return Response.json({ ok: true, alerts: [], databaseConfigured: false }, { headers: { "Cache-Control": "no-store" } });
   }
 
-  const canManage = user.role === "admin" || user.permissions.includes("alerts:manage");
+  const canManage = new URL(request.url).searchParams.get("public") !== "1" && Boolean(user && (user.role === "admin" || user.permissions.includes("alerts:manage")));
   const result = await db.query(
     `${alertSelect}
      where ${canManage ? "true" : "status = 'approved' and (expires_at is null or expires_at > now())"}

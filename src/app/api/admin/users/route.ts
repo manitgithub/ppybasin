@@ -2,7 +2,7 @@ import { listUsers, requireAdmin, updateUserAccess, type UserRole, type UserStat
 
 export const dynamic = "force-dynamic";
 
-const allowedPermissions = new Set(["dashboard:view", "alerts:manage", "sensors:manage", "users:manage"]);
+const allowedPermissions = new Set(["dashboard:view", "alerts:manage", "sensors:manage", "users:manage", "reports:create", "reports:manage"]);
 const allowedRoles = new Set<UserRole>(["admin", "operator", "viewer"]);
 const allowedStatuses = new Set<UserStatus>(["active", "disabled"]);
 

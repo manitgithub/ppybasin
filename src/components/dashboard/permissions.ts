@@ -2,6 +2,7 @@ import type { AppUser } from "@/lib/auth";
 import type { ViewId } from "@/components/dashboard/types";
 
 const viewPermissions: Record<ViewId, string[]> = {
+  reports: ["reports:manage", "reports:create"],
   dashboard: ["dashboard:view"],
   tracking: ["dashboard:view"],
   forecast: ["alerts:manage"],

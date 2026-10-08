@@ -1,5 +1,6 @@
 import {
   Activity,
+  ClipboardList,
   AlertTriangle,
   Database,
   FileText,
@@ -14,6 +15,7 @@ import type { NavItem } from "@/components/dashboard/types";
 
 export const navItems: NavItem[] = [
   { id: "dashboard", label: "หน้าหลัก", icon: Home },
+  { id: "reports", label: "รายงานและขอความช่วยเหลือ", icon: ClipboardList },
   { id: "tracking", label: "ติดตามสถานการณ์", icon: Activity },
   { id: "forecast", label: "คาดการณ์และแจ้งเตือน", icon: AlertTriangle },
   { id: "evacuation-map", label: "แผนที่และเส้นทางอพยพ", icon: Map },

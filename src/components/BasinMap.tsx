@@ -120,7 +120,7 @@ function BasinMap({ data }: BasinMapProps) {
       ))}
 
       {shelters.map((shelter) => (
-        <Marker key={shelter.id} position={[shelter.lat, shelter.lng]} icon={shelterIcons[shelter.status]}>
+        <Marker key={shelter.id} position={[shelter.lat, shelter.lng]} icon={shelterIcons[shelter.status] ?? shelterIcons.closed}>
           <Popup>
             <strong>{shelter.name}</strong>
             <br />

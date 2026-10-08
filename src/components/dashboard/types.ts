@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import type { AppUser } from "@/lib/auth";
 
 export type ViewId =
+  | "reports"
   | "dashboard"
   | "tracking"
   | "forecast"

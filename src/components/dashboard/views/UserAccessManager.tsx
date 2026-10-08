@@ -6,6 +6,8 @@ import type { AppUser, UserRole, UserStatus } from "@/lib/auth";
 import { formatDate, roleLabel } from "@/components/dashboard/utils";
 
 const permissionOptions = [
+  { id: "reports:create", label: "ส่งรายงานภาคสนาม" },
+  { id: "reports:manage", label: "จัดการรายงานและคำขอช่วยเหลือ" },
   { id: "dashboard:view", label: "ดู Dashboard" },
   { id: "alerts:manage", label: "จัดการแจ้งเตือน" },
   { id: "sensors:manage", label: "จัดการ Sensor" },

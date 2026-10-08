@@ -11,7 +11,9 @@ import type { ViewId } from "@/components/dashboard/types";
 import { roleLabel } from "@/components/dashboard/utils";
 import AccessDeniedView from "@/components/dashboard/views/AccessDeniedView";
 import DashboardHome from "@/components/dashboard/views/DashboardHome";
-import LoginScreen from "@/components/dashboard/views/LoginScreen";
+import PublicDashboard from "@/components/public/PublicDashboard";
+import ReportList from "@/components/public/ReportList";
+import ReportForm from "@/components/public/ReportForm";
 
 const ViewLoader = () => (
   <div className="grid min-h-[360px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
@@ -79,6 +81,10 @@ function DashboardContent({
 }) {
   if (!canAccessView(currentUser, activeView)) {
     return <AccessDeniedView viewId={activeView} />;
+  }
+
+  if (activeView === "reports") {
+    return <div className="citizen-app p-4"><ReportList user={currentUser} /><details className="mt-6"><summary>ส่งรายงานภาคสนาม</summary><ReportForm user={currentUser} /></details></div>;
   }
 
   if (activeView === "sensors") {
@@ -160,8 +166,8 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
   const currentTimeText = currentDateTime ? thaiTimeFormatter.format(currentDateTime) : "--:--:--";
   const currentDateText = currentDateTime ? thaiDateFormatter.format(currentDateTime) : "-- --- ----";
 
-  if (!currentUser) {
-    return <LoginScreen />;
+  if (!currentUser || currentUser.role === "viewer") {
+    return <PublicDashboard data={data} user={currentUser} />;
   }
 
   return (

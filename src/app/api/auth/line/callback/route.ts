@@ -97,6 +97,9 @@ export async function GET(request: Request) {
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
   const cookieStore = await cookies();
+  const requestedReturn = cookieStore.get("ppybasin_line_return")?.value;
+  const returnTo = requestedReturn === "/#report" || requestedReturn === "/#mine" ? requestedReturn : "/";
+  cookieStore.delete("ppybasin_line_return");
   const stored = cookieStore.get(STATE_COOKIE)?.value;
   const [storedState, storedNonce] = stored?.split(".") ?? [];
 
@@ -136,7 +139,7 @@ export async function GET(request: Request) {
     }
 
     await createSession(user.id);
-    return NextResponse.redirect(appUrl("/", request));
+    return NextResponse.redirect(appUrl(returnTo, request));
   } catch (callbackError) {
     console.error("LINE login failed", callbackError);
     return NextResponse.redirect(appUrl("/?login_error=line_failed", request));

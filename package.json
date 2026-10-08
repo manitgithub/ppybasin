@@ -14,7 +14,9 @@
     "terrain:build": "node scripts/build-terrain-dem.mjs",
     "terrain:roads": "node scripts/build-terrain-roads.mjs",
     "terrain:waterways": "node scripts/build-terrain-waterways.mjs",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate:reports": "node scripts/run-migration.mjs db/migrations/009_citizen_reports.sql db/migrations/010_report_water_depth.sql db/migrations/011_multiple_report_photos.sql",
+    "test:reports": "node scripts/test-citizen-reports.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

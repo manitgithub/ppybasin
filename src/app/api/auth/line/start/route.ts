@@ -26,6 +26,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(appUrl("/?login_error=line_config", request));
   }
 
+  const returnTo = new URL(request.url).searchParams.get("returnTo");
+  (await cookies()).set("ppybasin_line_return", returnTo === "/#report" || returnTo === "/#mine" ? returnTo : "/", {
+    httpOnly: true, maxAge: 10 * 60, path: "/", sameSite: "lax", secure: process.env.NODE_ENV === "production",
+  });
+
   const state = crypto.randomBytes(24).toString("base64url");
   const nonce = crypto.randomBytes(24).toString("base64url");
   const url = new URL(LINE_AUTH_URL);

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { cookies, headers } from "next/headers";
 import { getPool } from "@/lib/db";
+import { allowsLocalPreview, LOCAL_PREVIEW_LINE_ID, LOCAL_PREVIEW_USER_ID } from "@/lib/local-preview";
 
 export const SESSION_COOKIE = "ppybasin_session";
 const bypassPermissions = ["dashboard:view", "users:manage", "sensors:manage", "alerts:manage"];
@@ -81,25 +82,6 @@ function isAuthBypassEnabled() {
   return ["1", "true", "yes", "on"].includes((process.env.AUTH_BYPASS ?? "").trim().toLowerCase());
 }
 
-function isLocalhostHost(host: string | null) {
-  if (!host) return false;
-
-  const normalizedHost = host.trim().toLowerCase();
-  const hostname = normalizedHost.startsWith("[")
-    ? normalizedHost.slice(1, normalizedHost.indexOf("]"))
-    : normalizedHost.split(":")[0];
-
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-}
-
-async function isLocalhostRequest() {
-  const headerStore = await headers();
-  const forwardedHost = headerStore.get("x-forwarded-host");
-  const host = forwardedHost?.split(",")[0]?.trim() || headerStore.get("host");
-
-  return isLocalhostHost(host);
-}
-
 function bypassUser(): AppUser {
   const now = new Date().toISOString();
 
@@ -126,8 +108,19 @@ export function authConfigError() {
 }
 
 export async function getCurrentUser(): Promise<AppUser | null> {
-  if (isAuthBypassEnabled() || (await isLocalhostRequest())) {
+  if (isAuthBypassEnabled()) {
     return bypassUser();
+  }
+
+  const headerStore = await headers();
+  if (allowsLocalPreview(process.env.NODE_ENV, headerStore.get("host"), headerStore.get("x-forwarded-host"))) {
+    const now = new Date().toISOString();
+    return {
+      id: LOCAL_PREVIEW_USER_ID, lineUserId: LOCAL_PREVIEW_LINE_ID,
+      displayName: "ผู้ติดตามทดสอบ (localhost)", pictureUrl: null, email: null,
+      role: "viewer", status: "active", permissions: ["dashboard:view", "reports:create"],
+      lastLoginAt: now, createdAt: now, updatedAt: now,
+    };
   }
 
   const db = getPool();
@@ -214,11 +207,9 @@ export async function upsertLineUser(profile: {
   const db = getPool();
   if (!db) throw new Error("DATABASE_URL is not configured");
 
-  const countResult = await db.query<{ count: string }>("select count(*)::text as count from public.app_users");
-  const isFirstUser = Number(countResult.rows[0]?.count ?? 0) === 0;
-  const isAdmin = isFirstUser || isConfiguredAdmin(profile.lineUserId);
+  const isAdmin = isConfiguredAdmin(profile.lineUserId);
   const adminPermissions = ["dashboard:view", "users:manage", "sensors:manage", "alerts:manage"];
-  const viewerPermissions = ["dashboard:view"];
+  const viewerPermissions = ["dashboard:view", "reports:create"];
 
   const result = await db.query<UserRow>(
     `
