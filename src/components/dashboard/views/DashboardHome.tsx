@@ -16,6 +16,7 @@ import {
   Megaphone,
   Siren,
   Users,
+  Waves,
 } from "lucide-react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
 import type { SituationPayload } from "@/lib/situation/adapters";
@@ -85,7 +86,7 @@ function waterSituationLabel(level: number | null | undefined) {
 
 function Panel({ title, action, children }: { title: string; action?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+    <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
       <div className="flex h-11 items-center justify-between border-b border-slate-100 px-4">
         <h3 className="text-sm font-extrabold text-[#20325c]">{title}</h3>
         {action && <button className="text-xs font-extrabold text-[#2c72d9]">{action}</button>}
@@ -214,9 +215,9 @@ export default function DashboardHome({
         ))}
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-2">
+      <section className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel title="แผนที่สถานการณ์ น้ำท่วมแบบเรียลไทม์">
-          <div className="relative h-[470px] overflow-hidden rounded-b-[8px]">
+          <div className="relative h-[480px] overflow-hidden rounded-b-[8px] sm:h-[560px]">
             {mapReady ? <BasinMap data={data} /> : <MapPlaceholder />}
             <div className="absolute left-4 top-4 w-[160px] rounded-[8px] bg-[#102130]/92 p-4 text-white shadow-xl">
               <div className="mb-3 flex items-center justify-between text-xs font-extrabold">
@@ -240,15 +241,41 @@ export default function DashboardHome({
           </div>
         </Panel>
 
+        <Panel title="ENSO · เอลนีโญและลานีญา">
+          <div className="flex flex-col gap-6 p-5">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <span className="size-2 rounded-full bg-slate-400" />
+              ยังไม่มีข้อมูล ENSO ที่ยืนยันแล้ว
+            </div>
+            <div className="border-y border-slate-100 py-6">
+              <Waves size={32} className="mb-3 text-[#5370a0]" aria-hidden="true" />
+              <p className="text-base font-extrabold text-[#20325c]">รอข้อมูล ENSO</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                ติดตามภาวะเอลนีโญ ลานีญา และแนวโน้มภูมิอากาศ เพื่อประกอบการเฝ้าระวังน้ำท่วมและภัยแล้ง
+              </p>
+            </div>
+            <dl className="space-y-3 text-xs">
+              {["ภาวะ ENSO ล่าสุด", "แนวโน้มระยะถัดไป", "รอบรายงาน / แหล่งข้อมูล"].map((label) => (
+                <div key={label} className="flex flex-wrap items-baseline justify-between gap-2">
+                  <dt className="font-bold text-slate-600">{label}</dt>
+                  <dd className="font-semibold text-slate-500">รอข้อมูล</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </Panel>
+      </section>
+
+      <section className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง">
-          <div className="relative h-[470px] overflow-hidden bg-slate-900">
+          <div className="relative h-[400px] overflow-hidden bg-slate-900 sm:h-[560px]">
             <Image
               src={rainLoopUrl}
               alt="ภาพวนซ้ำเรดาร์ฝนพื้นที่พัทลุง"
               fill
               unoptimized
-              loading="eager"
-              sizes="(min-width: 1280px) 50vw, 100vw"
+              loading="lazy"
+              sizes="(min-width: 1280px) 66vw, 100vw"
               className="object-contain"
             />
           </div>
@@ -260,6 +287,7 @@ export default function DashboardHome({
           </div>
         </Panel>
 
+        <div className="min-w-0 space-y-3">
         <Panel title="ระดับน้ำในลำน้ำสำคัญ">
             <div className="p-3">
               <div className="mb-1 flex flex-wrap justify-end gap-2 text-[10px] font-bold text-slate-500">
@@ -357,6 +385,7 @@ export default function DashboardHome({
               )}
             </div>
         </Panel>
+        </div>
       </section>
 
       <section className="grid gap-3 [contain-intrinsic-size:430px] [content-visibility:auto] md:grid-cols-2 xl:grid-cols-[1.1fr_0.72fr_0.86fr]">
