@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import DataSource from "@/components/DataSource";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -738,7 +739,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
           </span>
           <div>
             <h3 className="text-base font-extrabold text-slate-800">สถานะแหล่งข้อมูล</h3>
-            <p className="text-xs font-semibold text-slate-500">URL และ parser แยกตาม adapter เพื่อให้ปรับแต่ละแหล่งได้โดยไม่กระทบส่วนอื่น</p>
+            <p className="text-xs font-semibold text-slate-500">ชื่อแหล่งข้อมูลและลิงก์ต้นทางสำหรับตรวจสอบข้อมูลที่แสดง</p>
           </div>
         </div>
         <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3">
@@ -748,7 +749,8 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
                 <p className="truncate text-sm font-extrabold text-slate-800">{source.label}</p>
                 <StatusBadge status={source.status} />
               </div>
-              <p className="line-clamp-2 text-xs font-semibold text-slate-500">{source.message}</p>
+              <DataSource label={source.label} url={source.url} />
+              <p className="mt-2 line-clamp-2 text-xs font-semibold text-slate-500">{source.message}</p>
             </div>
           ))}
         </div>

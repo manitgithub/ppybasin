@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import DataSource, { type DataSourceInfo } from "@/components/DataSource";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   Clock3,
@@ -13,7 +14,9 @@ import {
   Home,
   Hospital,
   LifeBuoy,
+  Maximize,
   Megaphone,
+  Minimize,
   Siren,
   Users,
   Waves,
@@ -52,6 +55,11 @@ const newsItems = [
 
 const rainLoopUrl = "https://semet.uk/loop/PTLLoop.gif";
 const tmdForecastUrl = "https://www.tmd.go.th/weather/region/southerneastcoast";
+const waterSource = {
+  label: "ThaiWater · สถาบันสารสนเทศทรัพยากรน้ำ (สสน.)",
+  url: "https://api-v3.thaiwater.net/api/v1/thaiwater30/provinces/waterlevel?province_code=93",
+};
+const exampleSource = { label: "ข้อมูลตัวอย่างในระบบ · ยังไม่ได้เชื่อมต่อแหล่งข้อมูลจริง" };
 
 function formatNumber(value: number | null | undefined, digits = 2) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "-";
@@ -84,7 +92,7 @@ function waterSituationLabel(level: number | null | undefined) {
   return { label: "ปกติ", className: "text-teal-600", dotClassName: "bg-teal-500" };
 }
 
-function Panel({ title, action, children }: { title: string; action?: string; children: React.ReactNode }) {
+function Panel({ title, action, sources, children }: { title: string; action?: string; sources?: DataSourceInfo[]; children: React.ReactNode }) {
   return (
     <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
       <div className="flex h-11 items-center justify-between border-b border-slate-100 px-4">
@@ -92,6 +100,9 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
         {action && <button className="text-xs font-extrabold text-[#2c72d9]">{action}</button>}
       </div>
       {children}
+      {sources && <div className="space-y-2 border-t border-slate-100 px-4 py-3">
+        {sources.map((source) => <DataSource key={source.url ?? source.label} {...source} />)}
+      </div>}
     </section>
   );
 }
@@ -105,7 +116,6 @@ function MapPlaceholder() {
 }
 
 export default function DashboardHome({
-  data,
   openShelters,
 }: {
   data: DashboardPayload;
@@ -113,6 +123,29 @@ export default function DashboardHome({
 }) {
   const [mapReady, setMapReady] = useState(false);
   const [situation, setSituation] = useState<SituationPayload | null>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState(false);
+  const [showWaterways, setShowWaterways] = useState(true);
+
+  useEffect(() => {
+    const updateFullscreen = () => setMapFullscreen(document.fullscreenElement === mapContainer.current);
+    document.addEventListener("fullscreenchange", updateFullscreen);
+    return () => document.removeEventListener("fullscreenchange", updateFullscreen);
+  }, []);
+
+  async function toggleMapFullscreen() {
+    try {
+      setFullscreenError(false);
+      if (document.fullscreenElement === mapContainer.current) {
+        await document.exitFullscreen();
+      } else {
+        await mapContainer.current?.requestFullscreen();
+      }
+    } catch {
+      setFullscreenError(true);
+    }
+  }
 
   useEffect(() => {
     const scheduleMap = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(callback, 250));
@@ -148,6 +181,7 @@ export default function DashboardHome({
   }, [situation?.thaiWater.waterLevels]);
 
   const latestRealWaterLevel = importantWaterRows[0] ?? null;
+  const currentWaterSource = situation?.sources.find((source) => source.id === "thaiwater-waterlevel") ?? waterSource;
 
   const cards = useMemo(
     () => [
@@ -211,37 +245,55 @@ export default function DashboardHome({
                 <p className="mt-1 truncate text-xs font-bold text-white/85">{card.detail}</p>
               </div>
             </div>
+            <div className="mt-3 border-t border-white/25 pt-2">
+              <DataSource {...(card.icon === Droplets ? currentWaterSource : exampleSource)} inverse />
+            </div>
           </article>
         ))}
       </section>
 
-      <section className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Panel title="แผนที่สถานการณ์ น้ำท่วมแบบเรียลไทม์">
-          <div className="relative h-[480px] overflow-hidden rounded-b-[8px] sm:h-[560px]">
-            {mapReady ? <BasinMap data={data} /> : <MapPlaceholder />}
-            <div className="absolute left-4 top-4 w-[160px] rounded-[8px] bg-[#102130]/92 p-4 text-white shadow-xl">
-              <div className="mb-3 flex items-center justify-between text-xs font-extrabold">
+      <section>
+        <Panel title="แผนที่ภูมิประเทศลุ่มน้ำป่าพะยอม" sources={[
+          { label: "Esri · World Topographic Map", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" },
+          { label: "เส้นทางน้ำ · OpenStreetMap contributors (ชุดข้อมูลที่นำเข้าในระบบ)", url: "/terrain/pa-phayom-waterways.json" },
+          { label: "ขอบเขตลุ่มน้ำป่าพะยอม · GeoJSON ที่ใช้ในระบบ", url: "/boundaries/pa-phayom-basin.geojson" },
+        ]}>
+          <div ref={mapContainer} className="relative h-[calc(100dvh-148px)] min-h-[420px] overflow-hidden rounded-b-[8px] bg-slate-100 [&:fullscreen]:h-dvh [&:fullscreen]:min-h-0 [&:fullscreen]:rounded-none">
+            {mapReady ? <BasinMap showWaterways={showWaterways} /> : <MapPlaceholder />}
+            <button type="button" onClick={() => void toggleMapFullscreen()} className="absolute right-3 top-3 z-10 flex min-h-11 items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-3 text-xs font-bold text-[#20325c] shadow-sm" aria-label={mapFullscreen ? "ออกจากแผนที่เต็มจอ" : "เปิดแผนที่เต็มจอ"}>
+              {mapFullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
+              {mapFullscreen ? "ออกจากเต็มจอ" : "เต็มจอ"}
+            </button>
+            {fullscreenError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">เบราว์เซอร์นี้เปิดโหมดเต็มจอไม่ได้</p>}
+            <details open className="absolute left-4 top-4 z-10 max-h-[calc(100%-80px)] w-[160px] overflow-y-auto rounded-[8px] bg-[#102130]/92 p-4 text-white shadow-xl">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-extrabold">
                 ชั้นข้อมูล
-                <ChevronDown size={15} />
+                <ChevronDown size={15} aria-hidden="true" />
+              </summary>
+              <div className="mt-3">
+              <p className="text-[11px] font-bold">แผนที่ภูมิประเทศ</p>
+              <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
+                <input type="checkbox" checked={showWaterways} onChange={(event) => setShowWaterways(event.target.checked)} className="size-4 accent-sky-400" />
+                เส้นทางน้ำ
+              </label>
+              <div className="space-y-2 text-[11px]">
+                <p className="flex items-center gap-2"><span className="w-5 border-t-[3px] border-[#56b5ff]" />แม่น้ำ / คลอง</p>
+                <p className="flex items-center gap-2"><span className="w-5 border-t-2 border-[#6edaff]" />ทางน้ำย่อย</p>
               </div>
-              {["ปริมาณฝน", "ระดับน้ำ", "พื้นที่เสี่ยงน้ำท่วม", "พื้นที่เสี่ยงน้ำแล้ง", "ศูนย์อพยพ", "เส้นทางอพยพ", "จุดอุปกรณ์เตือนภัย"].map((layer, index) => (
-                <label key={layer} className="mb-2 flex items-center gap-2 text-[11px] font-bold">
-                  <span className={["size-3 rounded-[3px]", index < 2 ? "bg-[#2f8ee8]" : index === 2 ? "bg-[#ff573d]" : index === 3 ? "bg-[#f59e0b]" : index === 4 ? "bg-[#38b86a]" : "bg-sky-400"].join(" ")} />
-                  {layer}
-                </label>
-              ))}
-              <p className="mt-4 text-[11px] font-extrabold">ปริมาณฝน (มม.)</p>
-              {["> 200", "150 - 200", "100 - 150", "50 - 100", "25 - 50", "0 - 25"].map((label, index) => (
-                <div key={label} className="mt-2 flex items-center gap-2 text-[11px] font-bold">
-                  <span className={["size-3 rounded-[3px]", ["bg-red-600", "bg-orange-500", "bg-amber-300", "bg-yellow-300", "bg-lime-400", "bg-sky-400"][index]].join(" ")} />
-                  {label}
-                </div>
-              ))}
-            </div>
+              <div className="mt-3 border-t border-white/20 pt-3 text-[11px] font-bold">
+                <span className="mb-1 block w-8 border-t-2 border-dashed border-[#7de0da]" />
+                ขอบเขตลุ่มน้ำป่าพะยอม
+                <p className="mt-1 font-normal text-white/75">พื้นที่นอกลุ่มน้ำแสดงสีเข้ม</p>
+              </div>
+              </div>
+            </details>
           </div>
         </Panel>
+      </section>
 
-        <Panel title="ENSO · เอลนีโญและลานีญา">
+      <section className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-3 xl:col-start-2 xl:row-start-1">
+        <Panel title="ENSO · เอลนีโญและลานีญา" sources={[{ label: "ยังไม่ได้เชื่อมต่อแหล่งข้อมูล ENSO" }]}>
           <div className="flex flex-col gap-6 p-5">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
               <span className="size-2 rounded-full bg-slate-400" />
@@ -264,10 +316,9 @@ export default function DashboardHome({
             </dl>
           </div>
         </Panel>
-      </section>
-
-      <section className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง">
+        </div>
+        <div className="min-w-0 xl:col-start-1 xl:row-start-1">
+        <Panel title="ภาพวนซ้ำเรดาร์ฝน พัทลุง" sources={[{ label: "SEMET · ภาพวนซ้ำเรดาร์ฝนพัทลุง", url: rainLoopUrl }]}>
           <div className="relative h-[400px] overflow-hidden bg-slate-900 sm:h-[560px]">
             <Image
               src={rainLoopUrl}
@@ -279,16 +330,11 @@ export default function DashboardHome({
               className="object-contain"
             />
           </div>
-          <div className="border-t border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-500">
-            ที่มา:{" "}
-            <a className="font-extrabold text-[#2c72d9]" href={rainLoopUrl} target="_blank" rel="noreferrer">
-              SEMET PTL radar loop
-            </a>
-          </div>
         </Panel>
+        </div>
 
-        <div className="min-w-0 space-y-3">
-        <Panel title="ระดับน้ำในลำน้ำสำคัญ">
+        <div className="min-w-0 space-y-3 xl:col-span-2 xl:grid xl:grid-cols-2 xl:gap-3 xl:space-y-0">
+        <Panel title="ระดับน้ำในลำน้ำสำคัญ" sources={[currentWaterSource]}>
             <div className="p-3">
               <div className="mb-1 flex flex-wrap justify-end gap-2 text-[10px] font-bold text-slate-500">
                 <span className="text-teal-600">● ปกติ</span>
@@ -329,7 +375,7 @@ export default function DashboardHome({
             </div>
         </Panel>
 
-        <Panel title="พยากรณ์อากาศ">
+        <Panel title="พยากรณ์อากาศ" sources={!situation ? [{ label: "กรมอุตุนิยมวิทยา · ภาคใต้ฝั่งตะวันออก", url: tmdForecastUrl }] : undefined}>
             <div className="p-3">
               <div className="mb-2 flex items-start justify-between">
                 <div>
@@ -356,15 +402,13 @@ export default function DashboardHome({
                         </span>
                       </div>
                       <p className="mt-1 text-xs font-bold text-slate-600">{forecast.evidence}</p>
+                      <div className="mt-2"><DataSource label={`กรมอุตุนิยมวิทยา · ${index === 0 ? "พยากรณ์ 24 ชั่วโมง" : "แนวโน้ม 7 วัน"}`} url={forecast.sourceUrl} /></div>
                       <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold">
                         <span className="rounded-[7px] bg-sky-100 px-2 py-1 text-sky-700">โอกาสฝน {forecast.probabilityPercent ?? "-"}</span>
                         <span className="rounded-[7px] bg-amber-100 px-2 py-1 text-amber-800">{forecast.heavyRainText ?? "ไม่พบคำฝนหนัก"}</span>
                       </div>
                     </div>
                   ))}
-                  <a className="block text-[11px] font-extrabold text-[#2c72d9]" href={tmdForecastUrl} target="_blank" rel="noreferrer">
-                    ที่มา: กรมอุตุนิยมวิทยา ภาคใต้ฝั่งตะวันออก
-                  </a>
                 </div>
               ) : (
                 <div className="rounded-[8px] bg-slate-50 px-3 py-4 text-xs font-bold text-slate-500">
@@ -389,7 +433,7 @@ export default function DashboardHome({
       </section>
 
       <section className="grid gap-3 [contain-intrinsic-size:430px] [content-visibility:auto] md:grid-cols-2 xl:grid-cols-[1.1fr_0.72fr_0.86fr]">
-        <Panel title={`ศูนย์อพยพที่เปิดดำเนินการ (${openShelters} แห่ง)`} action="ดูทั้งหมด">
+        <Panel title={`ศูนย์อพยพที่เปิดดำเนินการ (${openShelters} แห่ง)`} action="ดูทั้งหมด" sources={[exampleSource, { label: "จำนวนศูนย์ตามทะเบียนในระบบ", url: "/api/dashboard" }]}>
           <div className="flex gap-3 overflow-x-auto p-4">
             {shelterCards.map((shelter) => (
               <article key={shelter[0]} className="min-w-[138px] rounded-[8px] border border-slate-200 bg-white p-3 text-center">
@@ -406,7 +450,7 @@ export default function DashboardHome({
           </div>
         </Panel>
 
-        <Panel title="สถานการณ์โดยสรุป">
+        <Panel title="สถานการณ์โดยสรุป" sources={[exampleSource]}>
           <div className="space-y-2 p-4">
             <p className="mb-2 text-xs font-bold text-slate-500">ข้อมูล ณ เวลา 10:30 น.</p>
             {summaryRows.map(([label, value, Icon]) => (
@@ -418,7 +462,7 @@ export default function DashboardHome({
           </div>
         </Panel>
 
-        <Panel title="ข่าวประชาสัมพันธ์" action="ดูทั้งหมด">
+        <Panel title="ข่าวประชาสัมพันธ์" action="ดูทั้งหมด" sources={[exampleSource]}>
           <div className="space-y-3 p-4">
             {newsItems.map((item) => (
               <article key={item[0]} className="flex gap-3 rounded-[8px] border border-slate-100 bg-white p-3 shadow-sm">
