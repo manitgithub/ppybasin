@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import L from "leaflet";
 import styles from "./DistrictMap.module.css";
 import { useEffect, useMemo, useState } from "react";
@@ -74,5 +76,6 @@ export default function SituationMap({ waters, alerts, shelters }: { waters: Wat
       <BasinViewport boundary={boundary} focus={focus} />
     </MapContainer></div>
     <div className={styles.source}><span className={styles.boundarySwatch} />เส้นขอบลุ่มน้ำป่าพะยอม<span className={styles.outsideSwatch} />พื้นที่นอกโซน<a className={styles.note} href="https://pa-phayom-floodboard.dpakorn75.chatgpt.site/data/basin.geojson" target="_blank" rel="noreferrer">GeoJSON จากเว็บอ้างอิง</a></div>
+    <DataSources sources={[{ label: "ขอบเขตลุ่มน้ำป่าพะยอม · GeoJSON ที่ใช้ในระบบ", url: "/boundaries/pa-phayom-basin.geojson" }, { label: "แผนที่ฐาน · OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" }]} />
   </div>;
 }

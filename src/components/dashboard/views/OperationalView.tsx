@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import DataSource from "@/components/DataSource";
+import DataSource, { DataSources } from "@/components/DataSource";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -469,8 +469,9 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
         />
       </div>
 
+      <DataSources sources={situation.sources.filter((source) => ["thaiwater-rain24h", "thaiwater-rain72h", "thaiwater-waterlevel"].includes(source.id))} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
             <span className="grid size-10 place-items-center rounded-[8px] bg-blue-50 text-blue-700">
               <Waves size={20} />
@@ -483,6 +484,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
           <div className="grid gap-4 p-5 lg:grid-cols-2">
             <div>
               <p className="mb-3 text-xs font-extrabold text-slate-500">ฝน 24 ชั่วโมงสูงสุด</p>
+              <DataSources sources={situation.sources.filter((source) => source.id === "thaiwater-rain24h")} />
               <div className="space-y-2">
                 {topRain24.map((station) => {
                   const stationTone = toneForRainfall(station.rainfallMm, 24);
@@ -510,6 +512,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
             </div>
             <div>
               <p className="mb-3 text-xs font-extrabold text-slate-500">ฝน 72 ชั่วโมงสูงสุด</p>
+              <DataSources sources={situation.sources.filter((source) => source.id === "thaiwater-rain72h")} />
               <div className="space-y-2">
                 {topRain72.map((station) => {
                   const stationTone = toneForRainfall(station.rainfallMm, 72);
@@ -538,6 +541,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
           </div>
           <div className="border-t border-slate-100 px-5 py-4">
             <p className="mb-3 text-xs font-extrabold text-slate-500">สถานีระดับน้ำ</p>
+            <DataSources sources={situation.sources.filter((source) => source.id === "thaiwater-waterlevel")} />
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-extrabold text-slate-500">
@@ -581,7 +585,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <div className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -590,6 +594,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
               </div>
               <StatusBadge status={situation.thaiWater.radar ? "ok" : "schema_changed"} />
             </div>
+            <DataSources sources={situation.sources.filter((source) => source.id === "thaiwater-radar")} />
             <p className="text-2xl font-extrabold text-[#20325c]">{situation.thaiWater.radar?.name ?? "ไม่พบข้อมูลเรดาร์"}</p>
             <p className="mt-2 text-xs font-semibold text-slate-500">
               {situation.thaiWater.radar ? `${situation.thaiWater.radar.fileName} • ${formatDateTime(situation.thaiWater.radar.observedAt)}` : "parser ไม่สามารถยืนยัน field ภาพเรดาร์ได้"}
@@ -617,6 +622,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
                     <SeverityBadge tone={reservoirTone} />
                   </div>
 
+                  <DataSources sources={[{ label: "กรมชลประทาน · RID SWOC · อ่างเก็บน้ำป่าพะยอม", url: situation.reservoir.sourceUrl }]} />
                   <div className={`mt-4 rounded-[8px] border p-4 ${toneStyle.border} ${toneStyle.bg}`}>
                     <div className="flex items-end justify-between gap-4">
                       <div>
@@ -685,6 +691,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
                   <SeverityBadge tone={forecastTone} />
                 </div>
               </div>
+              <DataSources sources={[{ label: `กรมอุตุนิยมวิทยา · ${index === 0 ? "พยากรณ์ 24 ชั่วโมง" : "แนวโน้ม 7 วัน"}`, url: forecast.sourceUrl }]} />
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between gap-3 rounded-[8px] bg-white/70 px-4 py-3">
                   <span className={`font-bold ${toneStyle.mutedText}`}>โอกาสเกิดฝน</span>
@@ -701,7 +708,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
           );
         })}
 
-        <section className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-[8px] bg-slate-100 text-slate-700">
               <Map size={20} />
@@ -709,16 +716,14 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
             <h3 className="text-base font-extrabold text-slate-800">ประกาศและพื้นที่น้ำท่วม</h3>
           </div>
           <div className="mt-4 space-y-3">
-            {[situation.disaster.central, situation.disaster.phatthalung, situation.disaster.gistdaFloodBoundary].map((notice) => {
+            {[situation.disaster.central, situation.disaster.phatthalung, situation.disaster.gistdaFloodBoundary].map((notice, index) => {
               const noticeTone = toneForNoticeStatus(notice.status);
               const toneStyle = emergencyTone[noticeTone];
 
               return (
                 <div key={notice.sourceUrl} className={`rounded-[8px] border px-4 py-3 ${toneStyle.border} ${toneStyle.bg}`}>
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <a className={`truncate text-xs font-extrabold ${toneStyle.mutedText}`} href={notice.sourceUrl} target="_blank" rel="noreferrer">
-                      {notice.sourceUrl}
-                    </a>
+                    <DataSource label={["กรมป้องกันและบรรเทาสาธารณภัย (ปภ.)", "สำนักงานป้องกันและบรรเทาสาธารณภัยจังหวัดพัทลุง", "GISTDA · แพลตฟอร์มข้อมูลพื้นที่น้ำท่วม"][index]} url={notice.sourceUrl} />
                     <div className="flex shrink-0 items-center gap-2">
                       <SeverityBadge tone={noticeTone} />
                       <StatusBadge status={notice.status} />
@@ -732,7 +737,7 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
         </section>
       </div>
 
-      <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+      <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
         <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
           <span className="grid size-10 place-items-center rounded-[8px] bg-slate-100 text-slate-700">
             <Database size={20} />
@@ -831,6 +836,7 @@ function ForecastView() {
 
   return (
     <div className="space-y-4">
+      <DataSources sources={forecast.sources} />
       <FloodSimulation3D />
 
       <div className="grid gap-3 md:grid-cols-4">
@@ -857,7 +863,7 @@ function ForecastView() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
             <div className="flex items-start gap-3">
               <span className="grid size-10 place-items-center rounded-[8px] bg-sky-50 text-sky-700">
@@ -954,9 +960,10 @@ function ForecastView() {
           )}
         </section>
 
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
             <h3 className="text-base font-extrabold text-slate-800">ตารางฝนคาดการณ์</h3>
+            <DataSources sources={forecast.sources.filter((source) => source.id === "hii-six-month-rainfall")} />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-sm">
@@ -986,10 +993,11 @@ function ForecastView() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.55fr)]">
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
             <div>
               <h3 className="text-base font-extrabold text-slate-800">CLPP Radar / Nowcasting</h3>
+              <DataSources sources={[{ label: "สำนักงานทรัพยากรน้ำแห่งชาติ (สทนช.) · CLPP Radar", url: forecast.clppRadar.url }]} />
               <p className="text-xs font-semibold text-slate-500">เครื่องมือ radar composite ของ ONWR</p>
             </div>
             <ForecastStatusBadge status={forecast.clppRadar.status} />
@@ -1014,14 +1022,14 @@ function ForecastView() {
           </div>
         </section>
 
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
             <span className="grid size-10 place-items-center rounded-[8px] bg-slate-100 text-slate-700">
               <Database size={20} />
             </span>
             <div>
               <h3 className="text-base font-extrabold text-slate-800">แหล่งข้อมูล</h3>
-              <p className="text-xs font-semibold text-slate-500">แยก source สำหรับแก้ API/parser ภายหลัง</p>
+              <p className="text-xs font-semibold text-slate-500">ชื่อแหล่งข้อมูลและลิงก์ต้นทางสำหรับตรวจสอบข้อมูลที่แสดง</p>
             </div>
           </div>
           <div className="space-y-3 p-5">
@@ -1032,9 +1040,7 @@ function ForecastView() {
                   <ForecastStatusBadge status={source.status} />
                 </div>
                 <p className="text-xs font-semibold text-slate-500">{source.message}</p>
-                <a className="mt-2 block truncate text-xs font-extrabold text-blue-700" href={source.url} target="_blank" rel="noreferrer">
-                  {source.url}
-                </a>
+                <DataSource label={source.label} url={source.url} />
               </div>
             ))}
           </div>
@@ -1068,8 +1074,9 @@ function SettingsView({ data }: { data: DashboardPayload }) {
 
   return (
     <div className="space-y-5">
+      <DataSources sources={[{ label: data.source === "database" ? "สถานะข้อมูลและทะเบียนศูนย์อพยพในระบบ" : "สถานะข้อมูลสำรอง / ตัวอย่างในระบบ", url: "/api/dashboard" }]} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
             <span className="grid size-10 place-items-center rounded-[8px] bg-amber-50 text-amber-700">
               <SlidersHorizontal size={20} />
@@ -1087,7 +1094,7 @@ function SettingsView({ data }: { data: DashboardPayload }) {
           </div>
         </section>
 
-        <section className="rounded-[8px] border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
             <span className="grid size-10 place-items-center rounded-[8px] bg-emerald-50 text-emerald-700">
               <RadioTower size={20} />
@@ -1123,7 +1130,7 @@ function SettingsView({ data }: { data: DashboardPayload }) {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <section className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-start gap-3">
             <span className="grid size-10 place-items-center rounded-[8px] bg-blue-50 text-blue-700">
               <BellRing size={20} />
@@ -1140,7 +1147,7 @@ function SettingsView({ data }: { data: DashboardPayload }) {
           </div>
         </section>
 
-        <section className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-start gap-3">
             <span className="grid size-10 place-items-center rounded-[8px] bg-rose-50 text-rose-700">
               <ShieldCheck size={20} />
@@ -1171,7 +1178,7 @@ function SettingsView({ data }: { data: DashboardPayload }) {
           </div>
         </section>
 
-        <section className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-start gap-3">
             <span className="grid size-10 place-items-center rounded-[8px] bg-cyan-50 text-cyan-700">
               <Database size={20} />
@@ -1228,7 +1235,7 @@ export default function OperationalView({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       <div className="rounded-[8px] border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start gap-4">
           <span className="grid size-12 place-items-center rounded-[8px] bg-blue-50 text-[#216ed7]">
@@ -1251,6 +1258,11 @@ export default function OperationalView({
       ) : viewId === "shelters" ? (
         <ShelterOpsView data={data} />
       ) : (
+      <div>
+      <DataSources sources={[
+        { label: "ระดับน้ำและสถานี · ข้อมูลตั้งต้นในระบบ ยังไม่ใช่ค่าตรวจวัดล่าสุด", url: "/api/dashboard" },
+        { label: data.source === "database" ? "ทะเบียนศูนย์อพยพในระบบ" : "ทะเบียนศูนย์อพยพตัวอย่าง / ข้อมูลสำรอง", url: "/api/dashboard" },
+      ]} />
       <div className="grid gap-3 md:grid-cols-3">
         <article className="rounded-[8px] bg-white p-5 shadow-sm">
           <p className="text-xs font-extrabold text-slate-500">ระดับน้ำล่าสุด</p>
@@ -1264,6 +1276,7 @@ export default function OperationalView({
           <p className="text-xs font-extrabold text-slate-500">สถานีตรวจวัด</p>
           <p className="mt-2 text-3xl font-extrabold text-[#20325c]">{data.summary.stationsOnline.toLocaleString("th-TH")}</p>
         </article>
+      </div>
       </div>
       )}
     </section>

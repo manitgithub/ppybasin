@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import L from "leaflet";
 import {
   AlertTriangle,
@@ -373,6 +375,7 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
   };
 
   return (
+    <>
     <section className="relative h-[calc(100dvh-104px)] min-h-[620px] overflow-hidden rounded-[8px] border border-slate-200 bg-slate-100 shadow-sm">
       <MapContainer center={mapCenter} zoom={13} minZoom={9} maxZoom={18} zoomControl={false} scrollWheelZoom className={`z-0 h-full w-full ${placingStart || placingAlert ? "cursor-crosshair" : ""}`}>
         <TileLayer attribution="Tiles &copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -589,5 +592,7 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
         </div>
       </aside>
     </section>
+      <DataSources sources={[{ label: "ทะเบียนศูนย์อพยพ / ขอบเขตพื้นที่ตัวอย่างในระบบ", url: "/api/dashboard" }, { label: "ประกาศน้ำท่วมที่เจ้าหน้าที่บันทึกและอนุมัติในระบบ", url: "/api/flood-alerts" }, { label: "เส้นทางคำนวณโดย OSRM · ข้อมูลแผนที่ OpenStreetMap", url: "https://router.project-osrm.org" }, { label: "แผนที่ฐาน · OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" }]} />
+    </>
   );
 }

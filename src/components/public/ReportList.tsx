@@ -1,4 +1,6 @@
 "use client";
+
+import { DataSources } from "@/components/DataSource";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { canManageReports, passabilityLabels, waterDepthLabels, reportKinds, reportStatuses, type CitizenReport } from "@/lib/reports";
@@ -32,6 +34,7 @@ export default function ReportList({ user }: { user: AppUser | null }) {
   }
   const transitions = { pending: ["verified", "rejected"], verified: ["in_progress", "resolved", "rejected"], in_progress: ["resolved"], resolved: [], rejected: [] } as const;
   return <section className="report-list">
+    <DataSources sources={[{ label: "รายงานจากประชาชนและสถานะที่เจ้าหน้าที่บันทึก · เข้าถึงตามสิทธิ์ผู้ใช้งาน", url: "/api/reports" }]} />
     <div className="citizen-section-heading"><div><h2>{manage ? "รายงานจากประชาชน" : "รายงานของฉัน"}</h2><p>แสดง 100 รายการล่าสุด · ข้อมูลส่วนบุคคลไม่เผยแพร่ต่อสาธารณะ</p></div><button className="citizen-secondary" onClick={load} disabled={loading}><RefreshCw size={17} />โหลดใหม่</button></div>
     <label className="citizen-field">สถานะ<select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="all">ทั้งหมด</option>{Object.entries(reportStatuses).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
     {error && <p className="citizen-error" role="alert">{error}</p>}

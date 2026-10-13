@@ -1,5 +1,7 @@
 "use client";
 
+import DataSource from "@/components/DataSource";
+
 import L from "leaflet";
 import { useEffect } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
@@ -109,7 +111,7 @@ export default function ShelterLocationPicker({
         </MapContainer>
       </div>
       <div className="flex flex-col gap-1 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold text-slate-500 md:flex-row md:items-center md:justify-between">
-        <span>{helperText}</span>
+        <div><span>{helperText}</span><DataSource label="ภาพถ่ายดาวเทียม · Esri World Imagery" url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" /></div>
         <span className="text-slate-700">
           {position[0].toFixed(6)}, {position[1].toFixed(6)}
         </span>

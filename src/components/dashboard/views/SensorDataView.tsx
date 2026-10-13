@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import { Activity, BatteryMedium, Clock3, Copy, Database, Droplets, Server, Thermometer, Wifi, Wind } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { SensorReading } from "@/components/dashboard/types";
@@ -213,6 +215,7 @@ export default function SensorDataView() {
 
   return (
     <section className="space-y-6">
+      <DataSources sources={[{ label: "อุปกรณ์เซ็นเซอร์ IoT · ข้อมูลตรวจวัดที่รับเข้าในระบบ", url: "/api/sensor" }]} />
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-800 md:text-3xl">ข้อมูลเซ็นเซอร์ IoT (สด)</h2>

@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import { CircleUser } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { AppUser, UserRole, UserStatus } from "@/lib/auth";
@@ -95,6 +97,7 @@ export default function UserAccessManager({ currentUser }: { currentUser: AppUse
 
   return (
     <section className="space-y-4">
+      <DataSources sources={[{ label: "ทะเบียนผู้ใช้งานและสิทธิ์ในระบบ · สำหรับผู้ดูแลระบบ", url: "/api/admin/users" }]} />
       <div className="flex flex-col justify-between gap-3 rounded-[8px] bg-white p-5 shadow-sm md:flex-row md:items-center">
         <div>
           <p className="text-xs font-extrabold text-[#2c72d9]">ACCESS CONTROL</p>

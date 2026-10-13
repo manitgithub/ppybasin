@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import L from "leaflet";
 import { Hospital, MapPin, Users } from "lucide-react";
 import { useEffect, useMemo } from "react";
@@ -62,6 +64,10 @@ export default function ShelterOpsView({ data }: ShelterOpsViewProps) {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
+      <div className="xl:col-span-2"><DataSources sources={[
+        { label: data.source === "database" ? "ทะเบียนศูนย์อพยพในระบบ" : "ข้อมูลศูนย์อพยพตัวอย่าง · ยังไม่ใช่ทะเบียนจากฐานข้อมูล", url: "/api/dashboard" },
+        { label: "แผนที่ฐาน · OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" },
+      ]} /></div>
       <section className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div>

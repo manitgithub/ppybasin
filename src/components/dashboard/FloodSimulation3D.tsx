@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import { CloudRain, Pause, Play, RotateCcw, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -515,6 +517,7 @@ export default function FloodSimulation3D() {
   const riskClass = rainfallMm < 80 ? "text-emerald-700" : rainfallMm < 160 ? "text-sky-700" : rainfallMm < 260 ? "text-amber-800" : "text-rose-700";
 
   return (
+    <>
     <section className="relative min-h-[680px] overflow-hidden bg-[#dce8e8] text-[#102c32] xl:min-h-[720px]">
       <canvas ref={canvasRef} aria-label="แบบจำลองภูมิประเทศสามมิติและพื้นที่น้ำท่วมลุ่มน้ำป่าพะยอม" className="absolute inset-0 h-full w-full touch-none" />
 
@@ -554,5 +557,7 @@ export default function FloodSimulation3D() {
 
       {(!terrain || webglError) && <div className="absolute inset-0 z-30 grid place-items-center bg-[#dce8e8] text-sm font-extrabold text-[#557278]">{webglError ? "อุปกรณ์นี้ไม่รองรับ WebGL แสดงผลสรุปตัวเลขแทน" : "กำลังสร้างภูมิประเทศสามมิติ..."}</div>}
     </section>
+      <DataSources sources={[{ label: "ความสูงภูมิประเทศ · Mapzen Terrain Tiles on AWS Open Data", url: "https://registry.opendata.aws/terrain-tiles/" }, { label: "ชุดข้อมูลความสูงที่ใช้จำลองในระบบ", url: "/terrain/pa-phayom-dem.json" }, { label: "ถนน · OpenStreetMap contributors (ชุดข้อมูลที่นำเข้าในระบบ)", url: "/terrain/pa-phayom-roads.json" }, { label: "ทางน้ำ · OpenStreetMap contributors (ชุดข้อมูลที่นำเข้าในระบบ)", url: "/terrain/pa-phayom-waterways.json" }]} />
+    </>
   );
 }

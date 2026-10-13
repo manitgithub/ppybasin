@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import dynamic from "next/dynamic";
 import { BookOpen, PlusCircle, Save, X } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -110,6 +112,7 @@ export default function SensorDeviceManager() {
 
   return (
     <section className="space-y-6">
+      <DataSources sources={[{ label: "ทะเบียนสถานีตรวจวัดในระบบ", url: "/api/sensor/devices" }]} />
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-800 md:text-3xl">สถานีตรวจวัด</h2>

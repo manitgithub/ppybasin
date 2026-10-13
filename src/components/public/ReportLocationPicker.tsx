@@ -1,5 +1,7 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { GeoJSON, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
@@ -75,5 +77,6 @@ export default function ReportLocationPicker({ location, onChange }: { location:
     {error && <p className="citizen-error" role="status">โหลดขอบเขตลุ่มน้ำไม่ได้ ยังเลือกตำแหน่งได้จากแผนที่</p>}
     {location && boundary && !insideBoundary(location, boundary) && <p className="citizen-data-note" role="status">หมุดอยู่นอกขอบเขตลุ่มน้ำป่าพะยอม ตรวจสอบว่าตรงกับจุดเกิดเหตุหรือไม่</p>}
     {location && <div className="report-pin-adjust"><span>ขยับหมุดทีละประมาณ 10 เมตร</span>{[{ label: "เหนือ", lat: .0001, lng: 0 }, { label: "ใต้", lat: -.0001, lng: 0 }, { label: "ตะวันตก", lat: 0, lng: -.0001 }, { label: "ตะวันออก", lat: 0, lng: .0001 }].map((direction) => <button type="button" key={direction.label} aria-label={`เลื่อนหมุดไปทิศ${direction.label}`} onClick={() => onChange({ lat: location.lat + direction.lat, lng: location.lng + direction.lng })}>{direction.label}</button>)}</div>}
+    <DataSources sources={[{ label: "ขอบเขตลุ่มน้ำป่าพะยอม · GeoJSON ที่ใช้ในระบบ", url: "/boundaries/pa-phayom-basin.geojson" }, { label: "แผนที่ฐาน · OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" }]} />
   </div>;
 }

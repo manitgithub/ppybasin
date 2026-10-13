@@ -1,7 +1,9 @@
 "use client";
 
+import { DataSources } from "@/components/DataSource";
+
 import dynamic from "next/dynamic";
-import { AlertTriangle, ExternalLink, FileText, Home, Hospital, MapPin, Pencil, Plus, RadioTower, Save, Trash2, Users, X } from "lucide-react";
+import { AlertTriangle, FileText, Home, Hospital, MapPin, Pencil, Plus, RadioTower, Save, Trash2, Users, X } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
 import type { DisasterNoticeSummary, SourceStatus } from "@/lib/situation/adapters";
@@ -237,6 +239,7 @@ function VillageBasics({ data }: { data: DashboardPayload }) {
 
   return (
     <>
+      <DataSources sources={[{ label: "ทะเบียนหมู่บ้านที่เจ้าหน้าที่บันทึกในระบบ", url: "/api/villages" }, { label: "สถานีอ้างอิง · ข้อมูลตั้งต้นในระบบ", url: "/api/dashboard" }]} />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="หมู่บ้านในคลัง" value={`${villages.length.toLocaleString("th-TH")} หมู่บ้าน`} icon={Home} />
         <StatCard label="ครัวเรือนรวม" value={households.toLocaleString("th-TH")} icon={Users} />
@@ -466,10 +469,7 @@ function DisasterNoticeCard({
           </span>
           <div>
             <h3 className="text-base font-extrabold text-slate-800">{title}</h3>
-            <a className="mt-1 inline-flex max-w-full items-center gap-1 truncate text-xs font-extrabold text-[#2c72d9]" href={notice.sourceUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={13} />
-              {notice.sourceUrl}
-            </a>
+            <DataSources sources={[{ label: title, url: notice.sourceUrl }]} />
           </div>
         </div>
         <SourceStatusBadge status={notice.status} />
@@ -728,6 +728,7 @@ function ShelterData({ data }: { data: DashboardPayload }) {
 
   return (
     <>
+      <DataSources sources={[{ label: "ทะเบียนศูนย์อพยพที่เจ้าหน้าที่บันทึกในระบบ", url: "/api/shelters" }]} />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="ศูนย์ในฐานข้อมูล" value={`${shelters.length.toLocaleString("th-TH")} แห่ง`} icon={Hospital} />
         <StatCard label="เปิดใช้งาน" value={`${openShelters.toLocaleString("th-TH")} แห่ง`} icon={MapPin} />
