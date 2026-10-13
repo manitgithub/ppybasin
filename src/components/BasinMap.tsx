@@ -2,7 +2,9 @@
 
 import L from "leaflet";
 import { memo, useEffect, useMemo, useState } from "react";
-import { GeoJSON, MapContainer, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import { GeoJSON, MapContainer, Marker, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
+import DataSource from "@/components/DataSource";
 import type { FeatureCollection, LineString, MultiPolygon, Polygon as GeoPolygon } from "geojson";
 
 type WaterwayData = {
@@ -16,6 +18,34 @@ const paPhayomBounds: [[number, number], [number, number]] = [
 ];
 
 type BasinBoundary = FeatureCollection<GeoPolygon | MultiPolygon>;
+
+type Located<T> = { record: T; position: [number, number] };
+type DatabaseLayer<T> = { points: Located<T>[]; loading: boolean; error: boolean; skipped: number };
+
+function positionAt(lat: unknown, lng: unknown): [number, number] | null {
+  const parse = (value: unknown) => typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
+  const latitude = parse(lat);
+  const longitude = parse(lng);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+    ? [latitude, longitude] : null;
+}
+
+const stationIcon = L.divIcon({
+  className: "",
+  html: '<div style="width:32px;height:32px;border:2px solid white;border-radius:50%;background:#2563eb;box-shadow:0 2px 6px #0005;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="2"/><path d="m12 10-4 11m4-11 4 11M9 17h6M6 3a7 7 0 0 0 0 10M18 3a7 7 0 0 1 0 10"/></svg></div>',
+  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+});
+const shelterIcon = L.divIcon({
+  className: "",
+  html: '<div style="width:32px;height:32px;border:2px solid white;border-radius:8px;background:#15803d;box-shadow:0 2px 6px #0005;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true"><path d="m3 10 9-7 9 7v11H3Z"/><path d="M9 21v-7h6v7"/></svg></div>',
+  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+});
+
+function layerMessage<T>(label: string, layer: DatabaseLayer<T>) {
+  if (layer.loading) return `กำลังโหลด${label}จากฐานข้อมูล…`;
+  if (layer.error) return `โหลด${label}จากฐานข้อมูลไม่ได้ กรุณาโหลดหน้าใหม่`;
+  return `${label}: ${layer.points.length} จุด${layer.skipped ? ` · ไม่แสดง ${layer.skipped} รายการที่ไม่มีพิกัดถูกต้อง` : ""}`;
+}
 
 function BoundsUpdater({ boundary }: { boundary: BasinBoundary | null }) {
   const map = useMap();
@@ -37,11 +67,36 @@ function BoundsUpdater({ boundary }: { boundary: BasinBoundary | null }) {
   return null;
 }
 
-function BasinMap({ showWaterways = true }: { showWaterways?: boolean }) {
+function BasinMap({ showWaterways = true, showStations = true, showShelters = true }: { showWaterways?: boolean; showStations?: boolean; showShelters?: boolean }) {
   const [boundary, setBoundary] = useState<BasinBoundary | null>(null);
   const [boundaryError, setBoundaryError] = useState(false);
   const [waterways, setWaterways] = useState<WaterwayData | null>(null);
   const [waterwaysError, setWaterwaysError] = useState(false);
+  const [stations, setStations] = useState<DatabaseLayer<SensorDevice>>({ points: [], loading: true, error: false, skipped: 0 });
+  const [shelters, setShelters] = useState<DatabaseLayer<ShelterRecord>>({ points: [], loading: true, error: false, skipped: 0 });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load<T>(url: string, key: string, locate: (record: T) => [number, number] | null, update: (layer: DatabaseLayer<T>) => void) {
+      try {
+        const response = await fetch(url, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]), cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!payload.ok || !Array.isArray(payload[key])) throw new Error("Invalid database response");
+        const records: T[] = payload[key];
+        const points = records.flatMap((record) => {
+          const position = locate(record);
+          return position ? [{ record, position }] : [];
+        });
+        if (!controller.signal.aborted) update({ points, loading: false, error: false, skipped: records.length - points.length });
+      } catch {
+        if (!controller.signal.aborted) update({ points: [], loading: false, error: true, skipped: 0 });
+      }
+    }
+    void load<SensorDevice>("/api/sensor/devices", "devices", (record) => positionAt(record.latitude, record.longitude), setStations);
+    void load<ShelterRecord>("/api/shelters", "shelters", (record) => positionAt(record.lat, record.lng), setShelters);
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,9 +148,11 @@ function BasinMap({ showWaterways = true }: { showWaterways?: boolean }) {
   return (
     <>
     {boundaryError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">โหลดขอบเขตลุ่มน้ำไม่ได้ กรุณาโหลดหน้าใหม่</p>}
-    {showWaterways && <p role="status" className="absolute bottom-20 right-3 z-10 max-w-[240px] rounded bg-white px-3 py-2 text-xs text-slate-700">
-      {waterwaysError ? "โหลดเส้นทางน้ำไม่ได้ กรุณาโหลดหน้าใหม่" : waterways ? "ทางน้ำ: OpenStreetMap contributors" : "กำลังโหลดเส้นทางน้ำ…"}
-    </p>}
+    {(showWaterways || showStations || showShelters) && <div role="status" className="pointer-events-none absolute bottom-20 right-3 z-10 max-w-[240px] space-y-1 rounded bg-white px-3 py-2 text-xs text-slate-700">
+      {showWaterways && <p>{waterwaysError ? "โหลดเส้นทางน้ำไม่ได้ กรุณาโหลดหน้าใหม่" : waterways ? "ทางน้ำ: OpenStreetMap contributors" : "กำลังโหลดเส้นทางน้ำ…"}</p>}
+      {showStations && <p>{layerMessage("สถานีตรวจวัด", stations)}</p>}
+      {showShelters && <p>{layerMessage("ศูนย์อพยพ", shelters)}</p>}
+    </div>}
     <MapContainer
       center={center}
       zoom={13}
@@ -128,6 +185,28 @@ function BasinMap({ showWaterways = true }: { showWaterways?: boolean }) {
           }}
         />
       </>}
+
+      {showStations && stations.points.map(({ record: station, position }) => (
+        <Marker key={station.device_id} position={position} icon={stationIcon} title={`สถานีตรวจวัด ${station.name ?? station.device_id}`}>
+          <Popup>
+            <strong>{station.name || station.device_id}</strong>
+            <p>รหัสสถานี: {station.device_id}</p>
+            {station.location_name && <p>{station.location_name}</p>}
+            <p>สถานะ: {{ active: "ใช้งาน", inactive: "หยุดใช้งาน", maintenance: "บำรุงรักษา" }[station.status] ?? station.status}</p>
+            <DataSource label="ทะเบียนสถานีตรวจวัดในฐานข้อมูล" url="/api/sensor/devices" />
+          </Popup>
+        </Marker>
+      ))}
+      {showShelters && shelters.points.map(({ record: shelter, position }) => (
+        <Marker key={shelter.id} position={position} icon={shelterIcon} title={`ศูนย์อพยพ ${shelter.name}`}>
+          <Popup>
+            <strong>{shelter.name}</strong>
+            <p>สถานะ: {{ open: "เปิดใช้งาน", full: "เต็ม", closed: "ปิด", standby: "เตรียมพร้อม" }[shelter.status] ?? shelter.status}</p>
+            <p>ความจุตามทะเบียน: {shelter.capacity.toLocaleString("th-TH")} คน</p>
+            <DataSource label="ทะเบียนศูนย์อพยพในฐานข้อมูล" url="/api/shelters" />
+          </Popup>
+        </Marker>
+      ))}
 
       <ZoomControl position="bottomright" />
       <ScaleControl position="bottomleft" imperial={false} />

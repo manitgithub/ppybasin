@@ -17,6 +17,7 @@ import {
   Maximize,
   Megaphone,
   Minimize,
+  RadioTower,
   Siren,
   Users,
   Waves,
@@ -127,6 +128,8 @@ export default function DashboardHome({
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [fullscreenError, setFullscreenError] = useState(false);
   const [showWaterways, setShowWaterways] = useState(true);
+  const [showStations, setShowStations] = useState(true);
+  const [showShelters, setShowShelters] = useState(true);
 
   useEffect(() => {
     const updateFullscreen = () => setMapFullscreen(document.fullscreenElement === mapContainer.current);
@@ -257,9 +260,11 @@ export default function DashboardHome({
           { label: "Esri · World Topographic Map", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" },
           { label: "เส้นทางน้ำ · OpenStreetMap contributors (ชุดข้อมูลที่นำเข้าในระบบ)", url: "/terrain/pa-phayom-waterways.json" },
           { label: "ขอบเขตลุ่มน้ำป่าพะยอม · GeoJSON ที่ใช้ในระบบ", url: "/boundaries/pa-phayom-basin.geojson" },
+          { label: "ทะเบียนสถานีตรวจวัดในฐานข้อมูล", url: "/api/sensor/devices" },
+          { label: "ทะเบียนศูนย์อพยพในฐานข้อมูล", url: "/api/shelters" },
         ]}>
           <div ref={mapContainer} className="relative h-[calc(100dvh-148px)] min-h-[420px] overflow-hidden rounded-b-[8px] bg-slate-100 [&:fullscreen]:h-dvh [&:fullscreen]:min-h-0 [&:fullscreen]:rounded-none">
-            {mapReady ? <BasinMap showWaterways={showWaterways} /> : <MapPlaceholder />}
+            {mapReady ? <BasinMap showWaterways={showWaterways} showStations={showStations} showShelters={showShelters} /> : <MapPlaceholder />}
             <button type="button" onClick={() => void toggleMapFullscreen()} className="absolute right-3 top-3 z-10 flex min-h-11 items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-3 text-xs font-bold text-[#20325c] shadow-sm" aria-label={mapFullscreen ? "ออกจากแผนที่เต็มจอ" : "เปิดแผนที่เต็มจอ"}>
               {mapFullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
               {mapFullscreen ? "ออกจากเต็มจอ" : "เต็มจอ"}
@@ -279,6 +284,18 @@ export default function DashboardHome({
               <div className="space-y-2 text-[11px]">
                 <p className="flex items-center gap-2"><span className="w-5 border-t-[3px] border-[#56b5ff]" />แม่น้ำ / คลอง</p>
                 <p className="flex items-center gap-2"><span className="w-5 border-t-2 border-[#6edaff]" />ทางน้ำย่อย</p>
+              </div>
+              <div className="mt-3 border-t border-white/20 pt-3 text-[11px] font-bold">
+                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
+                  <input type="checkbox" checked={showStations} onChange={(event) => setShowStations(event.target.checked)} className="size-4 shrink-0 accent-blue-400" />
+                  สถานีตรวจวัด
+                </label>
+                <p className="flex items-center gap-2 font-normal text-white/85"><RadioTower size={16} className="text-blue-400" />ข้อมูลจากฐานข้อมูล</p>
+                <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
+                  <input type="checkbox" checked={showShelters} onChange={(event) => setShowShelters(event.target.checked)} className="size-4 shrink-0 accent-green-400" />
+                  ศูนย์อพยพ
+                </label>
+                <p className="flex items-center gap-2 font-normal text-white/85"><Hospital size={16} className="text-green-400" />ข้อมูลจากฐานข้อมูล</p>
               </div>
               <div className="mt-3 border-t border-white/20 pt-3 text-[11px] font-bold">
                 <span className="mb-1 block w-8 border-t-2 border-dashed border-[#7de0da]" />
