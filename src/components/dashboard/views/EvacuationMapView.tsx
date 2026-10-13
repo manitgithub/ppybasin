@@ -24,7 +24,6 @@ import {
   Circle,
   MapContainer,
   Marker,
-  Polygon,
   Polyline,
   Popup,
   TileLayer,
@@ -285,7 +284,7 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
         body: JSON.stringify({
           start: userPosition,
           destination: [selectedShelter.lat, selectedShelter.lng],
-          floodAreas: [data.floodArea, ...approvedAlerts.map(alertBoundary)],
+          floodAreas: approvedAlerts.map(alertBoundary),
         }),
       });
       const payload = await response.json() as {
@@ -317,7 +316,7 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
       setRouteState("error");
       setRouteMessage("บริการคำนวณเส้นทางไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้ง");
     }
-  }, [approvedAlerts, data.floodArea, selectedShelter, userPosition]);
+  }, [approvedAlerts, selectedShelter, userPosition]);
 
   const enableNotifications = async () => {
     if (typeof Notification === "undefined") {
@@ -395,12 +394,6 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
             setPlacingStart(false);
           }}
         />
-
-        {data.floodArea.length >= 3 && (
-          <Polygon positions={data.floodArea} pathOptions={{ color: "#e11d48", fillColor: "#fb7185", fillOpacity: 0.28, weight: 3, dashArray: "8 6" }}>
-            <Popup><strong>พื้นที่น้ำท่วม/เฝ้าระวัง</strong><br />ระบบจะพยายามหาเส้นทางที่ไม่ตัดพื้นที่นี้</Popup>
-          </Polygon>
-        )}
 
         {approvedAlerts.map((alert) => (
           <Circle
@@ -592,7 +585,7 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
         </div>
       </aside>
     </section>
-      <DataSources sources={[{ label: "ทะเบียนศูนย์อพยพ / ขอบเขตพื้นที่ตัวอย่างในระบบ", url: "/api/dashboard" }, { label: "ประกาศน้ำท่วมที่เจ้าหน้าที่บันทึกและอนุมัติในระบบ", url: "/api/flood-alerts" }, { label: "เส้นทางคำนวณโดย OSRM · ข้อมูลแผนที่ OpenStreetMap", url: "https://router.project-osrm.org" }, { label: "แผนที่ฐาน · OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" }]} />
+      <DataSources sources={[{ label: "ทะเบียนศูนย์อพยพในระบบ", url: "/api/dashboard" }, { label: "ประกาศน้ำท่วมที่เจ้าหน้าที่บันทึกและอนุมัติในระบบ", url: "/api/flood-alerts" }, { label: "เส้นทางคำนวณโดย OSRM · ข้อมูลแผนที่ OpenStreetMap", url: "https://router.project-osrm.org" }, { label: "แผนที่ฐาน · OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" }]} />
     </>
   );
 }
