@@ -126,6 +126,23 @@ redirect = await callback.GET(new Request("https://example.test/api/auth/line/ca
 assert.equal(redirect.headers.get("location"), "https://example.test/");
 console.log("PASS: LINE return-to-report, return cookie cleanup, redirect allowlist (mock LINE responses)");
 
+let destroyedSessions = 0;
+const logout = loadTs("src/app/api/auth/logout/route.ts", {
+  "@/lib/auth": { destroySession: async () => { destroyedSessions += 1; jar.delete("ppybasin_session"); } },
+}, { process: { env: { LINE_CALLBACK_URL: "https://old-tunnel.ngrok-free.dev/api/auth/line/callback" } } });
+for (const origin of ["http://localhost:3000", "https://basin.example.test"]) {
+  for (const method of ["GET", "POST"]) {
+    jar.set("ppybasin_session", "test-session");
+    const response = await logout[method](new Request(`${origin}/api/auth/logout`, { method }));
+    assert.equal(response.status, 303);
+    assert.equal(new URL(response.headers.get("location"), origin).href, `${origin}/`);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(jar.has("ppybasin_session"), false);
+  }
+}
+assert.equal(destroyedSessions, 4);
+console.log("PASS: GET/POST logout clears the session and stays on the current domain despite a stale LINE callback URL");
+
 currentUser = owner;
 transactionMode = "success"; statements = [];
 const multiplePhotos = form();

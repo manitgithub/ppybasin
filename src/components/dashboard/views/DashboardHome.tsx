@@ -23,7 +23,7 @@ import {
   Waves,
 } from "lucide-react";
 import type { DashboardPayload } from "@/lib/dashboard-data";
-import type { SituationPayload } from "@/lib/situation/adapters";
+import type { RainStation, SituationPayload } from "@/lib/situation/adapters";
 
 const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   ssr: false,
@@ -59,6 +59,10 @@ const tmdForecastUrl = "https://www.tmd.go.th/weather/region/southerneastcoast";
 const waterSource = {
   label: "ThaiWater · สถาบันสารสนเทศทรัพยากรน้ำ (สสน.)",
   url: "https://api-v3.thaiwater.net/api/v1/thaiwater30/provinces/waterlevel?province_code=93",
+};
+const rainSource = {
+  label: "ThaiWater · สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · จังหวัดพัทลุง",
+  url: "https://api-v3.thaiwater.net/api/v1/thaiwater30/provinces/rain24?include_zero=1&province_code=93",
 };
 const exampleSource = { label: "ข้อมูลตัวอย่างในระบบ · ยังไม่ได้เชื่อมต่อแหล่งข้อมูลจริง" };
 
@@ -117,6 +121,7 @@ function MapPlaceholder() {
 }
 
 export default function DashboardHome({
+  data,
   openShelters,
 }: {
   data: DashboardPayload;
@@ -185,15 +190,23 @@ export default function DashboardHome({
 
   const latestRealWaterLevel = importantWaterRows[0] ?? null;
   const currentWaterSource = situation?.sources.find((source) => source.id === "thaiwater-waterlevel") ?? waterSource;
+  const currentRainSource = situation?.sources.find((source) => source.id === "thaiwater-rain24h") ?? rainSource;
+  const highestRainStation = useMemo(() => (situation?.thaiWater.rain24h ?? [])
+    .filter((station) => Number.isFinite(station.rainfallMm) && station.rainfallMm >= 0)
+    .reduce<RainStation | null>(
+      (highest, station) => !highest || station.rainfallMm > highest.rainfallMm ? station : highest,
+      null,
+    ), [situation?.thaiWater.rain24h]);
 
   const cards = useMemo(
     () => [
       {
-        label: "ปริมาณฝนวันนี้",
-        value: "128.5",
+        label: "ฝนสะสม 24 ชม. สูงสุด",
+        value: highestRainStation ? formatNumber(highestRainStation.rainfallMm, 1) : "-",
         suffix: "มม.",
-        detail: "↑ 26% จากเมื่อวาน",
+        detail: highestRainStation ? `${highestRainStation.name} · อ.${highestRainStation.district} · ${formatDateTime(highestRainStation.observedAt)}` : "ยังไม่มีข้อมูลฝน 24 ชม. ที่ยืนยันได้จาก ThaiWater/สสน.",
         icon: CloudRain,
+        source: currentRainSource,
         className: "from-[#2f8ee8] to-[#0b5fbe]",
       },
       {
@@ -202,34 +215,38 @@ export default function DashboardHome({
         suffix: latestRealWaterLevel ? (latestRealWaterLevel.waterLevelMsl !== null ? "ม.รทก." : "ม.") : "",
         detail: latestRealWaterLevel ? `${latestRealWaterLevel.name} • ${formatDateTime(latestRealWaterLevel.observedAt)}` : "รอข้อมูลจริงจาก ThaiWater/สสน.",
         icon: Droplets,
+        source: currentWaterSource,
         className: "from-[#51c9c6] to-[#07979d]",
       },
       {
         label: "พื้นที่เสี่ยงน้ำท่วม",
-        value: "18",
+        value: formatNumber(data.databaseSummary?.riskVillages, 0),
         suffix: "หมู่บ้าน",
-        detail: "3,245 ครัวเรือน",
+        detail: data.databaseSummary?.riskVillages != null ? `เฝ้าระวัง / เสี่ยงสูง · ${formatNumber(data.databaseSummary.riskHouseholds, 0)} ครัวเรือนตามทะเบียน` : "ยังอ่านทะเบียนความเสี่ยงหมู่บ้านไม่ได้",
         icon: Home,
+        source: { label: "ทะเบียนหมู่บ้านในฐานข้อมูล · สถานะเฝ้าระวัง / เสี่ยงสูง", url: "/api/villages" },
         className: "from-[#ffb23b] to-[#ed7708]",
       },
       {
         label: "ศูนย์พักพิงเปิดดำเนินการ",
-        value: "6",
+        value: formatNumber(data.databaseSummary?.openShelters, 0),
         suffix: "ศูนย์",
-        detail: "รองรับได้ 2,450 คน",
+        detail: data.databaseSummary?.openShelters != null ? `ความจุตามทะเบียน ${formatNumber(data.databaseSummary.openShelterCapacity, 0)} คน · ไม่ใช่จำนวนที่ว่าง` : "ยังอ่านสถานะเปิดศูนย์พักพิงจากฐานข้อมูลไม่ได้",
         icon: Siren,
+        source: { label: "ทะเบียนศูนย์พักพิงในฐานข้อมูล · สถานะเปิดใช้งาน", url: "/api/shelters" },
         className: "from-[#ff675e] to-[#e12624]",
       },
       {
-        label: "ประชาชนได้รับผลกระทบ",
-        value: "1,247",
+        label: "ผู้ขอความช่วยเหลือที่ยืนยัน",
+        value: formatNumber(data.databaseSummary?.confirmedHelpPeople, 0),
         suffix: "คน",
-        detail: "จาก 18 หมู่บ้าน",
+        detail: data.databaseSummary?.confirmedHelpReports != null ? `รวมจาก ${formatNumber(data.databaseSummary.confirmedHelpReports, 0)} รายงานที่ยังไม่ปิดงาน · ยอดอาจซ้ำระหว่างรายงาน` : "ยังอ่านรายงานขอความช่วยเหลือที่ยืนยันไม่ได้",
         icon: Users,
+        source: { label: "รายงานขอความช่วยเหลือในฐานข้อมูล · ยืนยันแล้ว / กำลังดำเนินการ", url: "/api/reports" },
         className: "from-[#b387ea] to-[#7b4bd0]",
       },
     ],
-    [latestRealWaterLevel],
+    [highestRainStation, latestRealWaterLevel, currentRainSource, currentWaterSource, data.databaseSummary],
   );
 
   return (
@@ -240,16 +257,16 @@ export default function DashboardHome({
             <div className="flex items-center gap-3">
               <card.icon className="size-9 shrink-0 text-white" strokeWidth={2.7} />
               <div className="min-w-0">
-                <p className="truncate text-xs font-bold text-white/90">{card.label}</p>
+                <p className="text-xs font-bold text-white/90">{card.label}</p>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="text-[26px] font-extrabold leading-none">{card.value}</span>
                   <span className="text-sm font-extrabold">{card.suffix}</span>
                 </div>
-                <p className="mt-1 truncate text-xs font-bold text-white/85">{card.detail}</p>
+                <p className="mt-1 text-xs font-bold text-white/85">{card.detail}</p>
               </div>
             </div>
             <div className="mt-3 border-t border-white/25 pt-2">
-              <DataSource {...(card.icon === Droplets ? currentWaterSource : exampleSource)} inverse />
+              <DataSource {...card.source} inverse />
             </div>
           </article>
         ))}

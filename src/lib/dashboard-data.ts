@@ -28,6 +28,14 @@ export type DashboardPayload = {
   shelters: Shelter[];
   stations: TelemetryStation[];
   floodArea: [number, number][];
+  databaseSummary: {
+    riskVillages: number | null;
+    riskHouseholds: number | null;
+    openShelters: number | null;
+    openShelterCapacity: number | null;
+    confirmedHelpPeople: number | null;
+    confirmedHelpReports: number | null;
+  };
   summary: {
     stationsOnline: number;
     latestWaterLevel: number;
@@ -136,13 +144,16 @@ const floodArea: [number, number][] = [
   [7.7741, 100.2082],
 ];
 
-function buildPayload(shelters: Shelter[], source: DashboardPayload["source"]): DashboardPayload {
+function buildPayload(shelters: Shelter[], source: DashboardPayload["source"], databaseSummary: DashboardPayload["databaseSummary"] = {
+  riskVillages: null, riskHouseholds: null, openShelters: null, openShelterCapacity: null, confirmedHelpPeople: null, confirmedHelpReports: null,
+}): DashboardPayload {
   return {
     updatedAt: new Date().toISOString(),
     source,
     shelters,
     stations,
     floodArea,
+    databaseSummary,
     summary: {
       stationsOnline: stations.length,
       latestWaterLevel: 0,
@@ -160,8 +171,8 @@ export async function getDashboardData(): Promise<DashboardPayload> {
     return buildPayload(fallbackShelters, "fallback");
   }
 
-  try {
-    const result = await db.query<{
+  const [shelterResult, villageResult, capacityResult, helpResult] = await Promise.allSettled([
+    db.query<{
       id: string;
       name: string;
       capacity: number | null;
@@ -189,9 +200,38 @@ export async function getDashboardData(): Promise<DashboardPayload> {
         end,
         name
       limit 40
-    `);
+    `),
+    db.query<{ risk_villages: number; risk_households: string }>(`
+      select count(*) filter (where risk_status in ('watch', 'high'))::int as risk_villages,
+        coalesce(sum(households) filter (where risk_status in ('watch', 'high')), 0)::text as risk_households
+      from public.villages
+    `),
+    db.query<{ open_shelters: number; open_capacity: string }>(`
+      select count(*) filter (where status = 'open')::int as open_shelters,
+        coalesce(sum(capacity) filter (where status = 'open'), 0)::text as open_capacity
+      from public.shelters
+    `),
+    db.query<{ help_people: string; help_reports: number }>(`
+      select coalesce(sum(people_count), 0)::text as help_people, count(*)::int as help_reports
+      from public.citizen_reports
+      where kind = 'help' and status in ('verified', 'in_progress')
+    `),
+  ]);
 
-    const shelters = result.rows
+  const villages = villageResult.status === "fulfilled" ? villageResult.value.rows[0] : null;
+  const capacity = capacityResult.status === "fulfilled" ? capacityResult.value.rows[0] : null;
+  const help = helpResult.status === "fulfilled" ? helpResult.value.rows[0] : null;
+  const databaseSummary: DashboardPayload["databaseSummary"] = {
+    riskVillages: villages?.risk_villages ?? null,
+    riskHouseholds: villages ? Number(villages.risk_households) : null,
+    openShelters: capacity?.open_shelters ?? null,
+    openShelterCapacity: capacity ? Number(capacity.open_capacity) : null,
+    confirmedHelpPeople: help ? Number(help.help_people) : null,
+    confirmedHelpReports: help?.help_reports ?? null,
+  };
+
+  if (shelterResult.status === "fulfilled") {
+    const shelters = shelterResult.value.rows
       .filter((row) => row.lat !== null && row.lng !== null)
       .map((row) => ({
         id: row.id,
@@ -203,9 +243,9 @@ export async function getDashboardData(): Promise<DashboardPayload> {
         updatedAt: row.updated_at?.toISOString() ?? null,
       }));
 
-    return buildPayload(shelters.length ? shelters : fallbackShelters, shelters.length ? "database" : "fallback");
-  } catch (error) {
-    console.error("Unable to load dashboard data", error);
-    return buildPayload(fallbackShelters, "fallback");
+    return buildPayload(shelters, "database", databaseSummary);
   }
+
+  console.error("Unable to load dashboard shelters", shelterResult.reason);
+  return buildPayload(fallbackShelters, "fallback", databaseSummary);
 }
