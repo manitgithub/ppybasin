@@ -235,3 +235,18 @@
 .root :global(.report-saved-photos a) { overflow: hidden; border: 1px solid #cedee6; border-radius: 6px; text-decoration: none; }
 .root :global(.report-saved-photos span) { display: block; padding: 9px; font-size: 12px; }
 @media (min-width: 760px) { .root :global(.report-photo-previews), .root :global(.report-saved-photos) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* The reporting workspace fills the viewport; long forms scroll inside it. */
+.root.fullscreen:global(.citizen-app) { height: var(--app-viewport-height, 100dvh); min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.fullscreen :global(.citizen-header) { flex-shrink: 0; padding-inline: clamp(16px, 3vw, 40px); }
+.fullscreen :global(.citizen-container) { flex: 1; min-height: 0; max-width: none; width: 100%; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.fullscreen :global(.citizen-topline), .fullscreen :global(.citizen-footer) { display: none; }
+.fullscreen :global(.citizen-desktop-nav) { flex-shrink: 0; padding-inline: clamp(16px, 3vw, 40px); }
+.fullscreen :global(#citizen-main) { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 16px 16px 92px; }
+.fullscreen :global(.citizen-page-heading) { flex-shrink: 0; margin: 8px 0 20px; }
+.fullscreen :global(.report-layout) { width: 100%; }
+.fullscreen :global(.report-line-gate) { flex: 1; max-width: none; width: 100%; border: 0; border-radius: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: clamp(24px, 5vw, 72px); }
+.fullscreen :global(.report-line-gate > p) { max-width: 620px; }
+.fullscreen :global(.report-line-login) { width: min(100%, 420px); }
+.fullscreen :global(.report-line-emergency) { width: min(100%, 620px); }
+@media (min-width: 760px) { .fullscreen :global(#citizen-main) { padding: 24px clamp(24px, 3vw, 40px) 32px; } }

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, ClipboardList, Home, Layers, LogIn, Map, Phone, Plus, Waves } from "lucide-react";
+import { ChevronDown, ClipboardList, Home, Layers, LogIn, Navigation, Phone, Plus, Waves } from "lucide-react";
 import { DataSources } from "@/components/DataSource";
 import type { PublicAlert } from "./PublicDashboard";
 import styles from "./PublicMapHome.module.css";
@@ -18,7 +18,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
   loading: boolean;
   errors: string[];
   loginError: string;
-  navigate: (tab: "home" | "map" | "report" | "mine") => void;
+  navigate: (tab: "home" | "map" | "nearby" | "report" | "mine") => void;
 }) {
   const [layers, setLayers] = useState({ waterways: true, stations: true, shelters: true, alerts: true, boundary: true });
   const layerOptions = [
@@ -68,7 +68,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
       </details>
       <nav className={styles.nav} aria-label="เมนูหลัก">
         <button type="button" aria-current="page" onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>
-        <button type="button" onClick={() => navigate("map")}><Map size={19} /><span>สถานการณ์</span></button>
+        <button type="button" onClick={() => navigate("nearby")}><Navigation size={19} /><span>ศูนย์ใกล้ฉัน</span></button>
         <button type="button" onClick={() => navigate("report")}><Plus size={20} /><span>แจ้งเหตุ</span></button>
         <button type="button" onClick={() => navigate("mine")}><ClipboardList size={19} /><span>รายงานของฉัน</span></button>
       </nav>

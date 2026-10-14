@@ -3,20 +3,22 @@ import { resolve } from "node:path";
 import pg from "pg";
 
 async function loadLocalEnv() {
-  try {
-    const envFile = await readFile(resolve(".env.local"), "utf8");
+  for (const envFileName of [".env.local", ".env"]) {
+    try {
+      const envFile = await readFile(resolve(envFileName), "utf8");
 
-    for (const line of envFile.split(/\r?\n/)) {
-      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)\s*$/);
+      for (const line of envFile.split(/\r?\n/)) {
+        const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)\s*$/);
 
-      if (!match || process.env[match[1]]) {
-        continue;
+        if (!match || process.env[match[1]]) {
+          continue;
+        }
+
+        process.env[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, "");
       }
-
-      process.env[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, "");
+    } catch {
+      // The script can still run when DATABASE_URL is provided by the shell.
     }
-  } catch {
-    // The script can still run when DATABASE_URL is provided by the shell.
   }
 }
 

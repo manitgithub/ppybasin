@@ -59,8 +59,8 @@ function validateShelterPayload(body: ShelterBody) {
     errors.push("capacity must be a positive integer");
   }
 
-  if (!["open", "full", "closed"].includes(status)) {
-    errors.push("status must be open, full, or closed");
+  if (!["open", "full", "closed", "standby"].includes(status)) {
+    errors.push("status must be open, full, closed, or standby");
   }
 
   if (lat === undefined || lat < -90 || lat > 90) {
@@ -109,7 +109,8 @@ export async function GET() {
         status,
         ST_Y(geom::geometry) as lat,
         ST_X(geom::geometry) as lng,
-        updated_at
+        updated_at,
+        source_file
       from public.shelters
       order by
         case status when 'open' then 1 when 'full' then 2 else 3 end,

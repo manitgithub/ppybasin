@@ -46,6 +46,7 @@ const shelterStatusLabels: Record<ShelterStatus, string> = {
   open: "เปิดใช้งาน",
   full: "เต็ม",
   closed: "ปิด",
+  standby: "เตรียมพร้อม",
 };
 
 const categoryMeta = {
@@ -586,7 +587,7 @@ function ShelterData({ data }: { data: DashboardPayload }) {
       code: null,
       name: shelter.name,
       capacity: shelter.capacity,
-      status: ["open", "full", "closed"].includes(shelter.status) ? (shelter.status as ShelterStatus) : "closed",
+      status: ["open", "full", "closed", "standby"].includes(shelter.status) ? (shelter.status as ShelterStatus) : "standby",
       lat: shelter.lat,
       lng: shelter.lng,
       updated_at: shelter.updatedAt ?? new Date().toISOString(),
@@ -823,7 +824,7 @@ function ShelterData({ data }: { data: DashboardPayload }) {
 
             <div>
               <span className="mb-2 block text-xs font-extrabold text-slate-500">สถานะศูนย์</span>
-              <div className="grid grid-cols-3 gap-2 rounded-[8px] border border-slate-200 bg-slate-50 p-1">
+              <div className="grid grid-cols-2 gap-2 rounded-[8px] border border-slate-200 bg-slate-50 p-1 sm:grid-cols-4">
                 {(Object.keys(shelterStatusLabels) as ShelterStatus[]).map((status) => (
                   <button
                     key={status}

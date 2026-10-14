@@ -1,0 +1,30 @@
+.root { width: 100%; color: #193145; }
+.gps { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; border: 1px solid #cbdde5; border-radius: 8px; background: #edf5f8; }
+.gps h2 { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; }
+.gps p { font-size: 13px; color: #526e80; margin-top: 7px; }
+.gps button, .error button { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 48px; padding: 10px 18px; border-radius: 6px; background: #17658a; color: #f5fafc; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+.gps button:disabled { opacity: .65; cursor: wait; }
+.heading { margin: 26px 0 12px; font-size: 18px; font-weight: 700; }
+.list { display: grid; gap: 12px; }
+.shelter { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px; background: #fbfdfe; border: 1px solid #d4e1e8; border-radius: 7px; }
+.description { min-width: 0; }
+.description h3 { display: flex; align-items: baseline; gap: 6px; font-size: 18px; font-weight: 700; margin-top: 10px; overflow-wrap: anywhere; }
+.description h3 svg { flex-shrink: 0; }
+.description p { font-size: 13px; margin: 6px 0; color: #4e6a7b; }
+.description small { display: block; font-size: 11px; color: #607987; margin-top: 4px; }
+.open, .pending { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 650; }
+.open { color: #256b49; background: #e6f2e9; }
+.pending { color: #7b5d1e; background: #f7efdb; }
+.navigate, .view { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; padding: 11px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.navigate { color: #f4faf7; background: #24734e; }
+.view { color: #245b78; border: 1px solid #bdd0dc; background: #f1f6f8; }
+.position { margin: 14px 0; font-size: 12px; color: #3c697e; overflow-wrap: anywhere; }
+.note, .empty, .error { padding: 16px 20px; margin: 16px 0; font-size: 13px; line-height: 1.7; border-radius: 6px; }
+.note { color: #755a23; background: #f7f1e3; }
+.empty { color: #536f80; background: #edf2f5; border: 1px dashed #c6d8e3; }
+.empty a { text-decoration: underline; font-weight: 700; }
+.error { color: #98472c; background: #fcf0eb; }
+.error button { margin-top: 12px; font-size: 12px; }
+.source { border-top: 1px solid #d8e4e9; margin-top: 24px; padding-top: 18px; }
+.source > p { font-size: 11px; color: #647d8b; margin-top: 10px; }
+@media (max-width: 700px) { .gps, .shelter { flex-direction: column; align-items: stretch; padding: 18px; gap: 16px; } .gps h2, .description h3 { font-size: 16px; } }

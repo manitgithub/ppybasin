@@ -91,7 +91,7 @@ export type VillageForm = {
   primary_shelter: string;
 };
 
-export type ShelterStatus = "open" | "full" | "closed";
+export type ShelterStatus = "open" | "full" | "closed" | "standby";
 
 export type ShelterRecord = {
   id: string;
@@ -102,6 +102,7 @@ export type ShelterRecord = {
   lat: number;
   lng: number;
   updated_at: string;
+  source_file?: string | null;
 };
 
 export type ShelterForm = {

@@ -208,7 +208,7 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
             <p>รหัสศูนย์: {shelter.code}</p>
             <p>สถานะ: {{ open: "เปิดใช้งาน", full: "เต็ม", closed: "ปิด", standby: "เตรียมพร้อม" }[shelter.status] ?? shelter.status}</p>
             <p>ความจุตามทะเบียน: {shelter.capacity.toLocaleString("th-TH")} คน</p>
-            <DataSource label="ทะเบียนศูนย์อพยพในฐานข้อมูล" url="/api/shelters" />
+            <DataSource label={shelter.source_file ? `ทะเบียนศูนย์พักพิง · ${shelter.source_file}` : "ทะเบียนศูนย์อพยพในฐานข้อมูล"} url="/api/shelters" />
           </Popup>
         </Marker>
       ))}
