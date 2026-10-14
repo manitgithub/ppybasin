@@ -3,9 +3,12 @@
 import L from "leaflet";
 import { memo, useEffect, useMemo, useState } from "react";
 import { CircleMarker, GeoJSON, MapContainer, Marker, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import type { RainStation, WaterLevelStation } from "@/lib/situation/adapters";
+import { isRecentObservation, observationLabel } from "@/lib/public-situation";
 import type { PublicAlert } from "@/components/public/PublicDashboard";
 import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
 import DataSource from "@/components/DataSource";
+import NearbyShelterRoute from "@/components/public/NearbyShelterRoute";
 import { isBasinMapShelter } from "@/lib/shelter-map";
 import type { FeatureCollection, LineString, MultiPolygon, Polygon as GeoPolygon } from "geojson";
 
@@ -49,12 +52,13 @@ function layerMessage<T>(label: string, layer: DatabaseLayer<T>) {
   return `${label}: ${layer.points.length} จุด${layer.skipped ? ` · ไม่แสดง ${layer.skipped} รายการที่ไม่มีพิกัดถูกต้อง` : ""}`;
 }
 
-function BoundsUpdater({ boundary }: { boundary: BasinBoundary | null }) {
+function BoundsUpdater({ boundary, navigating }: { boundary: BasinBoundary | null; navigating: boolean }) {
   const map = useMap();
 
   useEffect(() => {
     const fit = () => {
       map.invalidateSize();
+      if (navigating) return;
       map.fitBounds(boundary ? L.geoJSON(boundary).getBounds() : paPhayomBounds, {
         animate: false,
         padding: [32, 32],
@@ -64,13 +68,14 @@ function BoundsUpdater({ boundary }: { boundary: BasinBoundary | null }) {
     const observer = new ResizeObserver(fit);
     observer.observe(map.getContainer());
     return () => observer.disconnect();
-  }, [map, boundary]);
+  }, [map, boundary, navigating]);
 
   return null;
 }
 
-function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showAlerts = true, alerts = [] }: {
-  showWaterways?: boolean; showStations?: boolean; showShelters?: boolean; showBoundary?: boolean; showAlerts?: boolean; alerts?: PublicAlert[];
+function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showAlerts = true, alerts = [], nearby = false, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0 }: {
+  rainStations?: RainStation[]; waterLevels?: WaterLevelStation[]; showRain?: boolean; showWaterLevels?: boolean; now?: number;
+  nearby?: boolean; showWaterways?: boolean; showStations?: boolean; showShelters?: boolean; showBoundary?: boolean; showAlerts?: boolean; alerts?: PublicAlert[];
 }) {
   const [boundary, setBoundary] = useState<BasinBoundary | null>(null);
   const [boundaryError, setBoundaryError] = useState(false);
@@ -201,6 +206,19 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
           </Popup>
         </Marker>
       ))}
+      {showRain && rainStations.map((station) => {
+        const position = positionAt(station.lat, station.lng);
+        return position && <CircleMarker key={`rain-${station.id}`} center={position} radius={8} pathOptions={{ color: "#087e96", fillColor: "#b5e7ef", fillOpacity: .9, weight: 2 }}>
+          <Popup><strong>ฝนสะสม 24 ชั่วโมง · {station.name}</strong><p>{station.district} · {station.rainfallMm} มม.</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label="ThaiWater / สสน. · ฝน 24 ชั่วโมง" url="https://www.thaiwater.net/" /></Popup>
+        </CircleMarker>;
+      })}
+      {showWaterLevels && waterLevels.map((station) => {
+        const position = positionAt(station.lat, station.lng);
+        return position && <CircleMarker key={`water-${station.id}`} center={position} radius={7} pathOptions={{ color: "#464ba5", fillColor: "#d6d8fa", fillOpacity: .9, weight: 2 }}>
+          <Popup><strong>ระดับน้ำ · {station.name}</strong><p>{station.waterLevelMsl !== null ? `${station.waterLevelMsl.toFixed(2)} ม.รทก.` : station.waterLevelM !== null ? `${station.waterLevelM.toFixed(2)} ม. (ระดับน้ำตามสถานี)` : "ข้อมูลไม่พร้อม"}</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label="ThaiWater / สสน. · ระดับน้ำ" url="https://www.thaiwater.net/" /></Popup>
+        </CircleMarker>;
+      })}
+
       {showShelters && shelters.points.map(({ record: shelter, position }) => (
         <Marker key={shelter.id} position={position} icon={shelterIcon} title={`ศูนย์อพยพ ${shelter.name}`}>
           <Popup>
@@ -220,7 +238,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       ))}
       <ZoomControl position="bottomright" />
       <ScaleControl position="bottomleft" imperial={false} />
-      <BoundsUpdater boundary={boundary} />
+      <BoundsUpdater boundary={boundary} navigating={nearby} />
+      {nearby && <NearbyShelterRoute shelters={shelters.points.map(({ record }) => record)} loading={shelters.loading} error={shelters.error} />}
     </MapContainer>
     </>
   );

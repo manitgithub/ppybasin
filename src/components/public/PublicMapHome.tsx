@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown, ClipboardList, Home, Layers, LogIn, Navigation, Phone, Plus, Waves } from "lucide-react";
 import { DataSources } from "@/components/DataSource";
+import PublicSituationSummary from "./PublicSituationSummary";
+import type { SituationPayload } from "@/lib/situation/adapters";
+import { localRain, localStations } from "@/lib/public-situation";
 import type { PublicAlert } from "./PublicDashboard";
 import styles from "./PublicMapHome.module.css";
 
@@ -13,17 +16,24 @@ const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   loading: () => <div className={styles.loading} role="status">กำลังเปิดแผนที่ลุ่มน้ำป่าพะยอม…</div>,
 });
 
-export default function PublicMapHome({ alerts, loading, errors, loginError, navigate }: {
+export default function PublicMapHome({ alerts, loading, errors, loginError, navigate, nearby = false, signedIn = false, situation, now, onRefresh }: {
+  situation: SituationPayload | null;
+  now: number;
+  onRefresh: () => void;
+  nearby?: boolean;
+  signedIn?: boolean;
   alerts: PublicAlert[];
   loading: boolean;
   errors: string[];
   loginError: string;
   navigate: (tab: "home" | "map" | "nearby" | "report" | "mine") => void;
 }) {
-  const [layers, setLayers] = useState({ waterways: true, stations: true, shelters: true, alerts: true, boundary: true });
+  const [layers, setLayers] = useState({ waterways: true, stations: true, shelters: true, alerts: true, boundary: true, rain: true, waterLevels: true });
   const layerOptions = [
     { id: "waterways", label: "เส้นทางน้ำ", note: "แม่น้ำ / คลอง / ทางน้ำย่อย", color: "#1988c6" },
     { id: "stations", label: "สถานีตรวจวัด", note: "กดหมุดเพื่อดูรายละเอียดสถานี", color: "#2563eb" },
+    { id: "rain", label: "ฝนสะสม 24 ชั่วโมง", note: "สถานีฝน · ป่าพะยอม / ควนขนุน", color: "#087e96" },
+    { id: "waterLevels", label: "ระดับน้ำล่าสุด", note: "ค่าตรวจวัดจาก ThaiWater", color: "#464ba5" },
     { id: "shelters", label: "ศูนย์อพยพ", note: "สถานะเปิด–ปิดตามทะเบียน", color: "#15803d" },
     { id: "alerts", label: "ประกาศที่ยืนยันแล้ว", note: loading ? "กำลังตรวจสอบประกาศ…" : errors.includes("ประกาศยืนยัน") ? "ยังอ่านประกาศไม่ได้" : `${alerts.length} ประกาศที่มีผลอยู่`, color: "#a66e16" },
     { id: "boundary", label: "ขอบเขตลุ่มน้ำ", note: "ลุ่มน้ำป่าพะยอม", color: "#128b87" },
@@ -32,15 +42,15 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
   return <div className={styles.root}>
     <header className={styles.header}>
       <Link href="/#home" className={styles.brand}><Waves size={28} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link>
-      <h1>แผนที่ติดตามสถานการณ์</h1>
+      <h1>{nearby ? "ศูนย์อพยพใกล้ฉัน" : "แผนที่ติดตามสถานการณ์"}</h1>
       <div className={styles.actions}>
         <a href="tel:1784" aria-label="โทร ปภ. 1784"><Phone size={17} /><span>1784</span></a>
-        <a href="/api/auth/line/start"><LogIn size={17} />เข้าสู่ระบบ</a>
+        <a href={signedIn ? "/api/auth/logout" : "/api/auth/line/start"}><LogIn size={17} />{signedIn ? "ออกจากระบบ" : "เข้าสู่ระบบ"}</a>
       </div>
     </header>
-    <main className={styles.map} aria-label="แผนที่ลุ่มน้ำป่าพะยอม">
-      <BasinMap showWaterways={layers.waterways} showStations={layers.stations} showShelters={layers.shelters} showAlerts={layers.alerts} showBoundary={layers.boundary} alerts={alerts} />
-      <details className={styles.layers} open>
+    <main className={`${styles.map} ${nearby ? styles.nearby : styles.withSituation}`} aria-label="แผนที่ลุ่มน้ำป่าพะยอม">
+      <BasinMap rainStations={localRain(situation, "rain24h")} waterLevels={localStations(situation?.thaiWater.waterLevels ?? [])} showRain={layers.rain} showWaterLevels={layers.waterLevels} now={now} showWaterways={layers.waterways} showStations={layers.stations} nearby={nearby} showShelters={nearby || layers.shelters} showAlerts={layers.alerts} showBoundary={layers.boundary} alerts={alerts} />
+      <details className={styles.layers} open={!nearby}>
         <summary><span><Layers size={18} />ชั้นข้อมูล</span><ChevronDown size={16} /></summary>
         <div className={styles.layerOptions}>
           {layerOptions.map(({ id, label, note, color }) => <label key={id} className={styles.layer}>
@@ -50,6 +60,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
           </label>)}
         </div>
       </details>
+      {!nearby && <PublicSituationSummary situation={situation} now={now} loading={loading} failed={errors.includes("ข้อมูลตรวจวัด")} onRefresh={onRefresh} />}
       {loginError && <p className={styles.error} role="alert">{loginError}</p>}
       <details className={styles.sources}>
         <summary>แหล่งข้อมูลและข้อควรทราบ <ChevronDown size={14} /></summary>
@@ -67,8 +78,8 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
         </div>
       </details>
       <nav className={styles.nav} aria-label="เมนูหลัก">
-        <button type="button" aria-current="page" onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>
-        <button type="button" onClick={() => navigate("nearby")}><Navigation size={19} /><span>ศูนย์ใกล้ฉัน</span></button>
+        <button type="button" aria-current={!nearby ? "page" : undefined} onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>
+        <button type="button" aria-current={nearby ? "page" : undefined} onClick={() => navigate("nearby")}><Navigation size={19} /><span>ศูนย์ใกล้ฉัน</span></button>
         <button type="button" onClick={() => navigate("report")}><Plus size={20} /><span>แจ้งเหตุ</span></button>
         <button type="button" onClick={() => navigate("mine")}><ClipboardList size={19} /><span>รายงานของฉัน</span></button>
       </nav>
