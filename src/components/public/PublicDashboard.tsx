@@ -11,6 +11,7 @@ import type { DashboardPayload } from "@/lib/dashboard-data";
 import type { SituationPayload } from "@/lib/situation/adapters";
 import ReportForm from "@/components/public/ReportForm";
 import ReportList from "@/components/public/ReportList";
+import PublicMapHome from "@/components/public/PublicMapHome";
 
 const SituationMap = dynamic(() => import("@/components/public/SituationMap"), { ssr: false, loading: () => <div className="citizen-map-loading">กำลังเปิดแผนที่…</div> });
 
@@ -68,6 +69,7 @@ export default function PublicDashboard({ data, user }: { data: DashboardPayload
   const confirmedShelters = dashboard.source === "database" ? dashboard.shelters.filter((s) => s.status === "open" && s.updatedAt && now - Date.parse(s.updatedAt) <= 6 * 3600000 && Date.parse(s.updatedAt) <= now) : [];
   const waters = situation?.thaiWater.waterLevels ?? [];
   const fresh = waters.filter((s) => s.observedAt && Date.parse(s.observedAt) <= now && now - Date.parse(s.observedAt) <= 3 * 3600000);
+  if (!user && tab === "home") return <PublicMapHome alerts={alerts} loading={loading} errors={errors} loginError={loginError} navigate={navigate} />;
   return <div className={`citizen-app ${styles.root}`}>
     <header className="citizen-header"><Link href="/" className="citizen-brand"><Waves size={29} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link><div className="citizen-header-actions"><a href="tel:1784" className="hotline"><Phone size={16} />1784</a>{user ? <a href="/api/auth/logout">ออกจากระบบ</a> : <a href="/api/auth/line/start">เข้าสู่ระบบ</a>}</div></header>
     <div className="citizen-container">

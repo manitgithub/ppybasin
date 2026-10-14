@@ -1,5 +1,7 @@
 "use client";
 
+import { isBasinMapShelter } from "@/lib/shelter-map";
+
 import { DataSources } from "@/components/DataSource";
 
 import L from "leaflet";
@@ -71,7 +73,7 @@ export default function SituationMap({ waters, alerts, shelters }: { waters: Wat
       </>}
       {waters.filter((s) => s.lat !== null && s.lng !== null).map((s) => <CircleMarker key={s.id} center={[s.lat!, s.lng!]} radius={7} pathOptions={{ color: "#226da0", fillOpacity: 0.8 }}><Popup><b>{s.name}</b><p>ระดับน้ำ {s.waterLevelMsl ?? "ไม่มีข้อมูล"} ม.รทก.</p><p>ตรวจวัด {new Date(s.observedAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</p></Popup></CircleMarker>)}
       {alerts.map((s) => <CircleMarker key={s.id} center={[s.latitude, s.longitude]} radius={12} pathOptions={{ color: s.severity === "critical" ? "#b82828" : "#ac7415", fillOpacity: 0.3 }}><Popup><b>ประกาศยืนยัน · {s.title}</b><p>{s.message}</p></Popup></CircleMarker>)}
-      {shelters.map((s) => <CircleMarker key={s.id} center={[s.lat, s.lng]} radius={9} pathOptions={{ color: "#257450", fillOpacity: 0.8 }}><Popup><b>{s.name}</b><p>ศูนย์ยืนยันเปิดล่าสุด · ความจุ {s.capacity} คน</p></Popup></CircleMarker>)}
+      {shelters.filter(isBasinMapShelter).map((s) => <CircleMarker key={s.id} center={[s.lat, s.lng]} radius={9} pathOptions={{ color: "#257450", fillOpacity: 0.8 }}><Popup><b>{s.name}</b><p>ศูนย์ยืนยันเปิดล่าสุด · ความจุ {s.capacity} คน</p></Popup></CircleMarker>)}
       <ScaleControl position="bottomleft" imperial={false} />
       <BasinViewport boundary={boundary} focus={focus} />
     </MapContainer></div>

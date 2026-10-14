@@ -180,3 +180,45 @@ assert.equal(localPreview.allowsLocalPreview("production", "localhost:3000", nul
 assert.equal(localPreview.allowsLocalPreview("development", "example.com", "localhost:3000"), false);
 assert.equal(localPreview.allowsLocalPreview("development", "localhost:3000", "example.com"), false);
 console.log("PASS: local development access, IPv4/IPv6 loopback, production/domain/forwarded-host exclusion");
+
+const previewEnv = { NODE_ENV: "development", AUTH_BYPASS: "true" };
+let previewHeaders = new Headers({ host: "localhost:3000" });
+const previewAuth = loadTs("src/lib/auth.ts", {
+  crypto: { default: crypto },
+  "next/headers": { cookies: async () => cookieStore, headers: async () => previewHeaders },
+  "@/lib/db": { getPool: () => undefined },
+  "@/lib/local-preview": localPreview,
+}, { process: { env: previewEnv } });
+jar.set(localPreview.LOCAL_PREVIEW_COOKIE, "guest");
+assert.equal(await previewAuth.getCurrentUser(), null);
+jar.set(localPreview.LOCAL_PREVIEW_COOKIE, "logged-in");
+assert.equal((await previewAuth.getCurrentUser()).id, localPreview.LOCAL_PREVIEW_USER_ID);
+assert.equal((await previewAuth.getCurrentUser()).role, "admin");
+previewHeaders = new Headers({ host: "localhost:3000", "x-forwarded-host": "basin.example.test" });
+assert.equal((await previewAuth.getCurrentUser()).id, "auth-bypass-user");
+previewEnv.NODE_ENV = "production";
+previewHeaders = new Headers({ host: "localhost:3000" });
+assert.equal((await previewAuth.getCurrentUser()).id, "auth-bypass-user");
+previewEnv.AUTH_BYPASS = "false";
+assert.equal(await previewAuth.getCurrentUser(), null);
+previewEnv.NODE_ENV = "development";
+const previewRoute = loadTs("src/app/api/dev/preview/route.ts", {
+  "next/headers": { cookies: async () => cookieStore },
+  "@/lib/local-preview": localPreview,
+}, { process: { env: previewEnv } });
+const previewRequest = (mode, headers = {}, origin = "http://localhost:3000") => new Request(`${origin}/api/dev/preview`, {
+  method: "POST", headers, body: new URLSearchParams({ mode }),
+});
+for (const mode of ["guest", "logged-in"]) {
+  const response = await previewRoute.POST(previewRequest(mode, { origin: "http://localhost:3000" }));
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), "/#home");
+  assert.equal(jar.get(localPreview.LOCAL_PREVIEW_COOKIE), mode);
+}
+assert.equal((await previewRoute.POST(previewRequest("other"))).status, 400);
+assert.equal((await previewRoute.POST(previewRequest("logged-in", { origin: "https://outside.example.test" }))).status, 403);
+assert.equal((await previewRoute.POST(previewRequest("logged-in", { "x-forwarded-host": "basin.example.test" }))).status, 404);
+assert.equal((await previewRoute.POST(previewRequest("logged-in", {}, "https://basin.example.test"))).status, 404);
+previewEnv.NODE_ENV = "production";
+assert.equal((await previewRoute.POST(previewRequest("logged-in"))).status, 404);
+console.log("PASS: local guest/admin preview, override of development bypass, production/domain/proxy isolation, preview route origin and mode checks");

@@ -1,5 +1,7 @@
 "use client";
 
+import { isBasinMapShelter } from "@/lib/shelter-map";
+
 import { DataSources } from "@/components/DataSource";
 
 import L from "leaflet";
@@ -177,7 +179,7 @@ export default function EvacuationMapView({ data, currentUser }: EvacuationMapVi
   const canManageAlerts = currentUser.role === "admin" || currentUser.permissions.includes("alerts:manage");
   const canApproveAlerts = currentUser.role === "admin";
   const shelters = useMemo(
-    () => data.shelters.filter((shelter) => Number.isFinite(shelter.lat) && Number.isFinite(shelter.lng)),
+    () => data.shelters.filter((shelter) => isBasinMapShelter(shelter) && Number.isFinite(shelter.lat) && Number.isFinite(shelter.lng)),
     [data.shelters],
   );
   const availableShelters = useMemo(() => shelters.filter((shelter) => shelter.status === "open"), [shelters]);

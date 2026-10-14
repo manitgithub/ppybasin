@@ -2,6 +2,7 @@ import { getPool } from "@/lib/db";
 
 export type Shelter = {
   id: string;
+  code?: string | null;
   name: string;
   capacity: number;
   status: "open" | "full" | "standby" | string;
@@ -174,6 +175,7 @@ export async function getDashboardData(): Promise<DashboardPayload> {
   const [shelterResult, villageResult, capacityResult, helpResult] = await Promise.allSettled([
     db.query<{
       id: string;
+      code: string | null;
       name: string;
       capacity: number | null;
       status: string | null;
@@ -183,6 +185,7 @@ export async function getDashboardData(): Promise<DashboardPayload> {
     }>(`
       select
         id::text,
+        code,
         name,
         capacity,
         coalesce(status, 'standby') as status,
@@ -235,6 +238,7 @@ export async function getDashboardData(): Promise<DashboardPayload> {
       .filter((row) => row.lat !== null && row.lng !== null)
       .map((row) => ({
         id: row.id,
+        code: row.code,
         name: row.name,
         capacity: row.capacity ?? 0,
         status: row.status ?? "standby",

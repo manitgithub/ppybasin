@@ -1,0 +1,9 @@
+.root { --app-viewport-height: calc(100dvh - 48px); }
+.toolbar { height: 48px; display: flex; justify-content: center; align-items: center; gap: 16px; padding: 0 12px; background: #e7edf2; color: #29465b; border-bottom: 1px solid #bacdd9; font-size: 12px; }
+.toolbar > span { font-weight: 700; white-space: nowrap; }
+.toolbar form { display: flex; gap: 4px; }
+.toolbar button { min-height: 36px; padding: 6px 12px; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
+.toolbar button[aria-pressed="true"] { background: #f8fbfd; border-color: #98b6cb; color: #164e70; font-weight: 700; }
+.toolbar button:focus-visible { outline: 3px solid #287db4; outline-offset: 2px; }
+.content { min-width: 0; }
+@media (max-width: 480px) { .caption { display: none; } .toolbar { gap: 8px; font-size: 11px; } .toolbar button { padding-inline: 10px; } }

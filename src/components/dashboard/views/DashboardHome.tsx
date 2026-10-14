@@ -307,12 +307,10 @@ export default function DashboardHome({
                   <input type="checkbox" checked={showStations} onChange={(event) => setShowStations(event.target.checked)} className="size-4 shrink-0 accent-blue-400" />
                   สถานีตรวจวัด
                 </label>
-                <p className="flex items-center gap-2 font-normal text-white/85"><RadioTower size={16} className="text-blue-400" />ข้อมูลจากฐานข้อมูล</p>
                 <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
                   <input type="checkbox" checked={showShelters} onChange={(event) => setShowShelters(event.target.checked)} className="size-4 shrink-0 accent-green-400" />
                   ศูนย์อพยพ
                 </label>
-                <p className="flex items-center gap-2 font-normal text-white/85"><Hospital size={16} className="text-green-400" />ข้อมูลจากฐานข้อมูล</p>
               </div>
               <div className="mt-3 border-t border-white/20 pt-3 text-[11px] font-bold">
                 <span className="mb-1 block w-8 border-t-2 border-dashed border-[#7de0da]" />

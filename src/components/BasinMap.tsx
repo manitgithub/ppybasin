@@ -2,9 +2,11 @@
 
 import L from "leaflet";
 import { memo, useEffect, useMemo, useState } from "react";
-import { GeoJSON, MapContainer, Marker, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import { CircleMarker, GeoJSON, MapContainer, Marker, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import type { PublicAlert } from "@/components/public/PublicDashboard";
 import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
 import DataSource from "@/components/DataSource";
+import { isBasinMapShelter } from "@/lib/shelter-map";
 import type { FeatureCollection, LineString, MultiPolygon, Polygon as GeoPolygon } from "geojson";
 
 type WaterwayData = {
@@ -67,7 +69,9 @@ function BoundsUpdater({ boundary }: { boundary: BasinBoundary | null }) {
   return null;
 }
 
-function BasinMap({ showWaterways = true, showStations = true, showShelters = true }: { showWaterways?: boolean; showStations?: boolean; showShelters?: boolean }) {
+function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showAlerts = true, alerts = [] }: {
+  showWaterways?: boolean; showStations?: boolean; showShelters?: boolean; showBoundary?: boolean; showAlerts?: boolean; alerts?: PublicAlert[];
+}) {
   const [boundary, setBoundary] = useState<BasinBoundary | null>(null);
   const [boundaryError, setBoundaryError] = useState(false);
   const [waterways, setWaterways] = useState<WaterwayData | null>(null);
@@ -77,13 +81,13 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
 
   useEffect(() => {
     const controller = new AbortController();
-    async function load<T>(url: string, key: string, locate: (record: T) => [number, number] | null, update: (layer: DatabaseLayer<T>) => void) {
+    async function load<T>(url: string, key: string, locate: (record: T) => [number, number] | null, update: (layer: DatabaseLayer<T>) => void, include: (record: T) => boolean = () => true) {
       try {
         const response = await fetch(url, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]), cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
         if (!payload.ok || !Array.isArray(payload[key])) throw new Error("Invalid database response");
-        const records: T[] = payload[key];
+        const records: T[] = payload[key].filter(include);
         const points = records.flatMap((record) => {
           const position = locate(record);
           return position ? [{ record, position }] : [];
@@ -94,7 +98,7 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       }
     }
     void load<SensorDevice>("/api/sensor/devices", "devices", (record) => positionAt(record.latitude, record.longitude), setStations);
-    void load<ShelterRecord>("/api/shelters", "shelters", (record) => positionAt(record.lat, record.lng), setShelters);
+    void load<ShelterRecord>("/api/shelters", "shelters", (record) => positionAt(record.lat, record.lng), setShelters, isBasinMapShelter);
     return () => controller.abort();
   }, []);
 
@@ -168,8 +172,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
       />
 
-      {outsideMask && <GeoJSON data={outsideMask} interactive={false} style={{ stroke: false, fillColor: "#203746", fillOpacity: .35, fillRule: "evenodd" }} />}
-      {boundary && <>
+      {showBoundary && outsideMask && <GeoJSON data={outsideMask} interactive={false} style={{ stroke: false, fillColor: "#203746", fillOpacity: .35, fillRule: "evenodd" }} />}
+      {showBoundary && boundary && <>
         <GeoJSON data={boundary} interactive={false} style={{ color: "#f9fdff", weight: 5, opacity: .8, fill: false }} />
         <GeoJSON data={boundary} interactive={false} style={{ color: "#128b87", weight: 2, dashArray: "6 4", opacity: 1, fillColor: "#128b87", fillOpacity: .06 }} />
       </>}
@@ -201,6 +205,7 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         <Marker key={shelter.id} position={position} icon={shelterIcon} title={`ศูนย์อพยพ ${shelter.name}`}>
           <Popup>
             <strong>{shelter.name}</strong>
+            <p>รหัสศูนย์: {shelter.code}</p>
             <p>สถานะ: {{ open: "เปิดใช้งาน", full: "เต็ม", closed: "ปิด", standby: "เตรียมพร้อม" }[shelter.status] ?? shelter.status}</p>
             <p>ความจุตามทะเบียน: {shelter.capacity.toLocaleString("th-TH")} คน</p>
             <DataSource label="ทะเบียนศูนย์อพยพในฐานข้อมูล" url="/api/shelters" />
@@ -208,6 +213,11 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         </Marker>
       ))}
 
+      {showAlerts && alerts.filter((alert) => Number.isFinite(alert.latitude) && Number.isFinite(alert.longitude) && Math.abs(alert.latitude) <= 90 && Math.abs(alert.longitude) <= 180).map((alert) => (
+        <CircleMarker key={alert.id} center={[alert.latitude, alert.longitude]} radius={12} pathOptions={{ color: alert.severity === "critical" ? "#b82828" : "#ac7415", fillOpacity: 0.3 }}>
+          <Popup><strong>ประกาศที่ยืนยันแล้ว · {alert.title}</strong><p>{alert.areaName}</p><p>{alert.message}</p><DataSource label="ประกาศที่เจ้าหน้าที่อนุมัติ" url="/api/flood-alerts?public=1" /></Popup>
+        </CircleMarker>
+      ))}
       <ZoomControl position="bottomright" />
       <ScaleControl position="bottomleft" imperial={false} />
       <BoundsUpdater boundary={boundary} />

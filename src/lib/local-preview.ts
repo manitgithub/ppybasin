@@ -1,5 +1,6 @@
 export const LOCAL_PREVIEW_USER_ID = "00000000-0000-4000-8000-000000000001";
 export const LOCAL_PREVIEW_LINE_ID = "local-preview";
+export const LOCAL_PREVIEW_COOKIE = "ppybasin_local_preview";
 
 export function isLocalPreviewHost(host: string | null) {
   if (!host) return false;

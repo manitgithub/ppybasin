@@ -1,5 +1,7 @@
 "use client";
 
+import { isBasinMapShelter } from "@/lib/shelter-map";
+
 import { DataSources } from "@/components/DataSource";
 
 import L from "leaflet";
@@ -59,6 +61,7 @@ export default function ShelterOpsView({ data }: ShelterOpsViewProps) {
     () => data.shelters.filter((shelter) => Number.isFinite(shelter.lat) && Number.isFinite(shelter.lng)),
     [data.shelters],
   );
+  const mapShelters = useMemo(() => shelters.filter(isBasinMapShelter), [shelters]);
   const openShelters = shelters.filter((shelter) => shelter.status === "open").length;
   const totalCapacity = shelters.reduce((sum, shelter) => sum + shelter.capacity, 0);
 
@@ -84,8 +87,8 @@ export default function ShelterOpsView({ data }: ShelterOpsViewProps) {
         <div className="h-[610px]">
           <MapContainer center={fallbackCenter} zoom={11} scrollWheelZoom className="z-0">
             <TileLayer attribution="Tiles &copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <BoundsUpdater shelters={shelters} />
-            {shelters.map((shelter) => (
+            <BoundsUpdater shelters={mapShelters} />
+            {mapShelters.map((shelter) => (
               <Marker key={shelter.id} position={[shelter.lat, shelter.lng]} icon={shelterIcon(shelter)}>
                 <Popup>
                   <strong>{shelter.name}</strong>

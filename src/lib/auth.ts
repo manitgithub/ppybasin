@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { cookies, headers } from "next/headers";
 import { getPool } from "@/lib/db";
-import { allowsLocalPreview, LOCAL_PREVIEW_LINE_ID, LOCAL_PREVIEW_USER_ID } from "@/lib/local-preview";
+import { allowsLocalPreview, LOCAL_PREVIEW_COOKIE, LOCAL_PREVIEW_LINE_ID, LOCAL_PREVIEW_USER_ID } from "@/lib/local-preview";
 
 export const SESSION_COOKIE = "ppybasin_session";
 const bypassPermissions = ["dashboard:view", "users:manage", "sensors:manage", "alerts:manage"];
@@ -108,12 +108,24 @@ export function authConfigError() {
 }
 
 export async function getCurrentUser(): Promise<AppUser | null> {
+  const headerStore = await headers();
+  const localPreview = allowsLocalPreview(process.env.NODE_ENV, headerStore.get("host"), headerStore.get("x-forwarded-host"));
+  const previewMode = localPreview ? (await cookies()).get(LOCAL_PREVIEW_COOKIE)?.value : undefined;
+  if (previewMode === "guest") return null;
+  if (previewMode === "logged-in") {
+    const now = new Date().toISOString();
+    return {
+      id: LOCAL_PREVIEW_USER_ID, lineUserId: LOCAL_PREVIEW_LINE_ID,
+      displayName: "ผู้ดูแลทดสอบ (localhost)", pictureUrl: null, email: null,
+      role: "admin", status: "active", permissions: [...bypassPermissions, "reports:create", "reports:manage"],
+      lastLoginAt: now, createdAt: now, updatedAt: now,
+    };
+  }
   if (isAuthBypassEnabled()) {
     return bypassUser();
   }
 
-  const headerStore = await headers();
-  if (allowsLocalPreview(process.env.NODE_ENV, headerStore.get("host"), headerStore.get("x-forwarded-host"))) {
+  if (localPreview) {
     const now = new Date().toISOString();
     return {
       id: LOCAL_PREVIEW_USER_ID, lineUserId: LOCAL_PREVIEW_LINE_ID,
