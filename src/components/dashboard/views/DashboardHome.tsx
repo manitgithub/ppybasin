@@ -5,7 +5,6 @@ import Image from "next/image";
 import DataSource, { type DataSourceInfo } from "@/components/DataSource";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronDown,
   Clock3,
   CloudRain,
   CloudSun,
@@ -17,7 +16,6 @@ import {
   Maximize,
   Megaphone,
   Minimize,
-  RadioTower,
   Siren,
   Users,
   Waves,
@@ -25,9 +23,8 @@ import {
 import type { DashboardPayload } from "@/lib/dashboard-data";
 import type { RainStation, SituationPayload } from "@/lib/situation/adapters";
 
-const BasinMap = dynamic(() => import("@/components/BasinMap"), {
-  ssr: false,
-  loading: () => <MapPlaceholder />,
+const PublicMapDashboard = dynamic(() => import("@/components/public/PublicDashboard"), {
+  ssr: false, loading: () => <MapPlaceholder />,
 });
 
 const weatherDays = ["อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา.", "จ."];
@@ -132,9 +129,6 @@ export default function DashboardHome({
   const mapContainer = useRef<HTMLDivElement>(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [fullscreenError, setFullscreenError] = useState(false);
-  const [showWaterways, setShowWaterways] = useState(true);
-  const [showStations, setShowStations] = useState(true);
-  const [showShelters, setShowShelters] = useState(true);
 
   useEffect(() => {
     const updateFullscreen = () => setMapFullscreen(document.fullscreenElement === mapContainer.current);
@@ -281,44 +275,13 @@ export default function DashboardHome({
           { label: "ทะเบียนศูนย์อพยพในฐานข้อมูล", url: "/api/shelters" },
         ]}>
           <div ref={mapContainer} className="relative h-[calc(100dvh-148px)] min-h-[420px] overflow-hidden rounded-b-[8px] bg-slate-100 [&:fullscreen]:h-dvh [&:fullscreen]:min-h-0 [&:fullscreen]:rounded-none">
-            {mapReady ? <BasinMap showWaterways={showWaterways} showStations={showStations} showShelters={showShelters} /> : <MapPlaceholder />}
-            <button type="button" onClick={() => void toggleMapFullscreen()} className="absolute right-3 top-3 z-10 flex min-h-11 items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-3 text-xs font-bold text-[#20325c] shadow-sm" aria-label={mapFullscreen ? "ออกจากแผนที่เต็มจอ" : "เปิดแผนที่เต็มจอ"}>
+            {mapReady ? <PublicMapDashboard data={data} user={null} embedded /> : <MapPlaceholder />}
+            <button type="button" onClick={() => void toggleMapFullscreen()} className="absolute right-3 top-20 z-[501] flex min-h-11 md:left-1/2 md:right-auto md:top-3 md:-translate-x-1/2 items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-3 text-xs font-bold text-[#20325c] shadow-sm" aria-label={mapFullscreen ? "ออกจากแผนที่เต็มจอ" : "เปิดแผนที่เต็มจอ"}>
               {mapFullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
               {mapFullscreen ? "ออกจากเต็มจอ" : "เต็มจอ"}
             </button>
             {fullscreenError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">เบราว์เซอร์นี้เปิดโหมดเต็มจอไม่ได้</p>}
-            <details open className="absolute left-4 top-4 z-10 max-h-[calc(100%-80px)] w-[160px] overflow-y-auto rounded-[8px] bg-[#102130]/92 p-4 text-white shadow-xl">
-              <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-extrabold">
-                ชั้นข้อมูล
-                <ChevronDown size={15} aria-hidden="true" />
-              </summary>
-              <div className="mt-3">
-              <p className="text-[11px] font-bold">แผนที่ภูมิประเทศ</p>
-              <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
-                <input type="checkbox" checked={showWaterways} onChange={(event) => setShowWaterways(event.target.checked)} className="size-4 accent-sky-400" />
-                เส้นทางน้ำ
-              </label>
-              <div className="space-y-2 text-[11px]">
-                <p className="flex items-center gap-2"><span className="w-5 border-t-[3px] border-[#56b5ff]" />แม่น้ำ / คลอง</p>
-                <p className="flex items-center gap-2"><span className="w-5 border-t-2 border-[#6edaff]" />ทางน้ำย่อย</p>
-              </div>
-              <div className="mt-3 border-t border-white/20 pt-3 text-[11px] font-bold">
-                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
-                  <input type="checkbox" checked={showStations} onChange={(event) => setShowStations(event.target.checked)} className="size-4 shrink-0 accent-blue-400" />
-                  สถานีตรวจวัด
-                </label>
-                <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold">
-                  <input type="checkbox" checked={showShelters} onChange={(event) => setShowShelters(event.target.checked)} className="size-4 shrink-0 accent-green-400" />
-                  ศูนย์อพยพ
-                </label>
-              </div>
-              <div className="mt-3 border-t border-white/20 pt-3 text-[11px] font-bold">
-                <span className="mb-1 block w-8 border-t-2 border-dashed border-[#7de0da]" />
-                ขอบเขตลุ่มน้ำป่าพะยอม
-                <p className="mt-1 font-normal text-white/75">พื้นที่นอกลุ่มน้ำแสดงสีเข้ม</p>
-              </div>
-              </div>
-            </details>
+
           </div>
         </Panel>
       </section>

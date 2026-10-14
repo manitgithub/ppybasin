@@ -24,7 +24,6 @@
 .layer:hover { background: #eaf3f7; }
 .layer input { width: 17px; height: 17px; flex-shrink: 0; accent-color: #17658a; }
 .layer small { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; color: #557183; }
-.swatch { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
 .sources { bottom: 21px; left: 18px; width: min(380px, calc(50% - 28px)); }
 .sources summary { font-size: 12px; }
 .sourceContent { max-height: min(50dvh, 420px); overflow: auto; padding: 0 16px 16px; font-size: 12px; line-height: 1.65; }
@@ -97,3 +96,12 @@
   .withSituation > div[role="status"] { bottom: 320px; max-width: 150px; }
   .withSituation .error { bottom: 280px; }
 }
+
+
+.layerMarker, .layerSymbol { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; }
+.layerMarker > div { box-sizing: border-box; }
+
+.embedded { height: 100%; grid-template-rows: minmax(0, 1fr); }
+.embedded .situation { bottom: 18px; }
+.embedded .map :global(.leaflet-bottom), .embedded .map :global(.leaflet-bottom.leaflet-left) { bottom: 220px; }
+.embedded .map > div[role="status"] { bottom: 245px; }

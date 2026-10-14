@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown, ClipboardList, Home, Layers, LogIn, Navigation, Phone, Plus, Waves } from "lucide-react";
+import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { DataSources } from "@/components/DataSource";
 import PublicSituationSummary from "./PublicSituationSummary";
 import type { SituationPayload } from "@/lib/situation/adapters";
@@ -16,7 +17,8 @@ const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   loading: () => <div className={styles.loading} role="status">กำลังเปิดแผนที่ลุ่มน้ำป่าพะยอม…</div>,
 });
 
-export default function PublicMapHome({ alerts, loading, errors, loginError, navigate, nearby = false, signedIn = false, situation, now, onRefresh }: {
+export default function PublicMapHome({ alerts, loading, errors, loginError, navigate, nearby = false, signedIn = false, situation, now, onRefresh, embedded = false }: {
+  embedded?: boolean;
   situation: SituationPayload | null;
   now: number;
   onRefresh: () => void;
@@ -39,15 +41,15 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
     { id: "boundary", label: "ขอบเขตลุ่มน้ำ", note: "ลุ่มน้ำป่าพะยอม", color: "#128b87" },
   ] as const;
 
-  return <div className={styles.root}>
-    <header className={styles.header}>
+  return <div className={`${styles.root} ${embedded ? styles.embedded : ""}`}>
+    {!embedded && <header className={styles.header}>
       <Link href="/#home" className={styles.brand}><Waves size={28} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link>
       <h1>{nearby ? "ศูนย์อพยพใกล้ฉัน" : "แผนที่ติดตามสถานการณ์"}</h1>
       <div className={styles.actions}>
         <a href="tel:1784" aria-label="โทร ปภ. 1784"><Phone size={17} /><span>1784</span></a>
         <a href={signedIn ? "/api/auth/logout" : "/api/auth/line/start"}><LogIn size={17} />{signedIn ? "ออกจากระบบ" : "เข้าสู่ระบบ"}</a>
       </div>
-    </header>
+    </header>}
     <main className={`${styles.map} ${nearby ? styles.nearby : styles.withSituation}`} aria-label="แผนที่ลุ่มน้ำป่าพะยอม">
       <BasinMap rainStations={localRain(situation, "rain24h")} waterLevels={localStations(situation?.thaiWater.waterLevels ?? [])} showRain={layers.rain} showWaterLevels={layers.waterLevels} now={now} showWaterways={layers.waterways} showStations={layers.stations} nearby={nearby} showShelters={nearby || layers.shelters} showAlerts={layers.alerts} showBoundary={layers.boundary} alerts={alerts} />
       <details className={styles.layers} open={!nearby}>
@@ -55,7 +57,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
         <div className={styles.layerOptions}>
           {layerOptions.map(({ id, label, note, color }) => <label key={id} className={styles.layer}>
             <input type="checkbox" checked={layers[id]} onChange={(event) => setLayers((current) => ({ ...current, [id]: event.target.checked }))} />
-            <span className={styles.swatch} style={{ backgroundColor: color }} aria-hidden="true" />
+            <LayerSymbol id={id} color={color} />
             <span>{label}<small>{note}</small></span>
           </label>)}
         </div>
@@ -77,12 +79,24 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
           <Link href="/privacy">ความเป็นส่วนตัว</Link>
         </div>
       </details>
-      <nav className={styles.nav} aria-label="เมนูหลัก">
+      {!embedded && <nav className={styles.nav} aria-label="เมนูหลัก">
         <button type="button" aria-current={!nearby ? "page" : undefined} onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>
         <button type="button" aria-current={nearby ? "page" : undefined} onClick={() => navigate("nearby")}><Navigation size={19} /><span>ศูนย์ใกล้ฉัน</span></button>
         <button type="button" onClick={() => navigate("report")}><Plus size={20} /><span>แจ้งเหตุ</span></button>
         <button type="button" onClick={() => navigate("mine")}><ClipboardList size={19} /><span>รายงานของฉัน</span></button>
-      </nav>
+      </nav>}
     </main>
   </div>;
+}
+
+function LayerSymbol({ id, color }: { id: string; color: string }) {
+  if (id === "stations" || id === "rain" || id === "shelters") {
+    return <span className={styles.layerMarker} aria-hidden="true" dangerouslySetInnerHTML={{ __html: BASIN_MARKER_HTML[id] }} />;
+  }
+  return <svg className={styles.layerSymbol} viewBox="0 0 32 32" aria-hidden="true">
+    {id === "waterLevels" ? <circle cx="16" cy="16" r="9" stroke={color} strokeWidth="2" fill="#d6d8fa" fillOpacity=".9" />
+      : id === "alerts" ? <circle cx="16" cy="16" r="12" stroke="#ac7415" strokeWidth="3" fill="#ac7415" fillOpacity=".3" />
+      : id === "boundary" ? <rect x="4" y="5" width="24" height="22" rx="3" stroke={color} strokeWidth="2" strokeDasharray="6 4" fill={color} fillOpacity=".06" />
+      : <><path d="M3 26C5 14 25 22 23 11S29 6 29 4" fill="none" stroke="#ffffff" strokeWidth="7" /><path d="M3 26C5 14 25 22 23 11S29 6 29 4" fill="none" stroke="#006bb6" strokeWidth="4" strokeLinecap="round" /></>}
+  </svg>;
 }

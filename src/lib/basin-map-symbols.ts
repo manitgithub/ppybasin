@@ -1,0 +1,6 @@
+// Static markup shared by Leaflet markers and the public layer legend.
+export const BASIN_MARKER_HTML = {
+  stations: '<div style="width:32px;height:32px;border:2px solid white;border-radius:50%;background:#2563eb;box-shadow:0 2px 6px #0005;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="2"/><path d="m12 10-4 11m4-11 4 11M9 17h6M6 3a7 7 0 0 0 0 10M18 3a7 7 0 0 1 0 10"/></svg></div>',
+  rain: '<div style="width:32px;height:32px;border:2px solid #f8fbfc;border-radius:50%;background:#087e96;box-shadow:0 2px 6px #102e4340;display:grid;place-items:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f8fbfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 16.2A4.5 4.5 0 0 0 18 7.7h-1.3a7 7 0 1 0-12.9 6.6"/><path d="M16 14v6M8 14v6M12 16v6"/></svg></div>',
+  shelters: '<div style="width:32px;height:32px;border:2px solid white;border-radius:8px;background:#15803d;box-shadow:0 2px 6px #0005;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true"><path d="m3 10 9-7 9 7v11H3Z"/><path d="M9 21v-7h6v7"/></svg></div>',
+} as const;

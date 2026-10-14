@@ -1,6 +1,7 @@
 "use client";
 
 import L from "leaflet";
+import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { memo, useEffect, useMemo, useState } from "react";
 import { CircleMarker, GeoJSON, MapContainer, Marker, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
 import type { RainStation, WaterLevelStation } from "@/lib/situation/adapters";
@@ -37,12 +38,17 @@ function positionAt(lat: unknown, lng: unknown): [number, number] | null {
 
 const stationIcon = L.divIcon({
   className: "",
-  html: '<div style="width:32px;height:32px;border:2px solid white;border-radius:50%;background:#2563eb;box-shadow:0 2px 6px #0005;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="2"/><path d="m12 10-4 11m4-11 4 11M9 17h6M6 3a7 7 0 0 0 0 10M18 3a7 7 0 0 1 0 10"/></svg></div>',
+  html: BASIN_MARKER_HTML.stations,
+  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+});
+const rainIcon = L.divIcon({
+  className: "basin-rain-marker",
+  html: BASIN_MARKER_HTML.rain,
   iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
 });
 const shelterIcon = L.divIcon({
   className: "",
-  html: '<div style="width:32px;height:32px;border:2px solid white;border-radius:8px;background:#15803d;box-shadow:0 2px 6px #0005;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true"><path d="m3 10 9-7 9 7v11H3Z"/><path d="M9 21v-7h6v7"/></svg></div>',
+  html: BASIN_MARKER_HTML.shelters,
   iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
 });
 
@@ -208,9 +214,9 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       ))}
       {showRain && rainStations.map((station) => {
         const position = positionAt(station.lat, station.lng);
-        return position && <CircleMarker key={`rain-${station.id}`} center={position} radius={8} pathOptions={{ color: "#087e96", fillColor: "#b5e7ef", fillOpacity: .9, weight: 2 }}>
+        return position && <Marker key={`rain-${station.id}`} position={position} icon={rainIcon} title={`ฝนสะสม 24 ชั่วโมง · ${station.name}`}>
           <Popup><strong>ฝนสะสม 24 ชั่วโมง · {station.name}</strong><p>{station.district} · {station.rainfallMm} มม.</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label="ThaiWater / สสน. · ฝน 24 ชั่วโมง" url="https://www.thaiwater.net/" /></Popup>
-        </CircleMarker>;
+        </Marker>;
       })}
       {showWaterLevels && waterLevels.map((station) => {
         const position = positionAt(station.lat, station.lng);
