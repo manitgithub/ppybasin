@@ -1,0 +1,19 @@
+.preview { width: min(330px, calc(100vw - 84px)); color: #193145; line-height: 1.5; }
+.preview h2 { font-size: 14px; font-weight: 700; padding-right: 12px; }
+.preview .location { margin: 6px 0 10px; font-size: 11px; color: #486479; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+.toolbar > div { display: flex; gap: 4px; }
+.toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 6px 9px; border: 1px solid #c8d9e2; border-radius: 4px; background: #f8fbfc; color: #193145; font-size: 11px; cursor: pointer; }
+.toolbar button[aria-pressed="true"] { background: #dcecf4; border-color: #7fa9bd; font-weight: 700; }
+.toolbar button:focus-visible, .original:focus-visible { outline: 3px solid #2486b9; outline-offset: 2px; }
+.image { position: relative; min-height: 100px; background: #edf3f5; border-radius: 4px; overflow: hidden; }
+.image img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; }
+.image > p { margin: 0; padding: 20px 12px; font-size: 12px; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; background: #edf3f5; }
+.preview .note { margin: 8px 0; font-size: 10px; color: #486479; }
+.original { display: inline-flex; align-items: center; min-height: 36px; color: #2167b5; font-size: 11px; text-decoration: underline; text-underline-offset: 2px; }
+
+.panel { position: absolute; z-index: 600; top: 80px; left: 50%; transform: translateX(-50%); width: min(370px, calc(100% - 24px)); max-height: calc(100% - 180px); overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px; border: 1px solid #c8d9e2; border-radius: 8px; background: #f8fbfc; box-shadow: 0 4px 18px #102e4330; }
+.panel .preview { width: 100%; }
+.close { position: sticky; top: 0; float: right; z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; margin: -8px -10px 0 0; border-radius: 4px; background: #f8fbfc; color: #193145; cursor: pointer; }
+.close:focus-visible { outline: 3px solid #2486b9; outline-offset: 2px; }

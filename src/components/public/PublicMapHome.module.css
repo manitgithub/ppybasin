@@ -105,3 +105,31 @@
 .embedded .situation { bottom: 18px; }
 .embedded .map :global(.leaflet-bottom), .embedded .map :global(.leaflet-bottom.leaflet-left) { bottom: 220px; }
 .embedded .map > div[role="status"] { bottom: 245px; }
+
+.radarControls { padding: 0 16px 12px; border-bottom: 1px solid #dce6eb; font-size: 10px; line-height: 1.6; }
+.radarControls > a { display: inline-block; color: #2167b5; text-decoration: underline; text-underline-offset: 2px; margin-bottom: 5px; }
+.radarControls p { margin: 4px 0; }
+.radarControls time { font-weight: 700; }
+.radarControls button { min-height: 36px; cursor: pointer; font-weight: 650; color: #175b7d; }
+.radarControls button:disabled { opacity: .5; cursor: default; }
+.radarControls input[type="range"] { display: block; width: 100%; height: 32px; accent-color: #17658a; cursor: pointer; }
+.radarPlayback { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.radarPlayback button { display: inline-flex; align-items: center; gap: 4px; }
+.radarOpacity { display: block; color: #405f72; }
+.radarControls details summary { min-height: 32px; border: 0; padding: 4px 0; font-size: 10px; }
+.radarWarning { color: #984a24; }
+@media (max-width: 600px) { .radarControls { padding: 0 13px 10px; } }
+
+.radarAnalysis { margin: 6px 0; padding: 7px 0; border-block: 1px solid #dce6eb; color: #193145; }
+.radarAnalysis strong { font-size: 11px; font-weight: 700; }
+.radarAnalysis small { display: block; font-size: 9px; color: #486479; }
+
+@media (min-width: 601px) {
+  /* Keep zoom controls in place while docking map attribution to the bottom edge. */
+  .map :global(.leaflet-control-attribution) { transform: translateY(78px); max-width: 300px; }
+  .withSituation :global(.leaflet-control-attribution) { transform: translateY(280px); }
+  .embedded .map :global(.leaflet-control-attribution) { transform: translateY(220px); }
+}
+
+.cctvLinks { display: grid; padding: 0 16px 10px; gap: 4px; border-bottom: 1px solid #dce6eb; }
+.cctvLinks button { min-height: 36px; padding: 5px 0; text-align: left; color: #2167b5; font-size: 11px; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

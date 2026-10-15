@@ -3,12 +3,14 @@
 import L from "leaflet";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { memo, useEffect, useMemo, useState } from "react";
-import { CircleMarker, GeoJSON, MapContainer, Marker, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import { CircleMarker, GeoJSON, MapContainer, Marker, Pane, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
 import type { RainStation, WaterLevelStation } from "@/lib/situation/adapters";
 import { isRecentObservation, observationLabel } from "@/lib/public-situation";
+import type { RadarOverlay } from "@/lib/rainviewer";
 import type { PublicAlert } from "@/components/public/PublicDashboard";
 import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
 import DataSource from "@/components/DataSource";
+import CctvMapMarkers from "@/components/public/CctvMapMarkers";
 import NearbyShelterRoute from "@/components/public/NearbyShelterRoute";
 import { isBasinMapShelter } from "@/lib/shelter-map";
 import type { FeatureCollection, LineString, MultiPolygon, Polygon as GeoPolygon } from "geojson";
@@ -79,7 +81,10 @@ function BoundsUpdater({ boundary, navigating }: { boundary: BasinBoundary | nul
   return null;
 }
 
-function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showAlerts = true, alerts = [], nearby = false, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0 }: {
+function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showAlerts = true, alerts = [], nearby = false, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0, radar = null, onRadarTileError, showCctv = false, focusedCctv = null }: {
+  focusedCctv?: { code: string; revision: number } | null;
+  showCctv?: boolean;
+  radar?: RadarOverlay | null; onRadarTileError?: (path: string) => void;
   rainStations?: RainStation[]; waterLevels?: WaterLevelStation[]; showRain?: boolean; showWaterLevels?: boolean; now?: number;
   nearby?: boolean; showWaterways?: boolean; showStations?: boolean; showShelters?: boolean; showBoundary?: boolean; showAlerts?: boolean; alerts?: PublicAlert[];
 }) {
@@ -183,6 +188,22 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
       />
 
+      {radar && <Pane name="rainviewer-radar" style={{ zIndex: 350, pointerEvents: "none" }}>
+        <TileLayer
+          key={radar.key}
+          url={radar.url}
+          attribution='Weather data by <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer</a>'
+          opacity={radar.opacity}
+          tileSize={256}
+          maxNativeZoom={7}
+          maxZoom={16}
+          minZoom={0}
+          keepBuffer={0}
+          updateWhenIdle
+          eventHandlers={{ tileerror: () => onRadarTileError?.(radar.path) }}
+        />
+      </Pane>}
+
       {showBoundary && outsideMask && <GeoJSON data={outsideMask} interactive={false} style={{ stroke: false, fillColor: "#203746", fillOpacity: .35, fillRule: "evenodd" }} />}
       {showBoundary && boundary && <>
         <GeoJSON data={boundary} interactive={false} style={{ color: "#f9fdff", weight: 5, opacity: .8, fill: false }} />
@@ -242,6 +263,7 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
           <Popup><strong>ประกาศที่ยืนยันแล้ว · {alert.title}</strong><p>{alert.areaName}</p><p>{alert.message}</p><DataSource label="ประกาศที่เจ้าหน้าที่อนุมัติ" url="/api/flood-alerts?public=1" /></Popup>
         </CircleMarker>
       ))}
+      {showCctv && <CctvMapMarkers focused={focusedCctv} />}
       <ZoomControl position="bottomright" />
       <ScaleControl position="bottomleft" imperial={false} />
       <BoundsUpdater boundary={boundary} navigating={nearby} />
