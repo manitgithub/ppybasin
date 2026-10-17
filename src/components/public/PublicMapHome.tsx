@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Fragment, useCallback, useState } from "react";
 import { GIS_SOURCE_URL, gisLayers, landuseLegend, type GisLayerStatus } from "@/lib/gis-layers";
-import { ChevronDown, ClipboardList, Home, Layers, LogIn, Navigation, Phone, Plus, Sun, Waves } from "lucide-react";
+import { Camera, ChevronDown, ClipboardList, CloudRain, Home, Layers, LogIn, Navigation, Phone, Plus, Sun, Waves } from "lucide-react";
 import { cctvStations } from "@/lib/cctv-stations";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { DataSources } from "@/components/DataSource";
@@ -44,7 +44,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
   const layerOptions = [
     { id: "radar", label: "เรดาร์ฝน · RainViewer", note: "ภาพกลุ่มฝนย้อนหลัง 2 ชั่วโมง", color: "#147ab5" },
     { id: "waterways", label: "เส้นทางน้ำ", note: "แม่น้ำ / คลอง / ทางน้ำย่อย", color: "#1988c6" },
-    { id: "cctv", label: "กล้อง ปภ. / กรมชลประทาน", note: `${cctvStations.length} จุด · กดเลือกเพื่อดูภาพและเวลาต้นทาง`, color: "#475569" },
+    { id: "cctv", label: "กล้อง ปภ. / กรมชลประทาน", note: `${cctvStations.length} จุด · เลือกดูภาพจากแผงดูกล้อง CCTV`, color: "#475569" },
     { id: "stations", label: "สถานีตรวจวัด", note: "กดหมุดเพื่อดูรายละเอียดสถานี", color: "#2563eb" },
     { id: "rain", label: "ฝนสะสม 24 ชั่วโมง", note: "สถานีฝน · ป่าพะยอม / ควนขนุน", color: "#087e96" },
     { id: "waterLevels", label: "ระดับน้ำล่าสุด", note: "ค่าตรวจวัดจาก ThaiWater", color: "#464ba5" },
@@ -72,11 +72,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
             <input type="checkbox" checked={layers[id]} onChange={(event) => setLayers((current) => ({ ...current, [id]: event.target.checked }))} />
             <LayerSymbol id={id} color={color} />
             <span>{label}<small>{note}</small></span>
-          </label>{id === "cctv" && layers.cctv && <div className={styles.cctvLinks}>{cctvStations.map((station) => <button key={station.code} type="button" onClick={(event) => {
-            setFocusedCctv((current) => ({ code: station.code, revision: (current?.revision ?? 0) + 1 }));
-            const panel = event.currentTarget.closest("details");
-            if (panel) panel.open = false;
-          }}>ดู {station.code} · {station.name} ({station.providerLabel})</button>)}</div>}{id === "radar" && layers.radar && <RainViewerControls radar={radar} now={now} />}</Fragment>)}
+          </label></Fragment>)}
           <div className={styles.basinView}><button type="button" onClick={() => {
             setLayers(current => ({ ...current, boundary: true, thanaeBoundary: true }));
             setBoundaryViewRevision(current => current + 1);
@@ -98,6 +94,20 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
       </details>
       {!nearby && <PublicSituationSummary situation={situation} now={now} loading={loading} failed={errors.includes("ข้อมูลตรวจวัด")} onRefresh={onRefresh} />}
       {loginError && <p className={styles.error} role="alert">{loginError}</p>}
+      <div className={styles.mapInfo}>
+        <details className={styles.toolPanel}>
+          <summary><span><Camera size={18} />ดูกล้อง CCTV · {cctvStations.length} จุด</span><ChevronDown size={16} /></summary>
+          <div className={styles.cctvLinks}>{cctvStations.map(station => <button key={station.code} type="button" onClick={event => {
+            setLayers(current => ({ ...current, cctv: true }));
+            setFocusedCctv(current => ({ code: station.code, revision: (current?.revision ?? 0) + 1 }));
+            const panel = event.currentTarget.closest("details");
+            if (panel) panel.open = false;
+          }}>ดู {station.code} · {station.name} ({station.providerLabel})</button>)}</div>
+        </details>
+        {layers.radar && <details className={styles.toolPanel}>
+          <summary><span><CloudRain size={18} />รายละเอียดเรดาร์ฝน</span><ChevronDown size={16} /></summary>
+          <RainViewerControls radar={radar} now={now} />
+        </details>}
       <details className={styles.sources}>
         <summary>แหล่งข้อมูลและข้อควรทราบ <ChevronDown size={14} /></summary>
         <div className={styles.sourceContent}>
@@ -119,6 +129,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
           <Link href="/privacy">ความเป็นส่วนตัว</Link>
         </div>
       </details>
+      </div>
       {!embedded && <nav className={styles.nav} aria-label="เมนูหลัก">
         <button type="button" aria-current={!nearby ? "page" : undefined} onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>
         <button type="button" onClick={() => navigate("drought")}><Sun size={19} /><span>เฝ้าระวังภัยแล้ง</span></button>
