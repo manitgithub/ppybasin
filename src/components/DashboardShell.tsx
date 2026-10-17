@@ -15,6 +15,7 @@ import PublicDashboard from "@/components/public/PublicDashboard";
 import reportStyles from "@/components/public/PublicDashboard.module.css";
 import ReportList from "@/components/public/ReportList";
 import ReportForm from "@/components/public/ReportForm";
+import DroughtMonitor from "@/components/DroughtMonitor";
 
 const ViewLoader = () => (
   <div className="grid min-h-[360px] place-items-center rounded-[8px] border border-slate-200 bg-white text-sm font-extrabold text-slate-500 shadow-sm">
@@ -90,6 +91,10 @@ function DashboardContent({
 
   if (activeView === "sensors") {
     return <SensorDataView />;
+  }
+
+  if (activeView === "drought") {
+    return <DroughtMonitor />;
   }
 
   if (activeView === "sensor-devices") {

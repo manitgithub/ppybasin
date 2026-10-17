@@ -5,6 +5,7 @@ const viewPermissions: Record<ViewId, string[]> = {
   reports: ["reports:manage", "reports:create"],
   dashboard: ["dashboard:view"],
   tracking: ["dashboard:view"],
+  drought: ["dashboard:view"],
   forecast: ["alerts:manage"],
   risk: ["dashboard:view"],
   "evacuation-map": ["dashboard:view"],

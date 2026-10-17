@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Fragment, useState } from "react";
-import { ChevronDown, ClipboardList, Home, Layers, LogIn, Navigation, Phone, Plus, Waves } from "lucide-react";
+import { ChevronDown, ClipboardList, Home, Layers, LogIn, Navigation, Phone, Plus, Sun, Waves } from "lucide-react";
 import { cctvStations } from "@/lib/cctv-stations";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { DataSources } from "@/components/DataSource";
@@ -31,7 +31,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
   loading: boolean;
   errors: string[];
   loginError: string;
-  navigate: (tab: "home" | "map" | "nearby" | "report" | "mine") => void;
+  navigate: (tab: "home" | "map" | "nearby" | "report" | "mine" | "drought") => void;
 }) {
   const [layers, setLayers] = useState({ waterways: true, stations: true, shelters: true, alerts: true, boundary: true, rain: true, waterLevels: true, radar: !nearby, cctv: true });
   const [focusedCctv, setFocusedCctv] = useState<{ code: string; revision: number } | null>(null);
@@ -39,7 +39,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
   const layerOptions = [
     { id: "radar", label: "เรดาร์ฝน · RainViewer", note: "ภาพกลุ่มฝนย้อนหลัง 2 ชั่วโมง", color: "#147ab5" },
     { id: "waterways", label: "เส้นทางน้ำ", note: "แม่น้ำ / คลอง / ทางน้ำย่อย", color: "#1988c6" },
-    { id: "cctv", label: "กล้อง ปภ.", note: "PLG01 / PLG02 · จุดละ 2 มุมกล้อง", color: "#475569" },
+    { id: "cctv", label: "กล้อง ปภ. / กรมชลประทาน", note: `${cctvStations.length} จุด · กดเลือกเพื่อดูภาพและเวลาต้นทาง`, color: "#475569" },
     { id: "stations", label: "สถานีตรวจวัด", note: "กดหมุดเพื่อดูรายละเอียดสถานี", color: "#2563eb" },
     { id: "rain", label: "ฝนสะสม 24 ชั่วโมง", note: "สถานีฝน · ป่าพะยอม / ควนขนุน", color: "#087e96" },
     { id: "waterLevels", label: "ระดับน้ำล่าสุด", note: "ค่าตรวจวัดจาก ThaiWater", color: "#464ba5" },
@@ -70,7 +70,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
             setFocusedCctv((current) => ({ code: station.code, revision: (current?.revision ?? 0) + 1 }));
             const panel = event.currentTarget.closest("details");
             if (panel) panel.open = false;
-          }}>ดู {station.code} · {station.name}</button>)}</div>}{id === "radar" && layers.radar && <RainViewerControls radar={radar} now={now} />}</Fragment>)}
+          }}>ดู {station.code} · {station.name} ({station.providerLabel})</button>)}</div>}{id === "radar" && layers.radar && <RainViewerControls radar={radar} now={now} />}</Fragment>)}
         </div>
       </details>
       {!nearby && <PublicSituationSummary situation={situation} now={now} loading={loading} failed={errors.includes("ข้อมูลตรวจวัด")} onRefresh={onRefresh} />}
@@ -80,8 +80,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
         <div className={styles.sourceContent}>
           <p>ศูนย์อพยพแสดงสถานะตามทะเบียน ควรยืนยันการเปิดและที่ว่างกับเจ้าหน้าที่ก่อนเดินทาง ไม่มีประกาศไม่ได้ยืนยันว่าไม่มีน้ำท่วม</p>
           <DataSources sources={[
-            { label: "ปภ. · กล้อง PLG01 ปตร.ท่าแนะ", url: "https://cctv.disaster.go.th/stations/PLG01" },
-            { label: "ปภ. · กล้อง PLG02 สะพานท่าสำเภา", url: "https://cctv.disaster.go.th/stations/PLG02" },
+            ...cctvStations.map((station) => ({ label: `${station.providerLabel} · กล้อง ${station.code} ${station.name}`, url: station.sourceUrl })),
             { label: "RainViewer · ภาพเรดาร์ฝน", url: "https://www.rainviewer.com/" },
             { label: "Esri · World Topographic Map", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" },
             { label: "เส้นทางน้ำ · OpenStreetMap contributors", url: "/terrain/pa-phayom-waterways.json" },
@@ -95,6 +94,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
       </details>
       {!embedded && <nav className={styles.nav} aria-label="เมนูหลัก">
         <button type="button" aria-current={!nearby ? "page" : undefined} onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>
+        <button type="button" onClick={() => navigate("drought")}><Sun size={19} /><span>เฝ้าระวังภัยแล้ง</span></button>
         <button type="button" aria-current={nearby ? "page" : undefined} onClick={() => navigate("nearby")}><Navigation size={19} /><span>ศูนย์ใกล้ฉัน</span></button>
         <button type="button" onClick={() => navigate("report")}><Plus size={20} /><span>แจ้งเหตุ</span></button>
         <button type="button" onClick={() => navigate("mine")}><ClipboardList size={19} /><span>รายงานของฉัน</span></button>

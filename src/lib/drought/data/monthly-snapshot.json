@@ -1,0 +1,106 @@
+{
+  "status": "partial_snapshot",
+  "generatedAt": "2026-09-20T00:00:00.000Z",
+  "reportMonth": "2026-08",
+  "reportMonthLabel": "สิงหาคม 2569",
+  "source": {
+    "provider": "สำนักงานเศรษฐกิจการเกษตร (สศก.)",
+    "product": "การเตือนภัยแล้งด้วยปัญญาประดิษฐ์ · SPEI รายเดือนระดับอำเภอ",
+    "method": "คำนวณจากฝนและอุณหภูมิรายวัน ERA5-Land แล้วสรุปค่าเฉลี่ยระดับอำเภอ",
+    "catalogUrl": "https://catalog.oae.go.th/en/dataset/ai-drought-warning",
+    "dashboardUrl": "https://app.powerbi.com/view?r=eyJrIjoiZjJmMzM1N2UtZmRiZC00N2MyLWI1ZjgtOWU2YjJkYzg5NWM2IiwidCI6IjI0M2Q1MDVlLWZlZmEtNGQwOC1hNmQ3LTZhOGJlNjcxNTYzMSIsImMiOjEwfQ%3D%3D",
+    "machineReadableEndpoint": null,
+    "message": "บัญชีข้อมูลสาธารณะระบุการปรับปรุงรายเดือน แต่ทรัพยากรที่เผยแพร่ในปัจจุบันเป็น Power BI/HTML และยังไม่พบ CSV หรือ API สำหรับดึงค่าอัตโนมัติ"
+  },
+  "scope": {
+    "name": "พื้นที่ลุ่มน้ำป่าพะยอม",
+    "districts": 3,
+    "tambons": 11,
+    "spatialNote": "ค่า SPEI เป็นค่าเฉลี่ยระดับอำเภอ ตำบลในอำเภอเดียวกันจึงอ้างอิงค่าเดียวกัน และไม่ใช่ค่าเฉพาะขอบเขตตำบล"
+  },
+  "districts": [
+    {
+      "districtCode": "9310",
+      "district": "ป่าพะยอม",
+      "tambons": [
+        "เกาะเต่า",
+        "ลานข่อย",
+        "ป่าพะยอม",
+        "บ้านพร้าว"
+      ],
+      "value": -0.943,
+      "classification": "แล้งน้อย",
+      "recordStatus": "verified",
+      "note": "ตรวจสอบจาก tooltip ของรายงาน สศก. รอบเดือนสิงหาคม 2569"
+    },
+    {
+      "districtCode": "9307",
+      "district": "ศรีบรรพต",
+      "tambons": [
+        "เขาปู่",
+        "เขาย่า"
+      ],
+      "value": null,
+      "classification": null,
+      "recordStatus": "unavailable",
+      "note": "มีพื้นที่ในรายงานต้นทาง แต่ยังไม่มี API/CSV ที่ยืนยันค่าเพื่อแสดงอัตโนมัติ"
+    },
+    {
+      "districtCode": "9305",
+      "district": "ควนขนุน",
+      "tambons": [
+        "แหลมโตนด",
+        "ชะมวง",
+        "ปันแต",
+        "พนางตุง",
+        "ทะเลน้อย"
+      ],
+      "value": null,
+      "classification": null,
+      "recordStatus": "unavailable",
+      "note": "มีพื้นที่ในรายงานต้นทาง แต่ยังไม่มี API/CSV ที่ยืนยันค่าเพื่อแสดงอัตโนมัติ"
+    }
+  ],
+  "thresholds": [
+    {
+      "level": "normal",
+      "label": "ปกติ",
+      "range": "-0.50 < SPEI ≤ 0.50",
+      "action": "ติดตามตามรอบรายเดือน"
+    },
+    {
+      "level": "slight",
+      "label": "แล้งน้อย",
+      "range": "-1.00 < SPEI ≤ -0.50",
+      "action": "ติดตามฝนจริงและน้ำต้นทุน"
+    },
+    {
+      "level": "moderate",
+      "label": "แล้งปานกลาง",
+      "range": "-1.50 < SPEI ≤ -1.00",
+      "action": "เพิ่มความถี่การเฝ้าระวัง"
+    },
+    {
+      "level": "high",
+      "label": "แล้งมาก",
+      "range": "-2.00 < SPEI ≤ -1.50",
+      "action": "เตรียมมาตรการสำรองน้ำ"
+    },
+    {
+      "level": "severe",
+      "label": "แล้งรุนแรง",
+      "range": "SPEI ≤ -2.00",
+      "action": "ยืนยันผลกระทบภาคสนามก่อนยกระดับ"
+    }
+  ],
+  "quality": {
+    "status": "partial",
+    "verifiedDistricts": 1,
+    "expectedDistricts": 3,
+    "warnings": [
+      "ค่าที่แสดงเป็นภาพถ่ายข้อมูลจากรายงาน ไม่ใช่การเชื่อมต่อข้อมูลสด",
+      "ยังไม่ระบุช่วงเวลาสะสมของ SPEI อย่างชัดเจน จึงไม่ตั้งชื่อเป็น SPEI-1, SPEI-3 หรือ SPEI-6",
+      "SPEI ของ สศก. ใช้ติดตามสภาวะแห้งแล้งจากข้อมูลย้อนหลัง/ปัจจุบัน ไม่ใช่ผลพยากรณ์ล่วงหน้า 6 เดือน"
+    ]
+  }
+}

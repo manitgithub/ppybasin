@@ -1,0 +1,84 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+import ts from "typescript";
+
+const json = (name) => JSON.parse(readFileSync(`src/lib/drought/data/${name}.json`, "utf8"));
+const seasonal = json("seasonal-snapshot"), tmd = json("tmd-snapshot"), layout = json("tmd-grid-layout");
+const compile = (path) => ts.transpileModule(readFileSync(path, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+const exports = {};
+vm.runInNewContext(compile("src/lib/drought/parse.ts"), { exports, Intl, Date });
+const { parseCsv, parseSeasonalCsv, parseTmdGrid, tmdCategory } = exports;
+const now = new Date("2026-10-17T08:30:00Z");
+const headers = "TAMBON_IDN,TYPE_E,YEAR,MONTH";
+const rows = seasonal.tambons.flatMap((tambon) => seasonal.months.map((month, index) => `${tambon.id},${tambon.id === seasonal.tambons[0].id && index < 2 ? "drought" : "norisk"},${month.key.slice(0, 4)},${Number(month.key.slice(5))}`));
+const csv = [headers, ...rows].join("\r\n");
+const parse = (text) => parseSeasonalCsv(text, "202610", seasonal, null, now);
+assert.equal(JSON.stringify(parseCsv('\uFEFFa,b\r\n"ไทย,ทดสอบ","a""b"\r\n')), JSON.stringify([["a", "b"], ["ไทย,ทดสอบ", 'a"b']]));
+assert.throws(() => parseCsv('a,b\n"unterminated'));
+const result = parse(csv);
+assert.equal(result.tambons.length, 11);
+assert.equal(result.months.at(-1).key, "2027-03");
+assert.equal(result.summary.atRiskAnyMonth, 1);
+assert.equal(result.summary.atRiskNext3Months, 1);
+assert.equal(result.tambons[0].consecutiveDroughtMonths, 2);
+assert.equal(result.tambons[0].firstDroughtMonth, "2026-10");
+assert.equal(result.summary.alertCounts.red, 0);
+assert.equal(parse(`${csv}\r\n${rows[0]}`).quality.exactDuplicatesRemoved, 1);
+assert.throws(() => parse(`${csv}\r\n${rows[0].replace("drought", "norisk")}`), /ขัดแย้ง/);
+assert.throws(() => parse([headers, ...rows.slice(1)].join("\n")), /ไม่ครบ/);
+assert.throws(() => parse(csv.replace("drought", "unknown")), /ไม่รู้จัก/);
+assert.throws(() => parse(csv.replace("TAMBON_IDN", "changed")), /เปลี่ยนแปลง/);
+assert.throws(() => parse(csv.replace(",2026,10", ",2026,13")), /ไม่ถูกต้อง/);
+assert.throws(() => parseSeasonalCsv(csv, "202611", seasonal, null, now), /ไม่ตรง/);
+const baseline = () => ({ meta: { updated_at: "2026-10-14", analysis_start: "2026-10-13", analysis_end: "2026-10-22" }, grid_data: layout.map(([lat, lon]) => ({ lat, lon, spei: tmd.cells.find((cell) => cell.lat === lat && cell.lon === lon)?.spei ?? 0 })) });
+const parsedTmd = parseTmdGrid(baseline(), tmd, layout);
+assert.equal(parsedTmd.summary.areaWeightedMean, tmd.summary.areaWeightedMean);
+assert.equal(parsedTmd.summary.minimum, tmd.summary.minimum);
+assert.equal(parsedTmd.scope.coveragePercent, 98.35);
+assert.equal(parsedTmd.summary.categoriesPercent.normal, 98.35);
+assert.equal(parsedTmd.scope.noDataPercent, 1.65);
+assert.equal(tmdCategory(-0.5), "normal");
+assert.equal(tmdCategory(-1), "watch");
+assert.equal(tmdCategory(-1.5), "drought");
+assert.equal(tmdCategory(-1.51), "severe");
+const missing = baseline();
+const missingCell = missing.grid_data.find((cell) => cell.lat === tmd.cells[0].lat && cell.lon === tmd.cells[0].lon);
+missingCell.spei = null;
+const missingResult = parseTmdGrid(missing, tmd, layout);
+assert.equal(missingResult.cells.length, 14);
+assert.ok(missingResult.scope.noDataPercent > 1.65);
+assert.ok(missingResult.summary.minimum > 0); // Null never becomes zero.
+const shifted = baseline(); shifted.grid_data[0].lon += 0.001;
+assert.throws(() => parseTmdGrid(shifted, tmd, layout), /ตำแหน่ง/);
+const duplicate = baseline(); duplicate.grid_data.push(duplicate.grid_data[0]);
+assert.throws(() => parseTmdGrid(duplicate, tmd, layout), /ตำแหน่ง/);
+const incomplete = baseline(); incomplete.grid_data.pop();
+assert.throws(() => parseTmdGrid(incomplete, tmd, layout), /ไม่ครบ/);
+const invalid = baseline(); invalid.grid_data[0].spei = "";
+assert.throws(() => parseTmdGrid(invalid, tmd, layout), /ไม่ถูกต้อง/);
+const badDate = baseline(); badDate.meta.analysis_end = "2026-10-01";
+assert.throws(() => parseTmdGrid(badDate, tmd, layout), /ช่วงคาดการณ์/);
+
+// Offline fallback, request coalescing, honest dates, and no invented OAE values.
+const adapters = {};
+let fetches = 0;
+const failingFetch = async () => { fetches++; throw new Error("offline"); };
+const fixedDate = class extends Date { constructor(value) { super(value === undefined ? now : value); } static now() { return now.getTime(); } };
+vm.runInNewContext(compile("src/lib/drought/adapters.ts"), {
+  exports: adapters, require: (name) => name === "./parse" ? exports : name.endsWith(".json") ? json(name.replace("./data/", "").replace(".json", "")) : (() => { throw new Error(name); })(),
+  fetch: failingFetch, AbortSignal, Intl, Date: fixedDate,
+});
+const [fallback, concurrent] = await Promise.all([adapters.getDroughtData(), adapters.getDroughtData()]);
+assert.equal(fetches, 2); // Current HII and TMD; older HII must not replace a newer stored issue.
+assert.equal(fallback, concurrent);
+assert.equal(fallback.seasonal.mode, "snapshot");
+assert.equal(fallback.seasonal.data.source.mode, "fallback");
+assert.equal(fallback.tmd.mode, "snapshot");
+assert.equal(fallback.tmd.data.source.sourceUpdatedAt, "2026-10-14");
+assert.equal(fallback.monthly.mode, "snapshot");
+assert.equal(fallback.monthly.data.reportMonth, "2026-08");
+assert.equal(fallback.monthly.data.districts.filter((district) => district.value === null).length, 2);
+assert.equal(await adapters.getDroughtData(true), fallback);
+assert.equal(fetches, 2);
+console.log("PASS: HII completeness, CSV quoting/BOM, year rollover, unknown/missing/conflicting observations, duplicate removal, TMD reference parity, threshold boundaries, missing coverage, grid changes, invalid dates, offline fallback, request coalescing, cache, and OAE null preservation");

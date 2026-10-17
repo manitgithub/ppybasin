@@ -18,7 +18,9 @@
     "lint": "eslint",
     "db:migrate:reports": "node scripts/run-migration.mjs db/migrations/009_citizen_reports.sql db/migrations/010_report_water_depth.sql db/migrations/011_multiple_report_photos.sql",
     "test:reports": "node scripts/test-citizen-reports.mjs",
-    "test:radar-area": "node scripts/test-radar-area.mjs"
+    "test:radar-area": "node scripts/test-radar-area.mjs",
+    "test:drought": "node scripts/test-drought.mjs",
+    "test:cctv": "node scripts/test-cctv.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

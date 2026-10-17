@@ -9,6 +9,7 @@ import {
   Map,
   RadioTower,
   Settings,
+  Sun,
   Users,
 } from "lucide-react";
 import type { NavItem } from "@/components/dashboard/types";
@@ -17,6 +18,7 @@ export const navItems: NavItem[] = [
   { id: "dashboard", label: "หน้าหลัก", icon: Home },
   { id: "reports", label: "รายงานและขอความช่วยเหลือ", icon: ClipboardList },
   { id: "tracking", label: "ติดตามสถานการณ์", icon: Activity },
+  { id: "drought", label: "เฝ้าระวังภัยแล้ง", icon: Sun },
   { id: "forecast", label: "คาดการณ์และแจ้งเตือน", icon: AlertTriangle },
   { id: "evacuation-map", label: "แผนที่และเส้นทางอพยพ", icon: Map },
   { id: "shelters", label: "ศูนย์อพยพ", icon: Hospital },

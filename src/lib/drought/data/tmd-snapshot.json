@@ -1,0 +1,163 @@
+{
+  "status": "verified_official_grid",
+  "verifiedAt": "2026-10-15T01:07:00.000Z",
+  "source": {
+    "provider": "กรมอุตุนิยมวิทยา · กองอุตุนิยมวิทยาเกษตร",
+    "product": "ระบบการคาดหมายอุตุนิยมวิทยาเพื่อการเกษตร (10 วันข้างหน้า) · SPEI",
+    "dashboardUrl": "https://www.arcims.tmd.go.th/dashboard/10days/",
+    "dataUrl": "http://www.arcims.tmd.go.th/dashboard/10days/web_data/dashboard_data.json",
+    "manualUrl": "http://www.arcims.tmd.go.th/DailyDATA/IndexManual/SPEIMAI.pdf",
+    "sourceUpdatedAt": "2026-10-14",
+    "gridResolution": "9 × 9 กม."
+  },
+  "forecast": {
+    "validStart": "2026-10-13",
+    "validEnd": "2026-10-22",
+    "validLabel": "13–22 ตุลาคม 2569",
+    "lead": "กรอบคาดการณ์ 10 วัน (valid window เดียว)",
+    "accumulation": "ช่วงผลิตภัณฑ์ 10 วัน; ต้นทางไม่ระบุเป็น SPEI-1, SPEI-3, SPEI-6 หรือ SPEI-12",
+    "limitation": "ไฟล์ทางการเผยแพร่ผลรวมหนึ่งค่าต่อกริดสำหรับทั้งช่วง จึงไม่มีค่าแยก lead day 1–10"
+  },
+  "scope": {
+    "name": "ลุ่มน้ำย่อยคลองป่าพะยอม (ทะเลน้อย)",
+    "boundarySource": "ชั้นขอบเขตลุ่มน้ำเดิมของระบบ",
+    "intersectingCells": 15,
+    "representedAreaKm2": 350.9,
+    "coveragePercent": 98.35,
+    "noDataPercent": 1.65,
+    "method": "สร้างขอบเขตเซลล์จากจุดศูนย์กลางกริดทางการ แล้วถ่วงน้ำหนักตามพื้นที่ตัดกันใน UTM 47N"
+  },
+  "summary": {
+    "areaWeightedMean": 2.56,
+    "minimum": 1.7,
+    "maximum": 3.1,
+    "categoriesPercent": {
+      "normal": 98.35,
+      "watch": 0,
+      "drought": 0,
+      "severe": 0
+    }
+  },
+  "thresholds": [
+    {
+      "category": "normal",
+      "label": "ปกติ",
+      "range": "SPEI ≥ −0.50"
+    },
+    {
+      "category": "watch",
+      "label": "เฝ้าระวัง",
+      "range": "−1.00 ≤ SPEI < −0.50"
+    },
+    {
+      "category": "drought",
+      "label": "ภัยแล้ง",
+      "range": "−1.50 ≤ SPEI < −1.00"
+    },
+    {
+      "category": "severe",
+      "label": "รุนแรง",
+      "range": "SPEI < −1.50"
+    }
+  ],
+  "cells": [
+    {
+      "lat": 7.728454,
+      "lon": 99.77597,
+      "spei": 2.9,
+      "overlapKm2": 0.55
+    },
+    {
+      "lat": 7.728454,
+      "lon": 99.8591,
+      "spei": 2.9,
+      "overlapKm2": 20.51
+    },
+    {
+      "lat": 7.728454,
+      "lon": 99.942245,
+      "spei": 3.1,
+      "overlapKm2": 1.37
+    },
+    {
+      "lat": 7.728454,
+      "lon": 100.10852,
+      "spei": 2.4,
+      "overlapKm2": 2.22
+    },
+    {
+      "lat": 7.728454,
+      "lon": 100.19165,
+      "spei": 1.8,
+      "overlapKm2": 6.57
+    },
+    {
+      "lat": 7.810814,
+      "lon": 99.77597,
+      "spei": 2.6,
+      "overlapKm2": 12.63
+    },
+    {
+      "lat": 7.810814,
+      "lon": 99.8591,
+      "spei": 3.1,
+      "overlapKm2": 63.35
+    },
+    {
+      "lat": 7.810814,
+      "lon": 99.942245,
+      "spei": 2.9,
+      "overlapKm2": 70.52
+    },
+    {
+      "lat": 7.810814,
+      "lon": 100.02538,
+      "spei": 2.6,
+      "overlapKm2": 55.95
+    },
+    {
+      "lat": 7.810814,
+      "lon": 100.10852,
+      "spei": 1.8,
+      "overlapKm2": 65.34
+    },
+    {
+      "lat": 7.810814,
+      "lon": 100.19165,
+      "spei": 2.5,
+      "overlapKm2": 27.77
+    },
+    {
+      "lat": 7.893181,
+      "lon": 99.942245,
+      "spei": 2.7,
+      "overlapKm2": 6.67
+    },
+    {
+      "lat": 7.893181,
+      "lon": 100.02538,
+      "spei": 2.3,
+      "overlapKm2": 0.71
+    },
+    {
+      "lat": 7.893181,
+      "lon": 100.10852,
+      "spei": 2,
+      "overlapKm2": 9.89
+    },
+    {
+      "lat": 7.893181,
+      "lon": 100.19165,
+      "spei": 1.7,
+      "overlapKm2": 6.85
+    }
+  ],
+  "quality": {
+    "status": "verified_with_gap",
+    "warnings": [
+      "พื้นที่ 1.65% ของขอบเขตลุ่มน้ำอยู่นอกความครอบคลุมของเซลล์ในไฟล์ทางการ จึงแสดงเป็นไม่มีข้อมูลและไม่นำไปประมาณค่า",
+      "ค่าเฉลี่ยคำนวณเฉพาะพื้นที่ที่มีข้อมูล 98.35%; ร้อยละระดับความรุนแรงใช้ฐานพื้นที่ลุ่มน้ำทั้งหมดและจึงรวมกันได้ 98.35%",
+      "ต้นทางระบุกรอบคาดการณ์ 10 วัน แต่ไม่เผยแพร่ค่า SPEI แยกรายวันหรือชื่อช่วงสะสมแบบ SPEI-n รายเดือน"
+    ]
+  }
+}

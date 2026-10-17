@@ -6,6 +6,7 @@ export type ViewId =
   | "dashboard"
   | "tracking"
   | "forecast"
+  | "drought"
   | "risk"
   | "evacuation-map"
   | "shelters"

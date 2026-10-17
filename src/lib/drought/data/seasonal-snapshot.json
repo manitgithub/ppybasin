@@ -1,0 +1,510 @@
+{
+  "generatedAt": "2026-10-17T08:25:30.175Z",
+  "source": {
+    "provider": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน) — สสน.",
+    "datasetUrl": "https://data.hii.or.th/dataset/0af4991c-f8b5-4681-b33f-e2e92c9fd09a",
+    "fileUrl": "https://live1.hii.or.th/product/latest/forecast/drought/202610droughtForecast_6month.csv",
+    "issue": "202610",
+    "issueLabel": "ต.ค. 2569",
+    "lastModified": "2026-10-01T09:08:24.000Z",
+    "mode": "live",
+    "fallbackReason": null
+  },
+  "quality": {
+    "status": "valid",
+    "expectedRecords": 66,
+    "records": 66,
+    "expectedTambons": 11,
+    "tambons": 11,
+    "expectedMonths": 6,
+    "months": 6,
+    "exactDuplicatesRemoved": 0,
+    "conflictingDuplicates": 0,
+    "freshnessDays": 15,
+    "stale": false,
+    "warnings": []
+  },
+  "months": [
+    {
+      "key": "2026-10",
+      "label": "ต.ค. 2569",
+      "shortLabel": "ต.ค. 69"
+    },
+    {
+      "key": "2026-11",
+      "label": "พ.ย. 2569",
+      "shortLabel": "พ.ย. 69"
+    },
+    {
+      "key": "2026-12",
+      "label": "ธ.ค. 2569",
+      "shortLabel": "ธ.ค. 69"
+    },
+    {
+      "key": "2027-01",
+      "label": "ม.ค. 2570",
+      "shortLabel": "ม.ค. 70"
+    },
+    {
+      "key": "2027-02",
+      "label": "ก.พ. 2570",
+      "shortLabel": "ก.พ. 70"
+    },
+    {
+      "key": "2027-03",
+      "label": "มี.ค. 2570",
+      "shortLabel": "มี.ค. 70"
+    }
+  ],
+  "tambons": [
+    {
+      "id": "930702",
+      "name": "เขาปู่",
+      "district": "ศรีบรรพต",
+      "zone": "ต้นน้ำ",
+      "watchlist": true,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "930701",
+      "name": "เขาย่า",
+      "district": "ศรีบรรพต",
+      "zone": "ต้นน้ำ",
+      "watchlist": true,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "931003",
+      "name": "เกาะเต่า",
+      "district": "ป่าพะยอม",
+      "zone": "ต้นน้ำ",
+      "watchlist": true,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "931002",
+      "name": "ลานข่อย",
+      "district": "ป่าพะยอม",
+      "zone": "ต้นน้ำ",
+      "watchlist": true,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "931001",
+      "name": "ป่าพะยอม",
+      "district": "ป่าพะยอม",
+      "zone": "กลางน้ำ",
+      "watchlist": false,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "931004",
+      "name": "บ้านพร้าว",
+      "district": "ป่าพะยอม",
+      "zone": "กลางน้ำ",
+      "watchlist": true,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "930506",
+      "name": "แหลมโตนด",
+      "district": "ควนขนุน",
+      "zone": "กลางน้ำ",
+      "watchlist": false,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "930513",
+      "name": "ชะมวง",
+      "district": "ควนขนุน",
+      "zone": "กลางน้ำ",
+      "watchlist": false,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "930508",
+      "name": "ปันแต",
+      "district": "ควนขนุน",
+      "zone": "กลางน้ำ",
+      "watchlist": false,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "930512",
+      "name": "พนางตุง",
+      "district": "ควนขนุน",
+      "zone": "ปลายน้ำ",
+      "watchlist": false,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    },
+    {
+      "id": "930502",
+      "name": "ทะเลน้อย",
+      "district": "ควนขนุน",
+      "zone": "ปลายน้ำ",
+      "watchlist": false,
+      "alertLevel": "green",
+      "firstDroughtMonth": null,
+      "consecutiveDroughtMonths": 0,
+      "forecast": [
+        {
+          "month": "2026-10",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-11",
+          "status": "norisk"
+        },
+        {
+          "month": "2026-12",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-01",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-02",
+          "status": "norisk"
+        },
+        {
+          "month": "2027-03",
+          "status": "norisk"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalTambons": 11,
+    "atRiskAnyMonth": 0,
+    "atRiskNext3Months": 0,
+    "watchlistTambons": 5,
+    "alertCounts": {
+      "green": 11,
+      "yellow": 0,
+      "orange": 0,
+      "red": 0
+    },
+    "monthlyCounts": [
+      {
+        "month": "2026-10",
+        "drought": 0,
+        "norisk": 11
+      },
+      {
+        "month": "2026-11",
+        "drought": 0,
+        "norisk": 11
+      },
+      {
+        "month": "2026-12",
+        "drought": 0,
+        "norisk": 11
+      },
+      {
+        "month": "2027-01",
+        "drought": 0,
+        "norisk": 11
+      },
+      {
+        "month": "2027-02",
+        "drought": 0,
+        "norisk": 11
+      },
+      {
+        "month": "2027-03",
+        "drought": 0,
+        "norisk": 11
+      }
+    ]
+  },
+  "comparison": {
+    "available": false,
+    "previousIssue": null,
+    "overlapMonths": 0,
+    "changedCells": 0,
+    "newlyAtRisk": 0,
+    "resolved": 0,
+    "note": "ยังไม่มีฉบับก่อนหน้าที่ผ่านการตรวจสอบสำหรับรอบข้อมูลนี้"
+  }
+}

@@ -41,7 +41,7 @@ function CctvMarker({ station, focused, open, onOpen, onClose }: {
   }, [open, onClose]);
   const surface = map.getContainer().parentElement;
   return <>
-    <Marker ref={marker} position={[station.lat, station.lng]} icon={cameraIcon} title={`กล้อง ปภ. ${station.code} · ${station.name}`}
+    <Marker ref={marker} position={[station.lat, station.lng]} icon={cameraIcon} title={`กล้อง ${station.providerLabel} ${station.code} · ${station.name}`}
       eventHandlers={{ click: () => onOpen(station.code) }} />
     {open && surface && createPortal(<aside className={styles.panel} role="dialog" aria-label={`ดูกล้อง ${station.code}`}>
       <button ref={closeButton} className={styles.close} type="button" aria-label="ปิดภาพกล้อง" onClick={onClose}><X size={18} /></button>
@@ -56,7 +56,20 @@ function CctvPreview({ station }: { station: CctvStation }) {
   const [version, setVersion] = useState(0);
   const [loaded, setLoaded] = useState("");
   const [failed, setFailed] = useState("");
+  const [status, setStatus] = useState<{ key: string; observedAt: string; checkedAt: string } | null>(null);
   const imageKey = `${camera}:${version}`;
+  useEffect(() => {
+    if (station.provider !== "rid") return;
+    const controller = new AbortController();
+    fetch(`/api/cctv/${camera}/status`, { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        const value: { observedAt: string; checkedAt: string } = await response.json();
+        if (!Number.isFinite(Date.parse(value.observedAt)) || !Number.isFinite(Date.parse(value.checkedAt))) throw new Error();
+        if (!controller.signal.aborted) setStatus({ key: imageKey, ...value });
+      }).catch(() => { if (!controller.signal.aborted) setStatus(null); });
+    return () => controller.abort();
+  }, [station.provider, camera, imageKey]);
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") setVersion((value) => value + 1);
@@ -65,7 +78,7 @@ function CctvPreview({ station }: { station: CctvStation }) {
   }, []);
   return <section className={styles.preview} aria-label={`ภาพกล้อง ${station.code}`}>
     <h2>{station.code} · {station.name}</h2>
-    <p className={styles.location}>{station.location}<br />{station.waterway}</p>
+    <p className={styles.location}>{station.providerLabel} · {station.location}<br />{station.waterway}</p>
     <div className={styles.toolbar}>
       <div aria-label="เลือกมุมกล้อง">{station.cameras.map((name, index) => <button key={name} type="button" aria-pressed={camera === name} onClick={() => setCamera(name)}>กล้อง {index + 1}</button>)}</div>
       <button type="button" aria-label={`อัปเดตภาพ ${station.code}`} onClick={() => setVersion((value) => value + 1)}><RefreshCw size={14} />อัปเดต</button>
@@ -74,10 +87,14 @@ function CctvPreview({ station }: { station: CctvStation }) {
       {/* eslint-disable-next-line @next/next/no-img-element -- Preserve public snapshot refresh and explicit image errors. */}
       <img key={imageKey} src={`/api/cctv/${camera}/image?v=${version}`} alt={`ภาพนิ่งจากกล้อง ${camera} · ${station.name}`} width={1280} height={720}
         onLoad={() => setLoaded(imageKey)} onError={() => setFailed(imageKey)} hidden={failed === imageKey} />
-      {failed === imageKey ? <p role="status">โหลดภาพไม่ได้ ลองอัปเดตหรือเปิดเว็บ ปภ.</p> : loaded !== imageKey && <p className={styles.loading} role="status">กำลังโหลดภาพ…</p>}
+      {failed === imageKey ? <p role="status">โหลดภาพไม่ได้ ลองอัปเดตหรือเปิดเว็บ{station.providerLabel}</p> : loaded !== imageKey && <p className={styles.loading} role="status">กำลังโหลดภาพ…</p>}
     </div>
+    {station.provider === "rid" && <p className={styles.timestamp} role="status">{status?.key === imageKey ? <>
+      เวลาภาพที่ต้นทางรายงาน: <time dateTime={status.observedAt}>{new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date(status.observedAt))}</time>
+      {Date.parse(status.checkedAt) - Date.parse(status.observedAt) > 3_600_000 && <strong>ภาพต้นทางเก่ากว่า 1 ชั่วโมง โปรดตรวจสอบก่อนใช้งาน</strong>}
+    </> : "ยังไม่ทราบเวลาภาพจากต้นทาง กรุณาตรวจเวลาที่ประทับบนภาพ"}</p>}
     <p className={styles.note}>ภาพนิ่ง · ตรวจภาพทุก 1 นาทีขณะเปิดดู<br />ตรวจเวลาที่ประทับบนภาพ ภาพอาจล่าช้าจากต้นทาง</p>
-    <DataSource label={`กรมป้องกันและบรรเทาสาธารณภัย · ${station.code}`} url={station.sourceUrl} />
-    <a className={styles.original} href={station.sourceUrl} target="_blank" rel="noopener noreferrer">เปิดกล้องบนเว็บ ปภ.</a>
+    <DataSource label={`${station.providerLabel} · ${station.code}`} url={station.sourceUrl} />
+    <a className={styles.original} href={station.sourceUrl} target="_blank" rel="noopener noreferrer">เปิดเว็บ{station.providerLabel}{station.provider === "rid" ? ` · ค้นหา ${station.code}` : ""}</a>
   </section>;
 }

@@ -5,20 +5,21 @@ import { DataSources } from "@/components/DataSource";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ClipboardList, Home, Navigation, Phone, Plus, ShieldCheck, Waves } from "lucide-react";
+import { ClipboardList, Home, Navigation, Phone, Plus, ShieldCheck, Sun, Waves } from "lucide-react";
 import type { AppUser } from "@/lib/auth";
 import type { DashboardPayload } from "@/lib/dashboard-data";
 import type { SituationPayload } from "@/lib/situation/adapters";
 import ReportForm from "@/components/public/ReportForm";
 import ReportList from "@/components/public/ReportList";
 import PublicMapHome from "@/components/public/PublicMapHome";
+import DroughtMonitor from "@/components/DroughtMonitor";
 
 const SituationMap = dynamic(() => import("@/components/public/SituationMap"), { ssr: false, loading: () => <div className="citizen-map-loading">กำลังเปิดแผนที่…</div> });
 
-type Tab = "home" | "map" | "nearby" | "report" | "mine";
+type Tab = "home" | "map" | "nearby" | "report" | "mine" | "drought";
 export type PublicAlert = { id: string; title: string; areaName: string; message: string; severity: string; latitude: number; longitude: number; approvedAt: string };
-const tabs = [{ id: "home", label: "หน้าหลัก", icon: Home }, { id: "nearby", label: "ศูนย์ใกล้ฉัน", icon: Navigation }, { id: "report", label: "แจ้งเหตุ", icon: Plus }, { id: "mine", label: "รายงานของฉัน", icon: ClipboardList }] as const;
-const titles = { home: "ติดตามสถานการณ์ป่าพะยอม", map: "แผนที่สถานการณ์และศูนย์อพยพ", report: "แจ้งเหตุและขอความช่วยเหลือ", mine: "ติดตามรายงานของคุณ", nearby: "ศูนย์อพยพใกล้ฉัน" };
+const tabs = [{ id: "home", label: "หน้าหลัก", icon: Home }, { id: "drought", label: "เฝ้าระวังภัยแล้ง", icon: Sun }, { id: "nearby", label: "ศูนย์ใกล้ฉัน", icon: Navigation }, { id: "report", label: "แจ้งเหตุ", icon: Plus }, { id: "mine", label: "รายงานของฉัน", icon: ClipboardList }] as const;
+const titles = { drought: "เฝ้าระวังภัยแล้ง", home: "ติดตามสถานการณ์ป่าพะยอม", map: "แผนที่สถานการณ์และศูนย์อพยพ", report: "แจ้งเหตุและขอความช่วยเหลือ", mine: "ติดตามรายงานของคุณ", nearby: "ศูนย์อพยพใกล้ฉัน" };
 
 export default function PublicDashboard({ data, user, embedded = false }: { data: DashboardPayload; user: AppUser | null; embedded?: boolean }) {
   const [dashboard, setDashboard] = useState(data);
@@ -34,7 +35,7 @@ export default function PublicDashboard({ data, user, embedded = false }: { data
     if (embedded) return;
     const readTab = () => {
       const value = window.location.hash.slice(1);
-      if (["home", "map", "nearby", "report", "mine"].includes(value)) setTab(value as Tab);
+      if (["home", "map", "nearby", "report", "mine", "drought"].includes(value)) setTab(value as Tab);
     };
     const timer = setTimeout(() => {
       readTab();
@@ -70,19 +71,20 @@ export default function PublicDashboard({ data, user, embedded = false }: { data
   const confirmedShelters = dashboard.source === "database" ? dashboard.shelters.filter((s) => s.status === "open" && s.updatedAt && now - Date.parse(s.updatedAt) <= 6 * 3600000 && Date.parse(s.updatedAt) <= now) : [];
   const waters = situation?.thaiWater.waterLevels ?? [];
   if (embedded || tab === "home" || tab === "nearby") return <PublicMapHome embedded={embedded} nearby={tab === "nearby"} signedIn={!!user} situation={situation} now={now} onRefresh={() => setRefresh((value) => value + 1)} alerts={alerts} loading={loading} errors={errors} loginError={loginError} navigate={navigate} />;
-  return <div className={`citizen-app ${styles.root} ${tab === "report" ? styles.fullscreen : ""}`}>
+  return <div className={`citizen-app ${styles.root} ${tab === "report" ? styles.fullscreen : ""} ${tab === "drought" ? styles.drought : ""}`}>
     <header className="citizen-header"><Link href="/" className="citizen-brand"><Waves size={29} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link><div className="citizen-header-actions"><a href="tel:1784" className="hotline"><Phone size={16} />1784</a>{user ? <a href="/api/auth/logout">ออกจากระบบ</a> : <a href="/api/auth/line/start">เข้าสู่ระบบ</a>}</div></header>
     <div className="citizen-container">
       <div className="citizen-topline"><span><ShieldCheck size={15} />ผู้ติดตามสถานการณ์{user ? ` · ${user.displayName}` : " ·"}</span><span>ลุ่มน้ำป่าพะยอม / พัทลุง</span></div>
       <nav className="citizen-desktop-nav" aria-label="เมนูหลัก">{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => navigate(id)} aria-current={tab === id ? "page" : undefined} className={tab === id ? "active" : ""}><Icon size={18} />{label}</button>)}</nav>
       <main id="citizen-main">
         {loginError && <p className="citizen-error" role="alert">{loginError}</p>}
-        <div className="citizen-page-heading"><div><p className="citizen-eyebrow">PA PHAYOM · FLOOD WATCH</p><h1>{titles[tab]}</h1><p>{tab === "report" ? "ระบุสิ่งที่พบ เพื่อให้เจ้าหน้าที่ตรวจสอบและประสานงาน" : "ข้อมูลสำหรับติดตามและประสานงานในพื้นที่"}</p></div></div>
+        {tab !== "drought" && <div className="citizen-page-heading"><div><p className="citizen-eyebrow">PA PHAYOM · FLOOD WATCH</p><h1>{titles[tab]}</h1><p>{tab === "report" ? "ระบุสิ่งที่พบ เพื่อให้เจ้าหน้าที่ตรวจสอบและประสานงาน" : "ข้อมูลสำหรับติดตามและประสานงานในพื้นที่"}</p></div></div>}
         {tab === "map" && <section className="citizen-map-section"><p className="citizen-data-note">แสดงสถานีที่มีพิกัด ประกาศที่อนุมัติแล้ว และศูนย์ที่ยืนยันเปิดภายใน 6 ชั่วโมง เส้นทางเข้าถึงต้องตรวจสอบกับเจ้าหน้าที่พื้นที่</p><SituationMap waters={waters} alerts={alerts} shelters={confirmedShelters} /><DataSources sources={[
             { label: "ThaiWater / สสน. · สถานีระดับน้ำ", url: situation?.sources.find((source) => source.id === "thaiwater-waterlevel")?.url ?? "https://api-v3.thaiwater.net/api/v1/thaiwater30/provinces/waterlevel?province_code=93" },
             { label: "ประกาศที่เจ้าหน้าที่ตรวจสอบและอนุมัติในระบบ", url: "/api/flood-alerts?public=1" },
             { label: dashboard.source === "database" ? "ทะเบียนศูนย์อพยพในระบบ" : "ข้อมูลศูนย์อพยพสำรอง / ตัวอย่างในระบบ", url: "/api/dashboard" },
           ]} /><div className="citizen-map-legend"><span>● สถานีระดับน้ำ</span><span>△ ประกาศเฝ้าระวัง / เตือนภัย</span><span>＋ ศูนย์อพยพยืนยันเปิดล่าสุด</span></div>{!confirmedShelters.length && <p>ยังไม่มีศูนย์ที่ยืนยันเปิดล่าสุด ติดต่อเจ้าหน้าที่พื้นที่หรือ ปภ. 1784</p>}{confirmedShelters.map((s) => <article className="citizen-shelter" key={s.id}><b>{s.name}</b><span>ความจุตามทะเบียน {s.capacity} คน · ยังไม่ใช่จำนวนที่ว่าง</span><small>ยืนยัน {new Date(s.updatedAt!).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</small></article>)}</section>}
+        {tab === "drought" && <DroughtMonitor />}
         {tab === "report" && <ReportForm user={user} />}
         {tab === "mine" && <ReportList user={user} />}
       </main>
