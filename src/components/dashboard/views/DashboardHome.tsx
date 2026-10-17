@@ -62,6 +62,8 @@ const rainSource = {
   url: "https://api-v3.thaiwater.net/api/v1/thaiwater30/provinces/rain24?include_zero=1&province_code=93",
 };
 const exampleSource = { label: "ข้อมูลตัวอย่างในระบบ · ยังไม่ได้เชื่อมต่อแหล่งข้อมูลจริง" };
+// Temporarily hidden until the station readings can be presented clearly.
+const showImportantWaterLevels = false;
 
 function formatNumber(value: number | null | undefined, digits = 2) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "-";
@@ -328,8 +330,8 @@ export default function DashboardHome({
         </Panel>
         </div>
 
-        <div className="min-w-0 space-y-3 xl:col-span-2 xl:grid xl:grid-cols-2 xl:gap-3 xl:space-y-0">
-        <Panel title="ระดับน้ำในลำน้ำสำคัญ" sources={[currentWaterSource]}>
+        <div className={`min-w-0 space-y-3 xl:col-span-2 ${showImportantWaterLevels ? "xl:grid xl:grid-cols-2 xl:gap-3 xl:space-y-0" : ""}`}>
+        {showImportantWaterLevels && <Panel title="ระดับน้ำในลำน้ำสำคัญ" sources={[currentWaterSource]}>
             <div className="p-3">
               <div className="mb-1 flex flex-wrap justify-end gap-2 text-[10px] font-bold text-slate-500">
                 <span className="text-teal-600">● ปกติ</span>
@@ -368,7 +370,7 @@ export default function DashboardHome({
                 </div>
               )}
             </div>
-        </Panel>
+        </Panel>}
 
         <Panel title="พยากรณ์อากาศ" sources={!situation ? [{ label: "กรมอุตุนิยมวิทยา · ภาคใต้ฝั่งตะวันออก", url: tmdForecastUrl }] : undefined}>
             <div className="p-3">
