@@ -14,7 +14,8 @@ export function parseRidCameraTime(raw: string, code: string, now = Date.now()):
   const station: unknown = JSON.parse(envelope.message);
   if (!isRecord(station) || station.code !== code || !isRecord(station.values) || !isRecord(station.values.cctv)) return null;
   const camera = station.values.cctv["1"];
-  if (!isRecord(camera) || camera.path !== `/1/SKA-${code}/image.jpg` || typeof camera.unixtime !== "number") return null;
+  const source = publicCctvCamera(`${code}-01`);
+  if (!source || source.station.provider !== "rid" || !isRecord(camera) || camera.path !== source.station.ridCameraPath || typeof camera.unixtime !== "number") return null;
   const timestamp = camera.unixtime * 1000;
   if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp > now + 300_000) return null;
   return new Date(timestamp).toISOString();

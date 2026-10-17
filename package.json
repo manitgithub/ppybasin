@@ -20,13 +20,15 @@
     "test:reports": "node scripts/test-citizen-reports.mjs",
     "test:radar-area": "node scripts/test-radar-area.mjs",
     "test:drought": "node scripts/test-drought.mjs",
-    "test:cctv": "node scripts/test-cctv.mjs"
+    "test:cctv": "node scripts/test-cctv.mjs",
+    "test:basin-boundaries": "node scripts/test-basin-boundaries.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "pg": "^8.22.0",
+    "polygon-clipping": "^0.15.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",

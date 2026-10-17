@@ -11,9 +11,12 @@ import type { PublicAlert } from "@/components/public/PublicDashboard";
 import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
 import DataSource from "@/components/DataSource";
 import CctvMapMarkers from "@/components/public/CctvMapMarkers";
+import GisMapLayers from "@/components/public/GisMapLayers";
+import type { GisLayerStatus } from "@/lib/gis-layers";
 import NearbyShelterRoute from "@/components/public/NearbyShelterRoute";
 import { isBasinMapShelter } from "@/lib/shelter-map";
-import type { FeatureCollection, LineString, MultiPolygon, Polygon as GeoPolygon } from "geojson";
+import { basinOutsideMask, combineBasinBoundaries, type BasinBoundary } from "@/lib/basin-boundaries";
+import type { FeatureCollection, LineString } from "geojson";
 
 type WaterwayData = {
   waterways: Array<{ id: number; type: string; name: string; points: [number, number][] }>;
@@ -24,8 +27,6 @@ const paPhayomBounds: [[number, number], [number, number]] = [
   [7.72, 99.82],
   [7.89, 100.23],
 ];
-
-type BasinBoundary = FeatureCollection<GeoPolygon | MultiPolygon>;
 
 type Located<T> = { record: T; position: [number, number] };
 type DatabaseLayer<T> = { points: Located<T>[]; loading: boolean; error: boolean; skipped: number };
@@ -60,7 +61,7 @@ function layerMessage<T>(label: string, layer: DatabaseLayer<T>) {
   return `${label}: ${layer.points.length} จุด${layer.skipped ? ` · ไม่แสดง ${layer.skipped} รายการที่ไม่มีพิกัดถูกต้อง` : ""}`;
 }
 
-function BoundsUpdater({ boundary, navigating }: { boundary: BasinBoundary | null; navigating: boolean }) {
+function BoundsUpdater({ boundary, navigating, revision }: { boundary: BasinBoundary | null; navigating: boolean; revision: number }) {
   const map = useMap();
 
   useEffect(() => {
@@ -76,12 +77,14 @@ function BoundsUpdater({ boundary, navigating }: { boundary: BasinBoundary | nul
     const observer = new ResizeObserver(fit);
     observer.observe(map.getContainer());
     return () => observer.disconnect();
-  }, [map, boundary, navigating]);
+  }, [map, boundary, navigating, revision]);
 
   return null;
 }
 
-function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showAlerts = true, alerts = [], nearby = false, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0, radar = null, onRadarTileError, showCctv = false, focusedCctv = null }: {
+function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showThaNaeBoundary = false, boundaryViewRevision = 0, showAlerts = true, alerts = [], nearby = false, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0, radar = null, onRadarTileError, showCctv = false, focusedCctv = null, gisSelected = [], onGisStatus }: {
+  showThaNaeBoundary?: boolean; boundaryViewRevision?: number;
+  gisSelected?: readonly string[]; onGisStatus?: (id: string, status: GisLayerStatus) => void;
   focusedCctv?: { code: string; revision: number } | null;
   showCctv?: boolean;
   radar?: RadarOverlay | null; onRadarTileError?: (path: string) => void;
@@ -90,6 +93,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
 }) {
   const [boundary, setBoundary] = useState<BasinBoundary | null>(null);
   const [boundaryError, setBoundaryError] = useState(false);
+  const [thaNaeBoundary, setThaNaeBoundary] = useState<BasinBoundary | null>(null);
+  const [thaNaeBoundaryError, setThaNaeBoundaryError] = useState(false);
   const [waterways, setWaterways] = useState<WaterwayData | null>(null);
   const [waterwaysError, setWaterwaysError] = useState(false);
   const [stations, setStations] = useState<DatabaseLayer<SensorDevice>>({ points: [], loading: true, error: false, skipped: 0 });
@@ -154,20 +159,31 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
     return () => controller.abort();
   }, []);
 
-  const outsideMask = useMemo<FeatureCollection<GeoPolygon> | null>(() => {
-    if (!boundary) return null;
-    const polygons = boundary.features.flatMap(({ geometry }) => geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates);
-    return {
-      type: "FeatureCollection",
-      features: [
-        { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]], ...polygons.map((rings) => rings[0])] } },
-        ...polygons.flatMap((rings) => rings.slice(1).map((ring) => ({ type: "Feature" as const, properties: {}, geometry: { type: "Polygon" as const, coordinates: [ring] } }))),
-      ],
-    };
-  }, [boundary]);
+  useEffect(() => {
+    if (!showThaNaeBoundary) return;
+    if (thaNaeBoundary) { onGisStatus?.("thanae_basin", "ready"); return; }
+    const controller = new AbortController();
+    onGisStatus?.("thanae_basin", "loading");
+    fetch("/gis/thanae_basin.geojson", { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) })
+      .then(async response => {
+        if (!response.ok) throw new Error("Tha Nae boundary unavailable");
+        const result: BasinBoundary = await response.json();
+        if (result.type !== "FeatureCollection" || !result.features?.length || result.features.some(feature => !["Polygon", "MultiPolygon"].includes(feature.geometry?.type))) throw new Error("Invalid basin boundary");
+        if (controller.signal.aborted) return;
+        setThaNaeBoundary(result); setThaNaeBoundaryError(false); onGisStatus?.("thanae_basin", "ready");
+      }).catch(() => { if (!controller.signal.aborted) { setThaNaeBoundaryError(true); onGisStatus?.("thanae_basin", "error"); } });
+    return () => controller.abort();
+  }, [showThaNaeBoundary, thaNaeBoundary, onGisStatus]);
+
+  const selectedBoundary = useMemo(() => combineBasinBoundaries([
+    ...(showBoundary && boundary ? [boundary] : []),
+    ...(showThaNaeBoundary && thaNaeBoundary ? [thaNaeBoundary] : []),
+  ]), [boundary, thaNaeBoundary, showBoundary, showThaNaeBoundary]);
+  const outsideMask = useMemo(() => basinOutsideMask(selectedBoundary), [selectedBoundary]);
   return (
     <>
-    {boundaryError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">โหลดขอบเขตลุ่มน้ำไม่ได้ กรุณาโหลดหน้าใหม่</p>}
+    {showBoundary && boundaryError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">โหลดขอบเขตลุ่มน้ำป่าพะยอมไม่ได้ กรุณาโหลดหน้าใหม่</p>}
+    {showThaNaeBoundary && !thaNaeBoundary && <p role="status" className="absolute right-3 top-28 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">{thaNaeBoundaryError ? "โหลดขอบเขตลุ่มน้ำคลองท่าแนะไม่ได้ ปิดแล้วเปิดชั้นข้อมูลเพื่อลองใหม่" : "กำลังโหลดขอบเขตลุ่มน้ำคลองท่าแนะ…"}</p>}
     {(showWaterways || showStations || showShelters) && <div role="status" className="pointer-events-none absolute bottom-20 right-3 z-10 max-w-[240px] space-y-1 rounded bg-white px-3 py-2 text-xs text-slate-700">
       {showWaterways && <p>{waterwaysError ? "โหลดเส้นทางน้ำไม่ได้ กรุณาโหลดหน้าใหม่" : waterways ? "ทางน้ำ: OpenStreetMap contributors" : "กำลังโหลดเส้นทางน้ำ…"}</p>}
       {showStations && <p>{layerMessage("สถานีตรวจวัด", stations)}</p>}
@@ -188,6 +204,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
       />
 
+      <GisMapLayers selected={gisSelected} onStatus={onGisStatus} />
+
       {radar && <Pane name="rainviewer-radar" style={{ zIndex: 350, pointerEvents: "none" }}>
         <TileLayer
           key={radar.key}
@@ -204,11 +222,9 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         />
       </Pane>}
 
-      {showBoundary && outsideMask && <GeoJSON data={outsideMask} interactive={false} style={{ stroke: false, fillColor: "#203746", fillOpacity: .35, fillRule: "evenodd" }} />}
-      {showBoundary && boundary && <>
-        <GeoJSON data={boundary} interactive={false} style={{ color: "#f9fdff", weight: 5, opacity: .8, fill: false }} />
-        <GeoJSON data={boundary} interactive={false} style={{ color: "#128b87", weight: 2, dashArray: "6 4", opacity: 1, fillColor: "#128b87", fillOpacity: .06 }} />
-      </>}
+      {outsideMask && <GeoJSON key={`mask-${showBoundary}-${showThaNaeBoundary}-${!!boundary}-${!!thaNaeBoundary}`} data={outsideMask} interactive={false} style={{ stroke: false, fillColor: "#203746", fillOpacity: .35, fillRule: "evenodd" }} />}
+      {showBoundary && boundary && <BasinOutline boundary={boundary} color="#128b87" />}
+      {showThaNaeBoundary && thaNaeBoundary && <BasinOutline boundary={thaNaeBoundary} color="#a35f9f" />}
 
       {showWaterways && waterways && <>
         <GeoJSON data={waterwayLines} interactive={false} style={(feature) => ({ color: "#ffffff", weight: feature?.properties?.main ? 7 : 4.5, opacity: .9, lineCap: "round", lineJoin: "round" })} />
@@ -266,11 +282,18 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       {showCctv && <CctvMapMarkers focused={focusedCctv} />}
       <ZoomControl position="bottomright" />
       <ScaleControl position="bottomleft" imperial={false} />
-      <BoundsUpdater boundary={boundary} navigating={nearby} />
+      <BoundsUpdater boundary={selectedBoundary} navigating={nearby} revision={boundaryViewRevision} />
       {nearby && <NearbyShelterRoute shelters={shelters.points.map(({ record }) => record)} loading={shelters.loading} error={shelters.error} />}
     </MapContainer>
     </>
   );
+}
+
+function BasinOutline({ boundary, color }: { boundary: BasinBoundary; color: string }) {
+  return <>
+    <GeoJSON data={boundary} interactive={false} style={{ color: "#f9fdff", weight: 5, opacity: .8, fill: false }} />
+    <GeoJSON data={boundary} interactive={false} style={{ color, weight: 2, dashArray: "6 4", opacity: 1, fillColor: color, fillOpacity: .06 }} />
+  </>;
 }
 
 export default memo(BasinMap);

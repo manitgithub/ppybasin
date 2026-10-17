@@ -1,4 +1,5 @@
 import type { SeasonalData, TmdData } from "./types";
+import { seasonalAlertLevel } from "./presentation";
 
 // Quoted fields, escaped quotes, CRLF, and the UTF-8 BOM in the official CSV.
 export function parseCsv(text: string): string[][] {
@@ -68,7 +69,7 @@ export function parseSeasonalCsv(text: string, issue: string, template: Seasonal
     return { ...tambon, forecast, firstDroughtMonth: forecast.find((cell) => cell.status === "drought")?.month ?? null,
       consecutiveDroughtMonths: longest,
       // Forecast alone is not a confirmed disaster warning.
-      alertLevel: forecast.some((cell) => cell.status === "drought") ? "yellow" : "green" };
+      alertLevel: seasonalAlertLevel(forecast) };
   });
   const issueDate = `${issue.slice(0, 4)}-${issue.slice(4)}-01T00:00:00+07:00`;
   const freshnessDays = Math.max(0, Math.floor((now.getTime() - Date.parse(modified || issueDate)) / 86400000));
@@ -80,7 +81,7 @@ export function parseSeasonalCsv(text: string, issue: string, template: Seasonal
       exactDuplicatesRemoved: duplicates, conflictingDuplicates: 0, freshnessDays, stale: freshnessDays > 45, warnings: [] },
     summary: { ...template.summary, atRiskAnyMonth: tambons.filter((t) => t.forecast.some((c) => c.status === "drought")).length,
       atRiskNext3Months: tambons.filter((t) => t.forecast.slice(0, 3).some((c) => c.status === "drought")).length,
-      alertCounts: { green: tambons.filter((t) => t.alertLevel === "green").length, yellow: tambons.filter((t) => t.alertLevel === "yellow").length, orange: 0, red: 0 },
+      alertCounts: { green: tambons.filter((t) => t.alertLevel === "green").length, yellow: tambons.filter((t) => t.alertLevel === "yellow").length, orange: tambons.filter((t) => t.alertLevel === "orange").length, red: 0 },
       monthlyCounts: months.map((month) => ({ month: month.key, drought: tambons.filter((t) => values.get(`${t.id}:${month.key}`) === "drought").length,
         norisk: tambons.filter((t) => values.get(`${t.id}:${month.key}`) === "norisk").length })) },
   };

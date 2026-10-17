@@ -24,6 +24,19 @@
 .layer:hover { background: #eaf3f7; }
 .layer input { width: 17px; height: 17px; flex-shrink: 0; accent-color: #17658a; }
 .layer small { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; color: #557183; }
+.gisIntro { padding: 14px 16px 10px; border-top: 1px solid #c8d9e2; font-size: 12px; }
+.basinView { padding: 8px 16px 12px; }
+.basinView button { width: 100%; min-height: 40px; border: 1px solid #aac7d4; border-radius: 5px; background: #e5f0f5; color: #175b7d; font-size: 12px; font-weight: 700; cursor: pointer; }
+.basinView button:hover { background: #d6e9f1; }
+.basinView p { margin-top: 6px; font-size: 10px; line-height: 1.6; color: #557183; }
+.gisIntro p, .gisNote { margin-top: 5px; font-size: 10px; line-height: 1.6; color: #557183; }
+.gisGroup { min-width: 0; margin: 0; padding: 0; border: 0; }
+.gisGroup legend { width: 100%; padding: 9px 16px; background: #eaf1f5; font-size: 11px; font-weight: 700; }
+.gisGroup .layer > span { min-width: 0; overflow-wrap: anywhere; }
+.gisNote { padding: 8px 16px 12px; }
+.gisLegend { display: flex; flex-wrap: wrap; gap: 7px 10px; padding: 4px 16px 12px; font-size: 10px; }
+.gisLegend span { display: flex; align-items: center; gap: 5px; }
+.gisLegend i { width: 10px; height: 10px; border-radius: 2px; }
 .sources { bottom: 21px; left: 18px; width: min(380px, calc(50% - 28px)); }
 .sources summary { font-size: 12px; }
 .sourceContent { max-height: min(50dvh, 420px); overflow: auto; padding: 0 16px 16px; font-size: 12px; line-height: 1.65; }

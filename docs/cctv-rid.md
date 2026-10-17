@@ -5,7 +5,7 @@ Verified 2026-10-17 against https://telerid.rid.go.th/#/ using its public feeds,
 - Station inventory: `https://telerid.rid.go.th/restapi/main/station_list/`
 - Public camera inventory: `wss://telerid.rid.go.th/ws/cctv/` (`INIT` message)
 - Per-station public metadata: `wss://telerid.rid.go.th/ws/station/{id}/`
-- Snapshot: `https://telerid.rid.go.th/restapi/main/camera/1/SKA-{code}/image.jpg`
+- Snapshot: `https://telerid.rid.go.th/restapi/main/camera{ridCameraPath}` using each station's registered path (usually `/1/SKA-{code}/image.jpg`; TPN11 uses `/1/SSE-U-TPN11/image.jpg`).
 
 The station inventory contained 921 stations. Point-in-polygon filtering against `public/boundaries/pa-phayom-basin.geojson` selected these two, both with camera channel 1 in the public camera inventory:
 
@@ -14,7 +14,15 @@ The station inventory contained 921 stations. Point-in-polygon filtering against
 | TSL11 | 719 | ฝายคลองบ้านพร้าว | 7.83329 | 99.9109 |
 | TX83 | 757 | บ้านทะเลน้อย | 7.788817 | 100.12426 |
 
-Nearby TSL12 (คลองท่าแนะ), TX276 (บ้านเขาปู่), TPN11 (ฝายไม้เสียบ), and TTr8 (บ้านเขาหลัก) are outside this map boundary and were not added. Existing DDPM markers are retained.
+The following nearby stations outside the basin boundary are also included at the user's request. Coordinates and station IDs were verified against the public station inventory, and channel 1 paths and timestamps were confirmed with the public per-station feed on 2026-10-17:
+
+| Code | ID | Name | Latitude | Longitude | Camera path |
+| --- | --- | --- | --- | --- | --- |
+| TPN11 | 682 | ฝายไม้เสียบ | 7.891563 | 99.908885 | `/1/SSE-U-TPN11/image.jpg` |
+| TX276 | 754 | บ้านเขาปู่ | 7.706969 | 99.842081 | `/1/SKA-TX276/image.jpg` |
+| TSL12 | 720 | ปตร.คลองท่าแนะ | 7.72914 | 99.914 | `/1/SKA-TSL12/image.jpg` |
+
+TTr8 (บ้านเขาหลัก) remains excluded. Existing DDPM markers are retained. All registered stations appear in the camera list; selecting one pans the map to its marker, including stations outside the basin boundary.
 
 At verification, TX83 returned a valid JPEG (`image/jpg`); TSL11 returned HTTP 500 and its public timestamp was old (2026-08-13T18:30:00Z, 14 August in Thailand). Keep the station visible, show image failures, and display the timestamp currently reported by the public station feed; do not claim either station is streaming live. The metadata may be available even when the snapshot is unavailable. Times are displayed in Asia/Bangkok, and timestamps older than one hour receive an explicit warning.
 
