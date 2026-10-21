@@ -1,4 +1,5 @@
 import https from "node:https";
+import { getDwrSituation } from "./dwr";
 
 export type SourceStatus = "ok" | "unavailable" | "schema_changed" | "no_confirmed_data";
 
@@ -12,6 +13,8 @@ export type SourceHealth = {
 };
 
 export type RainStation = {
+  accumulationHours?: 12 | 24 | 72;
+  sourceUrl?: string;
   id: string;
   name: string;
   district: string;
@@ -86,6 +89,7 @@ export type DisasterNoticeSummary = {
 };
 
 export type SituationPayload = {
+  dwr?: { rain12h: RainStation[] };
   updatedAt: string;
   thaiWater: {
     rain24h: RainStation[];
@@ -612,15 +616,17 @@ export async function getDisasterSituation() {
 }
 
 export async function getSituationData(): Promise<SituationPayload> {
-  const [thaiWater, tmd, reservoir, disaster] = await Promise.all([
+  const [thaiWater, tmd, reservoir, disaster, dwr] = await Promise.all([
     getThaiWaterSituation(),
     getTmdSituation(),
     getReservoirSituation(),
     getDisasterSituation(),
+    getDwrSituation(),
   ]);
 
   return {
     updatedAt: nowIso(),
+    dwr: { rain12h: dwr.rain12h },
     thaiWater: {
       rain24h: thaiWater.rain24h,
       rain72h: thaiWater.rain72h,
@@ -637,6 +643,6 @@ export async function getSituationData(): Promise<SituationPayload> {
       phatthalung: disaster.phatthalung,
       gistdaFloodBoundary: disaster.gistdaFloodBoundary,
     },
-    sources: [...thaiWater.sources, ...tmd.sources, reservoir.source, ...disaster.sources],
+    sources: [dwr.source, ...thaiWater.sources, ...tmd.sources, reservoir.source, ...disaster.sources],
   };
 }

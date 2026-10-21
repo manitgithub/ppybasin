@@ -251,8 +251,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       ))}
       {showRain && rainStations.map((station) => {
         const position = positionAt(station.lat, station.lng);
-        return position && <Marker key={`rain-${station.id}`} position={position} icon={rainIcon} title={`ฝนสะสม 24 ชั่วโมง · ${station.name}`}>
-          <Popup><strong>ฝนสะสม 24 ชั่วโมง · {station.name}</strong><p>{station.district} · {station.rainfallMm} มม.</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label="ThaiWater / สสน. · ฝน 24 ชั่วโมง" url="https://www.thaiwater.net/" /></Popup>
+        return position && <Marker key={`rain-${station.id}`} position={position} icon={rainIcon} title={`ฝนสะสม ${station.accumulationHours ?? 24} ชั่วโมง · ${station.name}`}>
+          <Popup><strong>ฝนสะสม {station.accumulationHours ?? 24} ชั่วโมง · {station.name}</strong><p>{station.district} · {station.rainfallMm} มม.</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label={station.accumulationHours === 12 ? "กรมทรัพยากรน้ำ · EWS · ฝน 12 ชั่วโมง" : "ThaiWater / สสน. · ฝน 24 ชั่วโมง"} url={station.sourceUrl ?? "https://www.thaiwater.net/"} /></Popup>
         </Marker>;
       })}
       {showWaterLevels && waterLevels.map((station) => {

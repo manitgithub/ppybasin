@@ -46,7 +46,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
     { id: "waterways", label: "เส้นทางน้ำ", note: "แม่น้ำ / คลอง / ทางน้ำย่อย", color: "#1988c6" },
     { id: "cctv", label: "กล้อง ปภ. / กรมชลประทาน", note: `${cctvStations.length} จุด · เลือกดูภาพจากแผงดูกล้อง CCTV`, color: "#475569" },
     { id: "stations", label: "สถานีตรวจวัด", note: "กดหมุดเพื่อดูรายละเอียดสถานี", color: "#2563eb" },
-    { id: "rain", label: "ฝนสะสม 24 ชั่วโมง", note: "สถานีฝน · ป่าพะยอม / ควนขนุน", color: "#087e96" },
+    { id: "rain", label: "สถานีวัดน้ำฝน", note: "ThaiWater 24 ชม. / EWS 12 ชม. ใกล้ป่าพะยอม", color: "#087e96" },
     { id: "waterLevels", label: "ระดับน้ำล่าสุด", note: "ค่าตรวจวัดจาก ThaiWater", color: "#464ba5" },
     { id: "shelters", label: "ศูนย์อพยพ", note: "สถานะเปิด–ปิดตามทะเบียน", color: "#15803d" },
     { id: "alerts", label: "ประกาศที่ยืนยันแล้ว", note: loading ? "กำลังตรวจสอบประกาศ…" : errors.includes("ประกาศยืนยัน") ? "ยังอ่านประกาศไม่ได้" : `${alerts.length} ประกาศที่มีผลอยู่`, color: "#a66e16" },
@@ -64,7 +64,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
       </div>
     </header>}
     <main className={`${styles.map} ${nearby ? styles.nearby : styles.withSituation}`} aria-label="แผนที่ลุ่มน้ำป่าพะยอมและคลองท่าแนะ">
-      <BasinMap showThaNaeBoundary={layers.thanaeBoundary} boundaryViewRevision={boundaryViewRevision} gisSelected={gisSelected} onGisStatus={onGisStatus} focusedCctv={focusedCctv} showCctv={layers.cctv} radar={radar.overlay} onRadarTileError={radar.onTileError} rainStations={localRain(situation, "rain24h")} waterLevels={localStations(situation?.thaiWater.waterLevels ?? [])} showRain={layers.rain} showWaterLevels={layers.waterLevels} now={now} showWaterways={layers.waterways} showStations={layers.stations} nearby={nearby} showShelters={nearby || layers.shelters} showAlerts={layers.alerts} showBoundary={layers.boundary} alerts={alerts} />
+      <BasinMap showThaNaeBoundary={layers.thanaeBoundary} boundaryViewRevision={boundaryViewRevision} gisSelected={gisSelected} onGisStatus={onGisStatus} focusedCctv={focusedCctv} showCctv={layers.cctv} radar={radar.overlay} onRadarTileError={radar.onTileError} rainStations={[...localRain(situation, "rain24h"), ...(situation?.dwr?.rain12h ?? [])]} waterLevels={localStations(situation?.thaiWater.waterLevels ?? [])} showRain={layers.rain} showWaterLevels={layers.waterLevels} now={now} showWaterways={layers.waterways} showStations={layers.stations} nearby={nearby} showShelters={nearby || layers.shelters} showAlerts={layers.alerts} showBoundary={layers.boundary} alerts={alerts} />
       <details className={styles.layers} open={!nearby}>
         <summary><span><Layers size={18} />ชั้นข้อมูล</span><ChevronDown size={16} /></summary>
         <div className={styles.layerOptions}>

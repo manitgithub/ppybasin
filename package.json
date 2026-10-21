@@ -21,7 +21,8 @@
     "test:radar-area": "node scripts/test-radar-area.mjs",
     "test:drought": "node scripts/test-drought.mjs",
     "test:cctv": "node scripts/test-cctv.mjs",
-    "test:basin-boundaries": "node scripts/test-basin-boundaries.mjs"
+    "test:basin-boundaries": "node scripts/test-basin-boundaries.mjs",
+    "test:dwr": "node scripts/test-dwr.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
