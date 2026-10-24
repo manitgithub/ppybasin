@@ -1,0 +1,87 @@
+.root { color: #193145; background: #eef4f6; padding: clamp(16px, 3vw, 32px); font-size: 13px; line-height: 1.6; }
+.root h1, .root h2, .root h3, .root p { margin: 0; }
+.root :focus-visible { outline: 3px solid #2486b9; outline-offset: 3px; }
+.root button, .root select, .root summary { cursor: pointer; }
+.root button:disabled { opacity: .45; cursor: default; }
+.pageHeader { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.pageHeader h1 { margin-block: 4px; font-size: clamp(28px, 3vw, 36px); font-weight: 750; }
+.pageHeader p { color: #557183; }
+.pageHeader .eyebrow, .eyebrow { color: #087e83; font-size: 11px; font-weight: 650; }
+.back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; margin-bottom: 8px; color: #17658a; }
+.refresh { display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 8px 14px; border: 1px solid #acc7d5; border-radius: 6px; background: #f8fbfc; color: #175b7d; font-weight: 650; }
+.sourceTabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.sourceTabs button { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border: 1px solid #c6d9e3; border-radius: 8px; background: #f8fbfc; color: #486479; text-align: left; }
+.sourceTabs button[aria-pressed="true"] { border-color: #087e96; background: #e1f0f4; box-shadow: inset 0 0 0 1px #087e96; color: #125f61; }
+.sourceTabs svg { flex-shrink: 0; }
+.sourceTabs strong { display: block; font-size: 15px; font-weight: 700; }
+.sourceTabs small { display: block; margin-top: 2px; color: #557183; font-size: 11px; }
+.received { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block: 8px; color: #557183; font-size: 11px; }
+.received button { display: flex; align-items: center; gap: 6px; min-height: 40px; color: #17658a; }
+.panel { overflow: hidden; border: 1px solid #cbdde5; border-radius: 10px; background: #f8fbfc; }
+.sectionHeader { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 12px; padding: 24px 24px 20px; }
+.sectionHeader h2 { margin-top: 4px; font-size: 23px; font-weight: 750; }
+.sectionHeader p:last-child { margin-top: 4px; color: #557183; font-size: 12px; }
+.sectionHeader a, .quality a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; color: #17658a; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.quality { padding: 16px 24px; color: #557183; font-size: 11px; }
+.quality p + p { margin-top: 6px; }
+.quality .warning { color: #81582d; padding: 10px 12px; margin-top: 12px; border-left: 2px solid #ad8552; background: #f6f1e9; }
+.details { border-top: 1px solid #d7e4e9; }
+.details summary { padding: 14px 24px; min-height: 48px; font-size: 12px; font-weight: 650; }
+.tableWrap { overflow-x: auto; }
+.tableWrap table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+.tableWrap th, .tableWrap td { padding: 12px 24px; border-top: 1px solid #d7e4e9; white-space: nowrap; }
+.tableWrap thead { background: #eaf1f5; }
+.notice { padding: 12px 16px; margin-bottom: 12px !important; border: 1px solid #bacfdc; border-radius: 6px; background: #e7eff3; color: #405f72; font-size: 12px; }
+.panel > .notice { margin-inline: 24px; }
+.empty { display: grid; place-items: center; min-height: 230px; padding: 24px; text-align: center; color: #557183; }
+.timeControls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 24px; }
+.timeControls button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 42px; min-height: 44px; padding: 6px 10px; border: 1px solid #b7cfdc; border-radius: 5px; background: #edf4f7; color: #175b7d; font-size: 12px; font-weight: 600; }
+.timeControls label { display: flex; align-items: center; gap: 8px; margin-left: 4px; color: #557183; font-size: 11px; }
+.timeControls select { min-height: 44px; min-width: 0; max-width: 100%; padding: 6px 8px; border: 1px solid #b7cfdc; border-radius: 5px; background: #f1f7fa; color: #193145; font: inherit; }
+.timeControls .frameSelect { margin-left: auto; }
+.scrubber { display: flex; align-items: center; gap: 12px; padding: 8px 24px; color: #557183; font-size: 11px; }
+.scrubber input { min-width: 0; flex: 1; min-height: 40px; accent-color: #087e96; }
+.mapLayout { display: grid; grid-template-columns: minmax(0, 2.5fr) minmax(220px, 1fr); gap: 20px; padding: 8px 24px 16px; }
+.mapLayout > div { min-width: 0; }
+.mapCaption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 10px; }
+.mapCaption strong { font-size: 13px; }
+.mapCaption span { color: #557183; font-size: 11px; }
+.map { height: 370px; overflow: hidden; border: 1px solid #c7dbe3; border-radius: 7px; isolation: isolate; }
+.map :global(.leaflet-container) { height: 100%; width: 100%; font-family: inherit; }
+.map :global(.leaflet-control-attribution) { max-width: 90%; font-size: 9px; }
+.legend { margin-top: 12px; color: #557183; font-size: 10px; }
+.legend > div { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 6px; }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.legend i { display: inline-block; width: 16px; height: 12px; border: 1px solid #9cb9c5; }
+.hatch { background: repeating-linear-gradient(135deg, #e1e8ec, #e1e8ec 3px, #8298a4 3px, #8298a4 5px); }
+.pointToggle { display: flex; align-items: center; gap: 7px; min-height: 44px; color: #486479; font-size: 11px; }
+.pointToggle input { accent-color: #087e96; }
+.mapStats { padding: 16px; border-left: 1px solid #d7e4e9; }
+.mapStats > div > span { color: #557183; font-size: 12px; }
+.mapStats strong { display: block; margin-top: 4px; font-size: 34px; font-weight: 750; color: #125f61; font-variant-numeric: tabular-nums; }
+.mapStats strong small { font-size: 12px; font-weight: 500; }
+.mapStats p { color: #557183; font-size: 11px; }
+.mapStats > p + p { margin-top: 6px; }
+.mapStats dl { margin-block: 20px; }
+.mapStats dl > div { padding-block: 9px; border-top: 1px solid #d7e4e9; }
+.mapStats dt { color: #557183; font-size: 11px; }
+.mapStats dd { margin: 3px 0 0; font-weight: 650; font-size: 14px; font-variant-numeric: tabular-nums; }
+.modules { margin-top: 28px; }
+.modules header { margin-bottom: 12px; }
+.modules h2 { font-size: 18px; font-weight: 700; }
+.modules header p { color: #557183; font-size: 11px; margin-top: 4px; }
+.modules article { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 4px; border-top: 1px solid #ccdce4; }
+.modules h3 { font-size: 13px; font-weight: 650; }
+.modules article p { margin-top: 4px; font-size: 11px; color: #557183; }
+.modules article > span { flex-shrink: 0; padding: 4px 8px; border: 1px solid #c7d5dd; border-radius: 4px; color: #557183; font-size: 10px; }
+.next { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; color: #17658a; font-size: 12px; text-decoration: underline; }
+@media (max-width: 1000px) { .mapLayout { grid-template-columns: 1fr; } .mapStats { border: 0; border-top: 1px solid #d7e4e9; padding: 16px 0 0; } .mapStats dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-block: 12px; } }
+@media (max-width: 700px) {
+  .root { padding: 16px 12px; } .pageHeader { align-items: start; margin-bottom: 16px; } .pageHeader p { font-size: 11px; } .pageHeader .eyebrow { font-size: 10px; } .refresh { font-size: 11px; padding-inline: 9px; }
+  .sourceTabs { gap: 8px; } .sourceTabs button { flex-direction: column; align-items: start; padding: 12px; gap: 8px; } .sourceTabs strong { font-size: 12px; } .sourceTabs small { font-size: 10px; }
+  .received { font-size: 10px; } .sectionHeader { padding: 16px; gap: 4px; } .sectionHeader h2 { font-size: 21px; }
+  .quality { padding: 16px; } .details summary { padding-inline: 16px; } .tableWrap th, .tableWrap td { padding-inline: 16px; } .panel > .notice { margin-inline: 16px; }
+  .timeControls { padding-inline: 16px; } .timeControls label { margin-left: 0; } .timeControls .frameSelect { width: 100%; margin-left: 0; } .frameSelect select { flex: 1; } .scrubber { padding-inline: 16px; }
+  .mapLayout { padding: 8px 16px 16px; gap: 12px; } .map { height: 300px; } .mapStats dl { grid-template-columns: 1fr; gap: 0; } .mapStats dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; } .mapStats dd { white-space: nowrap; }
+  .modules { margin-top: 20px; } .modules article { align-items: start; flex-direction: column; gap: 8px; }
+}

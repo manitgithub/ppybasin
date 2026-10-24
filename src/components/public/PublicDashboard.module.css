@@ -63,7 +63,7 @@
 .root :global(.citizen-source-note a) { text-decoration: underline; }
 .root :global(.citizen-footer) { border-top: 1px solid #dce4e7; margin-top: 30px; padding: 20px 0 110px; font-size: 10px; display: flex; gap: 14px; justify-content: space-between; color: #617784; }
 .root :global(.citizen-footer a) { flex-shrink: 0; text-decoration: underline; }
-.root :global(.citizen-mobile-nav) { position: fixed; z-index: 1000; bottom: 0; inset-inline: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 7px calc(6px + env(safe-area-inset-bottom)); background: #f8fbfc; border-top: 1px solid #d4e0e5; box-shadow: 0 -3px 15px #153d4d08; }
+.root :global(.citizen-mobile-nav) { position: fixed; z-index: 1000; bottom: 0; inset-inline: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 6px 7px calc(6px + env(safe-area-inset-bottom)); background: #f8fbfc; border-top: 1px solid #d4e0e5; box-shadow: 0 -3px 15px #153d4d08; }
 .root :global(.citizen-mobile-nav button) { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 57px; gap: 4px; font-size: 10px; color: #627987; border-radius: 5px; }
 .root :global(.citizen-mobile-nav .active) { background: #e5eff4; color: #185b7d; font-weight: 700; }
 .root :global(.report-steps) { display: flex; gap: 15px; border-bottom: 1px solid #d8e2e7; padding-bottom: 18px; margin-bottom: 22px; }
@@ -254,3 +254,11 @@
 /* Give the recreated drought dashboard the same wide canvas as its reference. */
 .drought :global(.citizen-container) { max-width: 1472px; padding: 0; }
 .drought :global(.citizen-topline), .drought :global(.citizen-desktop-nav), .drought :global(.citizen-footer) { margin-inline: 16px; }
+
+.water :global(.citizen-container) { max-width: 1472px; padding: 0; }
+.water :global(.citizen-topline), .water :global(.citizen-desktop-nav), .water :global(.citizen-footer) { margin-inline: 16px; }
+
+/* Keep the water graph visible together with the compact station paths. */
+.waterWorkspace :global(.citizen-topline) { display: none; }
+.waterWorkspace :global(.citizen-header) { min-height: 56px; padding-block: 8px; }
+.waterWorkspace :global(.citizen-desktop-nav) { margin-block: 0; padding-block: 8px; }

@@ -22,6 +22,8 @@ const ViewLoader = () => (
     กำลังโหลดข้อมูล...
   </div>
 );
+const ForecastMonitor = dynamic(() => import("@/components/forecast/ForecastMonitor"), { loading: ViewLoader, ssr: false });
+const WaterMonitor = dynamic(() => import("@/components/water/WaterMonitor"), { loading: ViewLoader, ssr: false });
 
 const DataWarehouseCategoryView = dynamic(() => import("@/components/dashboard/views/DataWarehouseCategoryView"), {
   loading: ViewLoader,
@@ -96,6 +98,8 @@ function DashboardContent({
   if (activeView === "drought") {
     return <DroughtMonitor />;
   }
+  if (activeView === "basin-forecast") return <ForecastMonitor />;
+  if (activeView === "water") return <WaterMonitor />;
 
   if (activeView === "sensor-devices") {
     return <SensorDeviceManager />;
@@ -124,6 +128,19 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
   const [activeView, setActiveView] = useState<ViewId>(() => {
     return initialUser ? firstAllowedView(initialUser, navItems.map((item) => item.id)) : "dashboard";
   });
+  useEffect(() => {
+    const read = () => {
+      if (window.location.hash === "#forecast" && initialUser && canAccessView(initialUser, "basin-forecast")) setActiveView("basin-forecast");
+      if (["#water", "#waterview"].includes(window.location.hash) && initialUser && canAccessView(initialUser, "water")) setActiveView("water");
+    };
+    const timer = setTimeout(read, 0);
+    window.addEventListener("hashchange", read);
+    return () => { clearTimeout(timer); window.removeEventListener("hashchange", read); };
+  }, [initialUser]);
+  function navigateView(view: ViewId) {
+    setActiveView(view);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${view === "water" ? "#water" : view === "basin-forecast" ? "#forecast" : ""}`);
+  }
 
   useEffect(() => {
     const updateCurrentDateTime = () => setCurrentDateTime(new Date());
@@ -199,7 +216,7 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
                       <button
                         key={child.label}
                         onClick={() => {
-                          setActiveView(child.id);
+                          navigateView(child.id);
                           setSidebarOpen(false);
                         }}
                         className={[
@@ -219,7 +236,7 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
                 <button
                   key={item.label}
                   onClick={() => {
-                    setActiveView(item.id);
+                    navigateView(item.id);
                     setSidebarOpen(false);
                   }}
                   className={[

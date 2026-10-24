@@ -2,14 +2,16 @@
 
 import L from "leaflet";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, GeoJSON, MapContainer, Marker, Pane, Popup, ScaleControl, TileLayer, useMap, ZoomControl } from "react-leaflet";
 import type { RainStation, WaterLevelStation } from "@/lib/situation/adapters";
-import { isRecentObservation, observationLabel } from "@/lib/public-situation";
+import type { RegisteredRainStation } from "@/lib/rain-stations";
+import type { RainMethod, RainSurfaceStatus } from "@/lib/rain-interpolation";
+import RainSurfaceLayer from "@/components/public/RainSurfaceLayer";
+import { isRecentObservation } from "@/lib/public-situation";
 import type { RadarOverlay } from "@/lib/rainviewer";
 import type { PublicAlert } from "@/components/public/PublicDashboard";
 import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
-import DataSource from "@/components/DataSource";
 import CctvMapMarkers from "@/components/public/CctvMapMarkers";
 import GisMapLayers from "@/components/public/GisMapLayers";
 import type { GisLayerStatus } from "@/lib/gis-layers";
@@ -17,6 +19,10 @@ import NearbyShelterRoute from "@/components/public/NearbyShelterRoute";
 import { isBasinMapShelter } from "@/lib/shelter-map";
 import { basinOutsideMask, combineBasinBoundaries, type BasinBoundary } from "@/lib/basin-boundaries";
 import type { FeatureCollection, LineString } from "geojson";
+import styles from "./BasinMap.module.css";
+import StationCatalogMarkers, { StationCatalogFocus, StationCatalogPopup } from "./public/StationCatalogMarkers";
+import type { CatalogStation, FocusedStation, StationCategory } from "@/lib/station-catalog";
+import MapDetailsCard, { mapCoordinates, mapDetailsPopupOptions } from "./public/MapDetailsCard";
 
 type WaterwayData = {
   waterways: Array<{ id: number; type: string; name: string; points: [number, number][] }>;
@@ -44,11 +50,16 @@ const stationIcon = L.divIcon({
   html: BASIN_MARKER_HTML.stations,
   iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
 });
-const rainIcon = L.divIcon({
-  className: "basin-rain-marker",
-  html: BASIN_MARKER_HTML.rain,
-  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
-});
+function rainStationIcon(rainfallMm: number | null, recent: boolean) {
+  const available = rainfallMm !== null && Number.isFinite(rainfallMm) && rainfallMm >= 0;
+  // Only a formatted finite number enters this static HTML; never source-provided text.
+  const value = available ? rainfallMm.toLocaleString("th-TH", { maximumFractionDigits: 1 }) : "—";
+  return L.divIcon({
+    className: `basin-rain-marker ${styles.rainMarker} ${!available || !recent ? styles.muted : ""}`,
+    html: `<span class="${styles.symbol}">${BASIN_MARKER_HTML.rain}</span><span class="${styles.value}">${value}${available ? `<small> มม.</small>` : ""}</span>`,
+    iconSize: [72, 50], iconAnchor: [36, 16], popupAnchor: [0, -18],
+  });
+}
 const shelterIcon = L.divIcon({
   className: "",
   html: BASIN_MARKER_HTML.shelters,
@@ -82,15 +93,19 @@ function BoundsUpdater({ boundary, navigating, revision }: { boundary: BasinBoun
   return null;
 }
 
-function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showThaNaeBoundary = false, boundaryViewRevision = 0, showAlerts = true, alerts = [], nearby = false, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0, radar = null, onRadarTileError, showCctv = false, focusedCctv = null, gisSelected = [], onGisStatus }: {
+function BasinMap({ showWaterways = true, showStations = true, showShelters = true, showBoundary = true, showThaNaeBoundary = false, boundaryViewRevision = 0, showAlerts = true, alerts = [], nearby = false, nearbyPanelContainer, rainStations = [], waterLevels = [], showRain = false, showWaterLevels = false, now = 0, radar = null, onRadarTileError, showCctv = false, focusedCctv = null, gisSelected = [], onGisStatus, rainSurface = null, onRainSurfaceStatus, stationCatalog, stationCategory = "all", focusedStation }: {
+  stationCatalog?: CatalogStation[]; stationCategory?: StationCategory; focusedStation?: FocusedStation | null;
+  rainSurface?: { method: RainMethod; opacity: number } | null; onRainSurfaceStatus?: (status: RainSurfaceStatus) => void;
   showThaNaeBoundary?: boolean; boundaryViewRevision?: number;
   gisSelected?: readonly string[]; onGisStatus?: (id: string, status: GisLayerStatus) => void;
   focusedCctv?: { code: string; revision: number } | null;
   showCctv?: boolean;
   radar?: RadarOverlay | null; onRadarTileError?: (path: string) => void;
-  rainStations?: RainStation[]; waterLevels?: WaterLevelStation[]; showRain?: boolean; showWaterLevels?: boolean; now?: number;
+  rainStations?: (RainStation | RegisteredRainStation)[]; waterLevels?: WaterLevelStation[]; showRain?: boolean; showWaterLevels?: boolean; now?: number;
+  nearbyPanelContainer?: HTMLElement | null;
   nearby?: boolean; showWaterways?: boolean; showStations?: boolean; showShelters?: boolean; showBoundary?: boolean; showAlerts?: boolean; alerts?: PublicAlert[];
 }) {
+  const catalogMarkers = useRef(new Map<string, L.Marker>());
   const [boundary, setBoundary] = useState<BasinBoundary | null>(null);
   const [boundaryError, setBoundaryError] = useState(false);
   const [thaNaeBoundary, setThaNaeBoundary] = useState<BasinBoundary | null>(null);
@@ -180,13 +195,14 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
     ...(showThaNaeBoundary && thaNaeBoundary ? [thaNaeBoundary] : []),
   ]), [boundary, thaNaeBoundary, showBoundary, showThaNaeBoundary]);
   const outsideMask = useMemo(() => basinOutsideMask(selectedBoundary), [selectedBoundary]);
+  const rainIcons = useMemo(() => rainStations.map(station => rainStationIcon(station.rainfallMm, isRecentObservation(station.observedAt, now))), [rainStations, now]);
   return (
     <>
     {showBoundary && boundaryError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">โหลดขอบเขตลุ่มน้ำป่าพะยอมไม่ได้ กรุณาโหลดหน้าใหม่</p>}
     {showThaNaeBoundary && !thaNaeBoundary && <p role="status" className="absolute right-3 top-28 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">{thaNaeBoundaryError ? "โหลดขอบเขตลุ่มน้ำคลองท่าแนะไม่ได้ ปิดแล้วเปิดชั้นข้อมูลเพื่อลองใหม่" : "กำลังโหลดขอบเขตลุ่มน้ำคลองท่าแนะ…"}</p>}
     {(showWaterways || showStations || showShelters) && <div role="status" className="pointer-events-none absolute bottom-20 right-3 z-10 max-w-[240px] space-y-1 rounded bg-white px-3 py-2 text-xs text-slate-700">
       {showWaterways && <p>{waterwaysError ? "โหลดเส้นทางน้ำไม่ได้ กรุณาโหลดหน้าใหม่" : waterways ? "ทางน้ำ: OpenStreetMap contributors" : "กำลังโหลดเส้นทางน้ำ…"}</p>}
-      {showStations && <p>{layerMessage("สถานีตรวจวัด", stations)}</p>}
+      {showStations && stationCategory === "all" && <p>{layerMessage("สถานีตรวจวัด", stations)}</p>}
       {showShelters && <p>{layerMessage("ศูนย์อพยพ", shelters)}</p>}
     </div>}
     <MapContainer
@@ -222,6 +238,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         />
       </Pane>}
 
+      {rainSurface && <RainSurfaceLayer stations={rainStations} boundary={selectedBoundary} method={rainSurface.method} opacity={rainSurface.opacity} now={now} onStatus={onRainSurfaceStatus} />}
+
       {outsideMask && <GeoJSON key={`mask-${showBoundary}-${showThaNaeBoundary}-${!!boundary}-${!!thaNaeBoundary}`} data={outsideMask} interactive={false} style={{ stroke: false, fillColor: "#203746", fillOpacity: .35, fillRule: "evenodd" }} />}
       {showBoundary && boundary && <BasinOutline boundary={boundary} color="#128b87" />}
       {showThaNaeBoundary && thaNaeBoundary && <BasinOutline boundary={thaNaeBoundary} color="#a35f9f" />}
@@ -238,52 +256,64 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         />
       </>}
 
-      {showStations && stations.points.map(({ record: station, position }) => (
+      {showStations && stationCategory === "all" && stations.points.map(({ record: station, position }) => (
         <Marker key={station.device_id} position={position} icon={stationIcon} title={`สถานีตรวจวัด ${station.name ?? station.device_id}`}>
-          <Popup>
-            <strong>{station.name || station.device_id}</strong>
-            <p>รหัสสถานี: {station.device_id}</p>
-            {station.location_name && <p>{station.location_name}</p>}
-            <p>สถานะ: {{ active: "ใช้งาน", inactive: "หยุดใช้งาน", maintenance: "บำรุงรักษา" }[station.status] ?? station.status}</p>
-            <DataSource label="ทะเบียนสถานีตรวจวัดในฐานข้อมูล" url="/api/sensor/devices" />
+          <Popup {...mapDetailsPopupOptions}>
+            <MapDetailsCard code={station.device_id} title={station.name || station.device_id} area={station.location_name} now={now} tags={["สถานีตรวจวัด"]}
+              metrics={[{ label: "สถานะอุปกรณ์", value: { active: "ใช้งาน", inactive: "หยุดใช้งาน", maintenance: "บำรุงรักษา" }[station.status] ?? station.status, observedAt: station.last_seen_at }]}
+              metadata={[{ label: "พิกัด", value: mapCoordinates(...position) }]}
+              sources={[{ label: "ทะเบียนสถานีตรวจวัดในฐานข้อมูล", url: "/api/sensor/devices" }]} />
           </Popup>
         </Marker>
       ))}
-      {showRain && rainStations.map((station) => {
+      {showRain && (stationCategory === "all" || stationCategory === "rain") && rainStations.map((station, index) => {
+        if (stationCategory === "all" && stationCatalog?.some(row => row.code === station.id && row.reservoir)) return null;
         const position = positionAt(station.lat, station.lng);
-        return position && <Marker key={`rain-${station.id}`} position={position} icon={rainIcon} title={`ฝนสะสม ${station.accumulationHours ?? 24} ชั่วโมง · ${station.name}`}>
-          <Popup><strong>ฝนสะสม {station.accumulationHours ?? 24} ชั่วโมง · {station.name}</strong><p>{station.district} · {station.rainfallMm} มม.</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label={station.accumulationHours === 12 ? "กรมทรัพยากรน้ำ · EWS · ฝน 12 ชั่วโมง" : "ThaiWater / สสน. · ฝน 24 ชั่วโมง"} url={station.sourceUrl ?? "https://www.thaiwater.net/"} /></Popup>
+        const hasRain = station.rainfallMm !== null;
+        const title = `${"code" in station ? `${station.code} · ` : ""}${station.name}`;
+        const markerLabel = `ฝนสะสม ${station.accumulationHours ?? 24} ชั่วโมง · ${title} · ${hasRain ? `${station.rainfallMm} มม.${!isRecentObservation(station.observedAt, now) ? " · ข้อมูลเก่าหรือเวลาไม่พร้อม" : ""}` : "ไม่มีข้อมูล"}`;
+        return position && <Marker key={`rain-${station.id}`} position={position} icon={rainIcons[index]} title={markerLabel} alt={markerLabel} ref={marker => { if (marker) catalogMarkers.current.set(station.id, marker); else catalogMarkers.current.delete(station.id); }}>
+          <Popup {...mapDetailsPopupOptions}>{stationCatalog?.find(row => row.code === station.id) ? <StationCatalogPopup station={stationCatalog.find(row => row.code === station.id)!} now={now} /> : <MapDetailsCard
+            code={station.id} title={station.name} area={"area" in station ? station.area : station.district} tags={["น้ำฝน"]} now={now}
+            metrics={[{ label: `ฝนสะสม ${station.accumulationHours ?? 24} ชั่วโมง`, value: station.rainfallMm, unit: "มม.", observedAt: station.observedAt }]}
+            metadata={[{ label: "หน่วยงาน", value: station.agency }, { label: "พิกัด", value: mapCoordinates(...position) }]}
+            sources={[{ label: station.agency, url: station.sourceUrl ?? "https://www.thaiwater.net/" }]} />}</Popup>
         </Marker>;
       })}
-      {showWaterLevels && waterLevels.map((station) => {
+      {!stationCatalog && showWaterLevels && waterLevels.map((station) => {
         const position = positionAt(station.lat, station.lng);
         return position && <CircleMarker key={`water-${station.id}`} center={position} radius={7} pathOptions={{ color: "#464ba5", fillColor: "#d6d8fa", fillOpacity: .9, weight: 2 }}>
-          <Popup><strong>ระดับน้ำ · {station.name}</strong><p>{station.waterLevelMsl !== null ? `${station.waterLevelMsl.toFixed(2)} ม.รทก.` : station.waterLevelM !== null ? `${station.waterLevelM.toFixed(2)} ม. (ระดับน้ำตามสถานี)` : "ข้อมูลไม่พร้อม"}</p><p>ตรวจวัด {observationLabel(station.observedAt)}</p>{!isRecentObservation(station.observedAt, now) && <p>ข้อมูลเก่าหรือเวลาไม่พร้อม</p>}<DataSource label="ThaiWater / สสน. · ระดับน้ำ" url="https://www.thaiwater.net/" /></Popup>
+          <Popup {...mapDetailsPopupOptions}><MapDetailsCard code={station.code ?? station.id} title={station.name} area={station.river} tags={["ระดับน้ำ"]} now={now}
+            metrics={[{ label: "ระดับน้ำ", value: station.waterLevelMsl ?? station.waterLevelM, unit: station.waterLevelMsl !== null ? "ม.รทก." : "ม.", observedAt: station.observedAt }]}
+            metadata={[{ label: "หน่วยงาน", value: station.agency }, { label: "พิกัด", value: mapCoordinates(...position) }]}
+            sources={[{ label: "ThaiWater / สสน. · ระดับน้ำ", url: "https://www.thaiwater.net/" }]} /></Popup>
         </CircleMarker>;
       })}
 
+      {stationCatalog && <StationCatalogMarkers stations={stationCatalog} category={stationCategory} showRain={showRain} showWaterLevels={showWaterLevels} now={now} markers={catalogMarkers} />}
+      <StationCatalogFocus station={focusedStation} markers={catalogMarkers} />
+
       {showShelters && shelters.points.map(({ record: shelter, position }) => (
         <Marker key={shelter.id} position={position} icon={shelterIcon} title={`ศูนย์อพยพ ${shelter.name}`}>
-          <Popup>
-            <strong>{shelter.name}</strong>
-            <p>รหัสศูนย์: {shelter.code}</p>
-            <p>สถานะ: {{ open: "เปิดใช้งาน", full: "เต็ม", closed: "ปิด", standby: "เตรียมพร้อม" }[shelter.status] ?? shelter.status}</p>
-            <p>ความจุตามทะเบียน: {shelter.capacity.toLocaleString("th-TH")} คน</p>
-            <DataSource label={shelter.source_file ? `ทะเบียนศูนย์พักพิง · ${shelter.source_file}` : "ทะเบียนศูนย์อพยพในฐานข้อมูล"} url="/api/shelters" />
+          <Popup {...mapDetailsPopupOptions}>
+            <MapDetailsCard code={shelter.code} title={shelter.name} tags={["ศูนย์พักพิง"]} now={now}
+              metrics={[{ label: "สถานะศูนย์", value: { open: "เปิดใช้งาน", full: "เต็ม", closed: "ปิด", standby: "เตรียมพร้อม" }[shelter.status] ?? shelter.status }, { label: "ความจุตามทะเบียน", value: shelter.capacity, unit: "คน" }]}
+              metadata={[{ label: "พิกัด", value: mapCoordinates(...position) }]}
+              sources={[{ label: "ทะเบียนศูนย์พักพิง", url: "/api/shelters" }]} />
           </Popup>
         </Marker>
       ))}
 
       {showAlerts && alerts.filter((alert) => Number.isFinite(alert.latitude) && Number.isFinite(alert.longitude) && Math.abs(alert.latitude) <= 90 && Math.abs(alert.longitude) <= 180).map((alert) => (
         <CircleMarker key={alert.id} center={[alert.latitude, alert.longitude]} radius={12} pathOptions={{ color: alert.severity === "critical" ? "#b82828" : "#ac7415", fillOpacity: 0.3 }}>
-          <Popup><strong>ประกาศที่ยืนยันแล้ว · {alert.title}</strong><p>{alert.areaName}</p><p>{alert.message}</p><DataSource label="ประกาศที่เจ้าหน้าที่อนุมัติ" url="/api/flood-alerts?public=1" /></Popup>
+          <Popup {...mapDetailsPopupOptions}><MapDetailsCard title={alert.title} area={alert.areaName} tags={["ประกาศที่ยืนยันแล้ว"]} now={now} metrics={[]} note={alert.message} metadata={[{ label: "พิกัด", value: mapCoordinates(alert.latitude, alert.longitude) }]} sources={[{ label: "ประกาศที่เจ้าหน้าที่อนุมัติ", url: "/api/flood-alerts?public=1" }]} /></Popup>
         </CircleMarker>
       ))}
       {showCctv && <CctvMapMarkers focused={focusedCctv} />}
       <ZoomControl position="bottomright" />
       <ScaleControl position="bottomleft" imperial={false} />
       <BoundsUpdater boundary={selectedBoundary} navigating={nearby} revision={boundaryViewRevision} />
-      {nearby && <NearbyShelterRoute shelters={shelters.points.map(({ record }) => record)} loading={shelters.loading} error={shelters.error} />}
+      {nearby && <NearbyShelterRoute panelContainer={nearbyPanelContainer} shelters={shelters.points.map(({ record }) => record)} loading={shelters.loading} error={shelters.error} />}
     </MapContainer>
     </>
   );

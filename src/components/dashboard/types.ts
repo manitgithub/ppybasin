@@ -5,6 +5,8 @@ export type ViewId =
   | "reports"
   | "dashboard"
   | "tracking"
+  | "basin-forecast"
+  | "water"
   | "forecast"
   | "drought"
   | "risk"

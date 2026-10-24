@@ -1,0 +1,23 @@
+.launcher { flex-shrink: 0; padding: 12px; border: 1px solid #c8d9e2; border-radius: 8px; background: #f8fbfc; color: #193145; box-shadow: 0 3px 12px #102e4320; }
+.launcher strong { display: block; font-size: 12px; font-weight: 700; }
+.launcher small { display: block; margin-top: 3px; color: #557183; font-size: 10px; }
+.launchButtons { display: flex; gap: 8px; margin-top: 10px; }
+.launchButtons button { display: flex; flex: 1; align-items: center; justify-content: center; gap: 7px; min-height: 44px; border: 1px solid #b7cfdc; border-radius: 5px; background: #e8f2f7; color: #175b7d; font-size: 12px; font-weight: 650; cursor: pointer; }
+.launchButtons button:hover { background: #dcecf4; }
+.fullPage { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 40px; margin-top: 4px; color: #17658a; font-size: 11px; cursor: pointer; }
+.dialog { position: fixed; inset: 0; width: min(1200px, calc(100vw - 40px)); height: min(960px, calc(100dvh - 40px)); max-width: none; max-height: none; margin: auto; padding: 0; border: 1px solid #c8d9e2; border-radius: 12px; background: #f8fbfc; color: #193145; box-shadow: 0 12px 48px #102e4340; overflow: hidden; font-family: inherit; }
+.dialog[open] { display: flex; flex-direction: column; }
+.dialog::backdrop { background: #102e4380; }
+.dialog :focus-visible { outline: 3px solid #2486b9; outline-offset: 2px; }
+.header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #c8d9e2; }
+.header h2 { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 750; }
+.header p { margin: 4px 0 0; color: #557183; font-size: 11px; }
+.close { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 6px; color: #486479; cursor: pointer; }
+.close:hover { background: #e6f0f5; }
+.content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.loading { display: grid; place-items: center; min-height: 300px; padding: 20px; color: #486479; font-size: 13px; }
+@media (max-width: 600px) {
+  .launcher { padding: 10px; } .launcher strong { font-size: 11px; } .launcher small { font-size: 9px; } .launchButtons { gap: 6px; } .launchButtons button { gap: 4px; font-size: 11px; }
+  .dialog { width: calc(100vw - 16px); height: calc(100dvh - 24px); border-radius: 9px; }
+  .header { padding: 12px; align-items: start; } .header h2 { font-size: 17px; } .header p { font-size: 10px; }
+}

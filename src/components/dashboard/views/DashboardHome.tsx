@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import DataSource, { type DataSourceInfo } from "@/components/DataSource";
+import DataSource, { shouldShowDataSource, type DataSourceInfo } from "@/components/DataSource";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Clock3,
@@ -97,6 +97,7 @@ function waterSituationLabel(level: number | null | undefined) {
 }
 
 function Panel({ title, action, sources, children }: { title: string; action?: string; sources?: DataSourceInfo[]; children: React.ReactNode }) {
+  const visibleSources = sources?.filter(shouldShowDataSource);
   return (
     <section className="min-w-0 rounded-[8px] border border-slate-200 bg-white shadow-sm">
       <div className="flex h-11 items-center justify-between border-b border-slate-100 px-4">
@@ -104,8 +105,8 @@ function Panel({ title, action, sources, children }: { title: string; action?: s
         {action && <button className="text-xs font-extrabold text-[#2c72d9]">{action}</button>}
       </div>
       {children}
-      {sources && <div className="space-y-2 border-t border-slate-100 px-4 py-3">
-        {sources.map((source) => <DataSource key={source.url ?? source.label} {...source} />)}
+      {!!visibleSources?.length && <div className="space-y-2 border-t border-slate-100 px-4 py-3">
+        {visibleSources.map((source) => <DataSource key={source.url ?? source.label} {...source} />)}
       </div>}
     </section>
   );
@@ -261,9 +262,9 @@ export default function DashboardHome({
                 <p className="mt-1 text-xs font-bold text-white/85">{card.detail}</p>
               </div>
             </div>
-            <div className="mt-3 border-t border-white/25 pt-2">
+            {shouldShowDataSource(card.source) && <div className="mt-3 border-t border-white/25 pt-2">
               <DataSource {...card.source} inverse />
-            </div>
+            </div>}
           </article>
         ))}
       </section>

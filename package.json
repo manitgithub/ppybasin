@@ -22,7 +22,12 @@
     "test:drought": "node scripts/test-drought.mjs",
     "test:cctv": "node scripts/test-cctv.mjs",
     "test:basin-boundaries": "node scripts/test-basin-boundaries.mjs",
-    "test:dwr": "node scripts/test-dwr.mjs"
+    "test:dwr": "node scripts/test-dwr.mjs",
+    "test:rain-registry": "node scripts/test-rain-registry.mjs",
+    "test:rain-interpolation": "node scripts/test-rain-interpolation.mjs",
+    "test:station-catalog": "node scripts/test-station-catalog.mjs",
+    "test:water-series": "node scripts/test-water-series.mjs",
+    "test:basin-forecast": "node scripts/test-basin-forecast.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

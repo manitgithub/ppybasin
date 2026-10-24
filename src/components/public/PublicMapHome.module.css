@@ -7,6 +7,11 @@
 .actions { display: flex; align-items: center; gap: 18px; font-size: 13px; }
 .actions a { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; }
 .map { position: relative; min-height: 0; isolation: isolate; }
+/* Keep station details unobstructed by the floating map tools. */
+.map:has(:global(.smart-map-popup)) .layers,
+.map:has(:global(.smart-map-popup)) .mapInfo,
+.map:has(:global(.smart-map-popup)) .situation { visibility: hidden; }
+.map:has(:global(.smart-map-popup)) > div[role="status"] { visibility: hidden; }
 .map :global(.leaflet-container) { height: 100%; width: 100%; }
 .map :global(.leaflet-bottom) { bottom: 78px; }
 .map :global(.leaflet-control-attribution) { max-width: min(540px, calc(100vw - 20px)); max-height: 36px; overflow: auto; font-size: 9px; }
@@ -24,6 +29,22 @@
 .layer:hover { background: #eaf3f7; }
 .layer input { width: 17px; height: 17px; flex-shrink: 0; accent-color: #17658a; }
 .layer small { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; color: #557183; }
+.surfaceControls { padding: 0 16px 14px; border-bottom: 1px solid #dce6eb; font-size: 11px; line-height: 1.65; }
+.surfaceControls > label { display: block; margin-top: 9px; font-weight: 650; }
+.surfaceControls > label > span { float: right; font-variant-numeric: tabular-nums; color: #405f72; }
+.surfaceControls select { display: block; width: 100%; min-height: 44px; margin-top: 4px; border: 1px solid #aac7d4; border-radius: 4px; padding: 5px 7px; background: #f1f7fa; color: #193145; font: inherit; cursor: pointer; }
+.surfaceControls input[type="range"] { display: block; width: 100%; min-height: 36px; accent-color: #17658a; cursor: pointer; }
+.surfaceControls p { margin-top: 5px; color: #405f72; }
+.surfaceStatus { margin-block: 5px 9px; padding-block: 8px; border-block: 1px solid #dce6eb; }
+.surfaceStatus strong { color: #175b7d; }
+.surfaceLegend > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
+.surfaceLegend span { display: flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.surfaceLegend i { display: inline-block; width: 15px; height: 12px; border: 1px solid #88a9bc; vertical-align: middle; }
+.surfaceHatch { background: repeating-linear-gradient(135deg, #e0e8ec, #e0e8ec 3px, #637a89 3px, #637a89 4px); }
+.surfaceNotes { margin-top: 8px; }
+.layers .surfaceNotes > summary { min-height: 40px; padding: 5px 0; border: 0; font-size: 11px; }
+.surfaceNotes a { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .surfaceControls { padding-inline: 13px; } }
 .gisIntro { padding: 14px 16px 10px; border-top: 1px solid #c8d9e2; font-size: 12px; }
 .basinView { padding: 8px 16px 12px; }
 .basinView button { width: 100%; min-height: 40px; border: 1px solid #aac7d4; border-radius: 5px; background: #e5f0f5; color: #175b7d; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -149,6 +170,7 @@
 
 .mapInfo { position: absolute; z-index: 500; top: 18px; right: 18px; width: 280px; max-height: calc(100% - 300px); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 .map .mapInfo .sources { position: static; width: 100%; flex-shrink: 0; }
+.mapInfo:has([data-station-catalog][open]) { width: 320px; }
 .toolPanel { flex-shrink: 0; border: 1px solid #c8d9e2; border-radius: 8px; background: #f8fbfc; box-shadow: 0 3px 12px #102e4320; }
 .toolPanel > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 12px 16px; cursor: pointer; font-size: 12px; font-weight: 700; list-style: none; }
 .toolPanel > summary::-webkit-details-marker { display: none; }
@@ -156,12 +178,27 @@
 .toolPanel[open] > summary { border-bottom: 1px solid #dce6eb; }
 .toolPanel[open] > summary > svg { transform: rotate(180deg); }
 .toolPanel .radarControls { padding-top: 10px; border-bottom: 0; }
-.nearby .mapInfo { max-height: calc(100% - 180px); }
+.nearby .mapInfo { width: 320px; max-height: calc(100% - 180px); overscroll-behavior: contain; }
+.nearbyPanelHost { flex-shrink: 0; }
+.mobileLayers { display: none; }
+.nearby .mapInfo .layers { position: static; width: 100%; max-height: min(50dvh, 420px); flex-shrink: 0; }
 @media (max-width: 600px) {
+  .withSituation > .layers { display: none; }
+  .mobileLayers { display: block; flex-shrink: 0; }
+  .withSituation .mobileLayers .layers { position: static; width: 100%; max-height: min(40dvh, 320px); }
   .mapInfo { top: 12px; right: 12px; width: 156px; max-height: calc(100% - 320px); }
   .mapInfo:has(.toolPanel[open]), .mapInfo:has(.sources[open]) { width: calc(100% - 24px); z-index: 510; }
+  .mapInfo:has([data-station-catalog][open]) { width: calc(100% - 24px); z-index: 510; }
   .toolPanel > summary { min-height: 44px; padding: 10px; font-size: 10px; }
   .map .mapInfo .sources, .map .mapInfo .sources[open] { width: 100%; }
   .mapInfo .radarControls { font-size: 11px; }
-  .nearby .mapInfo { max-height: calc(100% - 220px); }
+  .nearby .mapInfo { width: min(320px, calc(100% - 24px)); max-height: calc(100% - 110px); }
+}
+
+.root .map:has(:global(.smart-map-popup)) :global(.leaflet-bottom) { bottom: 78px; }
+.root .map:has(:global(.smart-map-popup)) :global(.leaflet-control-attribution) { transform: none; }
+.root.embedded .map:has(:global(.smart-map-popup)) :global(.leaflet-bottom) { bottom: 12px; }
+@media (min-width: 601px) and (max-width: 1000px) {
+  .nav { width: calc(100% - 24px); max-width: 760px; }
+  .nav button { flex: 1; min-width: 0; flex-direction: column; padding-inline: 4px; font-size: 10px; }
 }

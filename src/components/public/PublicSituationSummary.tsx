@@ -1,9 +1,10 @@
 "use client";
 
 import { ChevronDown, CloudRain, RefreshCw, Waves } from "lucide-react";
-import DataSource from "@/components/DataSource";
+import DataSource, { DataSources } from "@/components/DataSource";
 import type { SituationPayload } from "@/lib/situation/adapters";
-import { isRecentObservation, localRain, localStations, observationLabel } from "@/lib/public-situation";
+import { isRecentObservation, localRain, localStations, observationLabel, registeredRainStations } from "@/lib/public-situation";
+import { rainZoneLabels } from "@/lib/rain-stations";
 import styles from "./PublicMapHome.module.css";
 
 export default function PublicSituationSummary({ situation, loading, failed, now, onRefresh }: {
@@ -12,6 +13,8 @@ export default function PublicSituationSummary({ situation, loading, failed, now
   const rain24 = localRain(situation, "rain24h");
   const rain72 = localRain(situation, "rain72h");
   const rain12 = situation?.dwr?.rain12h ?? [];
+  const registry = registeredRainStations(situation);
+  const availableRainCount = registry.filter(station => station.rainfallMm !== null).length;
   const highest = (stations: typeof rain24) => stations.find((station) => isRecentObservation(station.observedAt, now));
   const reservoir = situation?.reservoir;
   const storage = reservoir?.status === "ok" && Number.isFinite(reservoir.capacityPercent) ? reservoir.capacityPercent : null;
@@ -28,8 +31,20 @@ export default function PublicSituationSummary({ situation, loading, failed, now
       <div><span>น้ำในอ่างป่าพะยอม</span><strong>{storage === null ? empty : <>{storage.toLocaleString("th-TH", { maximumFractionDigits: 1 })}<small> %</small></>}</strong><p>ของความจุเก็บกัก</p>{reservoir?.latestDataDate && <small>ข้อมูลวันที่ {reservoir.latestDataDate}</small>}</div>
     </div>
     <details className={styles.situationDetails}>
-      <summary>ระดับน้ำ พยากรณ์ และรายละเอียดฝน <ChevronDown size={14} /></summary>
+      <summary>สถานีฝน {registry.length} แห่ง · ระดับน้ำและพยากรณ์ <ChevronDown size={14} /></summary>
       <div className={styles.situationContent}>
+        <section aria-label="ทะเบียนสถานีฝน">
+          <h3>สถานีฝนในทะเบียน {registry.length} แห่ง</h3>
+          <p>มีค่าฝน 24 ชั่วโมง {availableRainCount}/{registry.length} แห่ง · รวมสถานีข้างเคียงในพัทลุง นครศรีธรรมราช และตรัง</p>
+          {registry.map(station => <article key={station.code}>
+            <b>{station.code} · {station.name}</b>
+            <span>{station.rainfallMm === null ? "ไม่มีค่าฝน 24 ชั่วโมง" : `${station.rainfallMm.toLocaleString("th-TH", { maximumFractionDigits: 1 })} มม.`}</span>
+            <small>{rainZoneLabels[station.zone]} · {station.agency}</small>
+            {station.observedAt && <small>{observationLabel(station.observedAt)}{!isRecentObservation(station.observedAt, now) && " · ข้อมูลเก่าหรือเวลาไม่พร้อม"}</small>}
+          </article>)}
+          <p>สถานีที่ไม่มีค่าฝนยังแสดงบนแผนที่ด้วยหมุดสีเทา · ไม่ใช้ฝน 12 ชั่วโมงหรือฝนตั้งแต่ 07:00 น. แทนฝน 24 ชั่วโมง</p>
+          <DataSources sources={situation?.sources.filter(source => source.id.startsWith("rain-registry-")) ?? []} />
+        </section>
         <p>ฝนสูงสุดจากสถานีในอำเภอป่าพะยอมและควนขนุน ไม่ใช่ค่าเฉลี่ยทั้งลุ่มน้ำ · ใช้ข้อมูลตรวจวัดไม่เกิน 3 ชั่วโมง หรือข้อมูลรายวันที่ระบุวันที่วันนี้ · ตรวจแหล่งข้อมูลทุก 5 นาที</p>
         <p>EWS: สถานีวัดฝนในรัศมี 20 กม. รอบจุดอ้างอิงป่าพะยอม (7.81, 99.93) รวมพื้นที่ข้างเคียง · ฝนสะสม 12 ชั่วโมง</p>
         {situation && <p>ตรวจแหล่งข้อมูล {observationLabel(situation.updatedAt)}</p>}

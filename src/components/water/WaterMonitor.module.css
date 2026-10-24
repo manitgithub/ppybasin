@@ -1,0 +1,123 @@
+.root { --ink: #193145; --muted: #557183; --line: #d1e0e7; color: var(--ink); background: #eef4f6; padding: clamp(16px, 3vw, 32px); font-size: 13px; line-height: 1.6; }
+.root :focus-visible { outline: 3px solid #2486b9; outline-offset: 3px; }
+.root button, .root summary, .root select { cursor: pointer; }
+.root button:disabled { opacity: .5; cursor: wait; }
+.root h1, .root h2, .root p { margin: 0; }
+.pageHeader { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.pageHeader h1 { margin-block: 4px 5px; font-size: clamp(26px, 3vw, 35px); font-weight: 750; letter-spacing: -.02em; }
+.pageHeader p { color: var(--muted); }
+.pageHeader .eyebrow { color: #17658a; font-size: 11px; font-weight: 650; }
+.back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; margin-bottom: 8px; color: #17658a; }
+.refresh { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 7px; min-height: 44px; border: 1px solid #acc7d5; border-radius: 6px; background: #f8fbfc; padding: 8px 14px; color: #175b7d; font-weight: 650; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 20px; }
+.dailyMethod select { min-height: 42px; width: 100%; min-width: 0; border: 1px solid #b9ceda; border-radius: 5px; background: #f1f7fa; color: var(--ink); padding: 6px 8px; font: inherit; }
+.main { scroll-margin-top: 16px; min-width: 0; display: grid; gap: 16px; }
+.controls { background: #f8fbfc; border: 1px solid var(--line); border-radius: 9px; padding: 14px 16px; }
+.controlRow, .periodRow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.controlRow { justify-content: space-between; }
+.segments { display: flex; gap: 4px; padding: 4px; border-radius: 6px; background: #e7eff3; }
+.segments button, .metricSelect button { min-height: 40px; padding: 6px 14px; border-radius: 4px; font-weight: 650; font-size: 12px; color: #405f72; }
+.segments button[aria-pressed="true"] { background: #f8fbfc; color: #175b7d; box-shadow: 0 1px 4px #102e431a; }
+.metricSelect { display: flex; gap: 3px; }
+.metricSelect button { border: 1px solid transparent; }
+.metricSelect button[aria-pressed="true"] { border-color: #accbd9; background: #e5f1f7; color: #175b7d; }
+.periodRow { margin-top: 13px; padding-top: 12px; border-top: 1px solid #e1e9ed; }
+.periodRow > span { color: var(--muted); font-size: 11px; }
+.periodRow > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.periodRow button { min-height: 38px; padding: 5px 13px; border: 1px solid #d0dfe6; border-radius: 5px; color: #405f72; font-size: 12px; }
+.periodRow button[aria-pressed="true"] { background: #17658a; color: #f8fbfc; border-color: #17658a; font-weight: 650; }
+.dailyMethod { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 11px; color: var(--muted); }
+.dailyMethod select { width: 215px; font-size: 12px; }
+.chartPanel { border: 1px solid var(--line); border-radius: 9px; background: #f8fbfc; overflow: hidden; }
+.chartHeader { display: flex; align-items: start; justify-content: space-between; gap: 12px; padding: 20px 22px 16px; }
+.chartHeader .code { font-size: 11px; font-weight: 650; color: #087e96; }
+.chartHeader h2 { margin-top: 5px; font-size: 22px; font-weight: 750; line-height: 1.4; }
+.chartHeader p:last-child { margin-top: 5px; color: var(--muted); font-size: 11px; }
+.dataBadge { flex-shrink: 0; border: 1px solid #bdcfd9; border-radius: 5px; padding: 5px 8px; color: #486479; font-size: 10px; }
+.summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .9fr); gap: 20px; padding: 0 22px 18px; }
+.summary > div > span { color: var(--muted); font-size: 12px; }
+.summary strong { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 10px; margin-top: 2px; font-size: 36px; line-height: 1.4; font-weight: 750; color: #125f61; font-variant-numeric: tabular-nums; }
+.summary strong small { font-size: 12px; font-weight: 500; }
+.summary p { margin-top: 2px; color: var(--muted); font-size: 11px; }
+.summary dl { margin: 0; display: grid; gap: 7px; align-content: center; }
+.summary dl > div { display: flex; justify-content: space-between; gap: 10px; padding-block: 4px; border-bottom: 1px solid #e0e9ed; font-size: 11px; }
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; font-weight: 650; font-variant-numeric: tabular-nums; }
+.chart { padding: 0 16px; border-top: 1px solid #e1e9ed; }
+.inspection { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; padding: 12px 6px; min-height: 60px; font-size: 11px; color: var(--muted); }
+.inspection strong { color: #125f61; font-size: 18px; font-variant-numeric: tabular-nums; }
+.inspection small { font-size: 11px; font-weight: 500; }
+.inspection > span:last-child { margin-left: auto; }
+.chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.axis { font-size: 11px; fill: #557183; }
+.gridLine { stroke: #d9e5eb; stroke-dasharray: 3 4; }
+.chartScrubber { display: flex; align-items: center; gap: 12px; padding: 0 6px; font-size: 10px; color: var(--muted); }
+.chartScrubber input { width: 100%; min-width: 0; min-height: 36px; accent-color: #087e96; cursor: pointer; }
+.chart .chartLegend { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; padding: 0 6px 12px; }
+.chartLegend span { width: 18px; border-top: 2px solid #087e96; flex-shrink: 0; }
+.chartEmpty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; min-height: 250px; padding: 26px; text-align: center; color: var(--muted); background: #f2f7f9; }
+.chartEmpty strong { font-size: 16px; color: #405f72; }
+.chartEmpty p { max-width: 520px; font-size: 12px; }
+.chartActions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 8px 22px; border-block: 1px solid #e1e9ed; font-size: 11px; }
+.chartActions label, .chartActions button { display: flex; align-items: center; gap: 7px; min-height: 38px; }
+.chartActions input { accent-color: #17658a; }
+.chartActions button { color: #17658a; font-weight: 650; }
+.qualityNote { padding: 12px 22px; color: var(--muted); font-size: 11px; }
+.qualityNote p + p { margin-top: 4px; }
+.notice { padding: 12px 16px; border: 1px solid #c4d3dc; border-radius: 6px; background: #e7eff3; color: #405f72; }
+.dataTable, .comparison, .sourceInfo { border: 1px solid var(--line); border-radius: 8px; background: #f8fbfc; overflow: hidden; }
+.dataTable summary, .sourceInfo summary { min-height: 48px; padding: 13px 18px; font-size: 12px; font-weight: 650; }
+.dataTable > div { max-height: 350px; overflow: auto; }
+.root table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; }
+.root th, .root td { padding: 11px 14px; border-top: 1px solid #e0e9ed; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.root thead th { background: #eaf1f5; color: #405f72; font-weight: 650; }
+.root td small, .root th small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 400; }
+.root tbody th button { min-height: 40px; text-align: left; color: #17658a; font-weight: 700; }
+.comparison header { padding: 16px 18px; }
+.comparison h2 { font-size: 16px; font-weight: 700; }
+.comparison header p { color: var(--muted); font-size: 11px; margin-top: 4px; }
+.tableScroll { overflow: auto; }
+.comparison tr[data-selected="true"] { background: #e7f2f7; }
+.sourceInfo p { padding: 0 18px; margin-bottom: 9px; color: var(--muted); font-size: 12px; }
+.sourceInfo a { display: block; margin: 8px 18px 12px; color: #17658a; text-decoration: underline; font-size: 12px; overflow-wrap: anywhere; }
+.empty { padding: 20px 12px; color: var(--muted); font-size: 12px; }
+@media (max-width: 1050px) { .layout { gap: 14px; } .summary { grid-template-columns: 1fr; gap: 10px; } .dailyMethod { margin-left: 0; } }
+@media (max-width: 700px) {
+  .root { padding: 16px 12px; } .pageHeader { align-items: start; gap: 10px; margin-bottom: 16px; } .pageHeader p:last-child { font-size: 11px; } .pageHeader .eyebrow { font-size: 10px; } .refresh { padding-inline: 9px; font-size: 11px; }
+  .layout { display: flex; flex-direction: column; gap: 12px; } .main { width: 100%; gap: 12px; }
+  .controls { padding: 11px; } .controlRow { gap: 8px; } .segments button, .metricSelect button { padding-inline: 10px; min-height: 42px; font-size: 11px; } .periodRow { gap: 6px; } .periodRow button { padding-inline: 10px; min-height: 40px; } .dailyMethod { width: 100%; } .dailyMethod select { width: auto; flex: 1; }
+  .chartHeader { padding: 16px 14px 12px; } .chartHeader h2 { font-size: 19px; } .dataBadge { max-width: 100px; font-size: 9px; text-align: center; } .summary { padding: 0 14px 14px; } .summary strong { font-size: 31px; } .chart { padding-inline: 4px; } .chart svg { min-height: 175px; } .axis { font-size: 19px; } .sparseTick { display: none; } .inspection { padding: 9px 10px; gap: 3px 8px; } .inspection > span:last-child { width: 100%; margin-left: 0; font-size: 10px; }
+  .chartActions, .qualityNote { padding-inline: 14px; } .chartScrubber { padding-inline: 10px; } .chart .chartLegend { padding-inline: 10px; } .root th, .root td { padding: 10px 12px; } .chartEmpty { min-height: 230px; padding: 20px; }
+}
+
+.main[hidden] { display: none; }
+
+/* The overview should leave room for the actual time series. */
+.root { padding: 16px; }
+.pageHeader { align-items: center; margin-bottom: 12px; }
+.pageHeader > div { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.pageHeader h1 { font-size: 26px; margin: 0; }
+.pageHeader .eyebrow, .pageHeader > div > p:last-child { display: none; }
+.back { margin-bottom: 0; }
+.main { gap: 10px; }
+.controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 8px 12px; }
+.controlRow { justify-content: start; gap: 12px; }
+.periodRow { margin: 0; padding: 0; border: 0; }
+.chartPanel { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 2fr); }
+.chartHeader { padding: 14px 18px; }
+.chartHeader h2 { font-size: 19px; }
+.summary { padding: 12px 18px; gap: 16px; }
+.summary strong { font-size: 30px; }
+.chart, .chartActions, .qualityNote { grid-column: 1 / -1; }
+.chart svg { width: 100%; margin-inline: auto; }
+.inspection { min-height: 42px; padding-block: 6px; }
+@media (max-width: 1050px) { .summary { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) {
+  .root { padding: 12px; } .pageHeader h1 { font-size: 22px; } .pageHeader > div { gap: 4px 12px; } .refresh { min-height: 40px; }
+  .controls { display: block; } .controlRow { justify-content: space-between; gap: 6px; } .periodRow { margin-top: 8px; }
+  .chartPanel { display: block; } .chartHeader { padding: 12px 14px 8px; } .summary { padding: 0 14px 12px; }
+  .chart svg { width: 100%; }
+}
+
+
+@media (max-width: 700px) { .axis { font-size: 11px; } }

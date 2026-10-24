@@ -1,4 +1,9 @@
 import type { RainStation, SituationPayload } from "@/lib/situation/adapters";
+import { emptyRainStations } from "./rain-stations";
+
+export function registeredRainStations(situation: SituationPayload | null) {
+  return situation?.rainStations ?? emptyRainStations();
+}
 
 export function observationTime(value: string) {
   const input = value.trim();

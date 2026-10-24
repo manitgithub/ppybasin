@@ -1,5 +1,7 @@
 import https from "node:https";
 import { getDwrSituation } from "./dwr";
+import { getRegistryRain } from "./rain-registry";
+import type { RegisteredRainStation } from "../rain-stations";
 
 export type SourceStatus = "ok" | "unavailable" | "schema_changed" | "no_confirmed_data";
 
@@ -29,6 +31,8 @@ export type RainStation = {
 
 export type WaterLevelStation = {
   id: string;
+  code?: string;
+  dischargeM3s?: number | null;
   name: string;
   district: string;
   river: string;
@@ -89,6 +93,7 @@ export type DisasterNoticeSummary = {
 };
 
 export type SituationPayload = {
+  rainStations?: RegisteredRainStation[];
   dwr?: { rain12h: RainStation[] };
   updatedAt: string;
   thaiWater: {
@@ -266,6 +271,8 @@ function parseWaterLevel(row: Record<string, unknown>): WaterLevelStation | null
 
   return {
     id,
+    code: textAt(station.tele_station_oldcode).trim().toUpperCase(),
+    dischargeM3s: numberAt(row.discharge) ?? numberAt(row.flow_rate),
     name: textAt(nested(station, ["tele_station_name", "th"]), textAt(nested(station, ["tele_station_name", "en"]), "ไม่ระบุสถานี")),
     district: textAt(nested(geocode, ["amphoe_name", "th"]), "-"),
     river: textAt(row.river_name, "-"),
@@ -616,16 +623,18 @@ export async function getDisasterSituation() {
 }
 
 export async function getSituationData(): Promise<SituationPayload> {
-  const [thaiWater, tmd, reservoir, disaster, dwr] = await Promise.all([
+  const [thaiWater, tmd, reservoir, disaster, dwr, registeredRain] = await Promise.all([
     getThaiWaterSituation(),
     getTmdSituation(),
     getReservoirSituation(),
     getDisasterSituation(),
     getDwrSituation(),
+    getRegistryRain(),
   ]);
 
   return {
     updatedAt: nowIso(),
+    rainStations: registeredRain.stations,
     dwr: { rain12h: dwr.rain12h },
     thaiWater: {
       rain24h: thaiWater.rain24h,
@@ -643,6 +652,6 @@ export async function getSituationData(): Promise<SituationPayload> {
       phatthalung: disaster.phatthalung,
       gistdaFloodBoundary: disaster.gistdaFloodBoundary,
     },
-    sources: [dwr.source, ...thaiWater.sources, ...tmd.sources, reservoir.source, ...disaster.sources],
+    sources: [dwr.source, ...registeredRain.sources, ...thaiWater.sources, ...tmd.sources, reservoir.source, ...disaster.sources],
   };
 }

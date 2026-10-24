@@ -1,6 +1,7 @@
 "use client";
 
 import L from "leaflet";
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, Polyline, Popup, useMap } from "react-leaflet";
 import { LocateFixed } from "lucide-react";
@@ -10,7 +11,7 @@ import styles from "./NearbyShelterRoute.module.css";
 
 type Route = { points: [number, number][]; distance: number; duration: number };
 
-export default function NearbyShelterRoute({ shelters, loading, error }: { shelters: ShelterRecord[]; loading: boolean; error: boolean }) {
+export default function NearbyShelterRoute({ shelters, loading, error, panelContainer }: { panelContainer?: HTMLElement | null; shelters: ShelterRecord[]; loading: boolean; error: boolean }) {
   const map = useMap();
   const panel = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
@@ -26,7 +27,7 @@ export default function NearbyShelterRoute({ shelters, loading, error }: { shelt
   useEffect(() => {
     if (panel.current) { L.DomEvent.disableClickPropagation(panel.current); L.DomEvent.disableScrollPropagation(panel.current); }
     return () => { requestId.current += 1; };
-  }, []);
+  }, [panelContainer]);
 
   function locate() {
     setGpsError("");
@@ -79,8 +80,7 @@ export default function NearbyShelterRoute({ shelters, loading, error }: { shelt
     else if (position) map.setView([position.lat, position.lng], 13);
   }, [map, route, position]);
 
-  return <>
-    <div ref={panel} className={styles.panel}>
+  const controls = <div ref={panel} className={`${styles.panel} ${panelContainer ? styles.docked : ""}`} data-nearby-panel>
       <strong>ศูนย์อพยพใกล้ฉัน</strong>
       <button type="button" onClick={locate} disabled={locating}><LocateFixed size={17} />{locating ? "กำลังรับตำแหน่ง…" : position ? "รับตำแหน่งใหม่" : "ใช้ตำแหน่งปัจจุบัน"}</button>
       {position && selected && <label>ศูนย์ปลายทาง<select value={selected.id} onChange={(event) => setSelectedId(event.target.value)}>{ranked.map((shelter) => <option key={shelter.id} value={shelter.id}>{shelter.name} · {shelter.distanceKm.toFixed(1)} กม. เส้นตรง</option>)}</select></label>}
@@ -94,7 +94,10 @@ export default function NearbyShelterRoute({ shelters, loading, error }: { shelt
         {route && <p>ระยะทาง {(route.distance / 1000).toFixed(1)} กม. · ประมาณ {Math.ceil(route.duration / 60)} นาที</p>}
       </div>
       <small>ยืนยันการเปิดและที่ว่างกับเจ้าหน้าที่ก่อนเดินทาง เส้นทางไม่ได้ยืนยันว่าปลอดภัยจากน้ำท่วม</small>
-    </div>
+    </div>;
+
+  return <>
+    {panelContainer ? createPortal(controls, panelContainer) : controls}
     {position && <CircleMarker center={[position.lat, position.lng]} radius={8} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }}><Popup>ตำแหน่งของคุณ</Popup></CircleMarker>}
     {route && <><Polyline positions={route.points} pathOptions={{ color: "#fff", weight: 9, opacity: .9 }} /><Polyline positions={route.points} pathOptions={{ color: "#2563eb", weight: 5, opacity: 1 }} /></>}
   </>;
