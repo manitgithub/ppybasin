@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql db/migrations/003_sensor_reading_details.sql db/migrations/006_seed_sensor_installation_points.sql db/migrations/012_update_hydro_meteorological_stations.sql db/migrations/013_retire_previous_sensor_stations.sql db/migrations/014_use_ws_sensor_station_ids.sql",
+    "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql db/migrations/003_sensor_reading_details.sql db/migrations/006_seed_sensor_installation_points.sql db/migrations/012_update_hydro_meteorological_stations.sql db/migrations/013_retire_previous_sensor_stations.sql db/migrations/014_use_ws_sensor_station_ids.sql db/migrations/015_rename_ws001_station.sql",
     "db:migrate:shelters": "node scripts/run-migration.mjs db/migrations/004_seed_pa_phayom_shelters.sql",
     "db:import:shelters": "node scripts/import-shelters.mjs",
     "db:migrate:villages": "node scripts/run-migration.mjs db/migrations/005_village_basics.sql",

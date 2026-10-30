@@ -92,6 +92,59 @@ try {
   assert.equal((await (await history.GET(new Request('http://localhost/api/sensor/history?device_id=WS003'))).json()).readings.length, 0);
   assert.equal((await history.GET(new Request('http://localhost/api/sensor/history?device_id=invalid%27'))).status, 400);
   console.log('PASS: water history returns latest 50 measured values for selected station in chronological order; nulls, other stations, empty history and invalid IDs handled');
+  const remove = id => api.DELETE(new Request('http://localhost/api/sensor/devices', { method: 'DELETE', body: JSON.stringify({ device_id: id }) }));
+  assert.equal((await remove('WS001')).status, 200);
+  for (const suffix of ['', '?include_hidden=1']) {
+    const listed = await (await api.GET(new Request(`http://localhost/api/sensor/devices${suffix}`))).json();
+    assert.ok(!listed.devices.some(device => device.device_id === 'WS001'), 'Deleted station absent from map and management list');
+  }
+  assert.equal((await db.query("select count(*)::int as count from public.sensor_readings where device_id = 'WS001'")).rows[0].count, 81);
+  await db.query(`insert into public.sensor_devices(device_id,last_seen_at) values ('WS001',now())
+    on conflict(device_id) do update set last_seen_at = excluded.last_seen_at`);
+  assert.ok((await db.query("select metadata->>'deleted_at' as deleted from public.sensor_devices where device_id = 'WS001'")).rows[0].deleted, 'Incoming data does not restore deleted station');
+  assert.equal((await remove('WS001')).status, 404);
+  assert.equal((await remove('MISSING')).status, 404);
+  assert.equal((await remove("invalid'")).status, 400);
+  assert.equal((await save({ ...form, device_id: 'WS001' })).status, 201);
+  const restored = await (await api.GET(new Request('http://localhost/api/sensor/devices'))).json();
+  assert.equal(restored.devices.find(device => device.device_id === 'WS001').readings_count, 81, 'Explicitly re-adding restores station with history');
+  console.log('PASS: delete removes station from both lists, preserves readings, stays deleted during ingest, handles invalid/missing IDs and supports explicit restoration');
+  const helpers = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync('src/lib/public-situation.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports: helpers, require: () => ({ emptyRainStations: () => [] }) });
+  let configured = true;
+  const dashboard = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync('src/lib/dashboard-data.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, {
+    exports: dashboard, console,
+    require: path => path.endsWith('/db') ? { getPool: () => configured ? {
+      query: (sql, params) => sql.includes('public.sensor_devices') ? db.query(sql, params) : Promise.resolve({ rows: [] }),
+    } : undefined } : helpers,
+  });
+  let dashboardData = await dashboard.getDashboardData();
+  assert.equal(dashboardData.stations.length, 6);
+  assert.ok(!dashboardData.stations.some(station => station.id === 'XX'));
+  assert.equal(dashboardData.summary.latestWaterLevel, null, 'Old measurements must not produce a fake zero');
+  await save({ ...form, device_id: 'WS001', original_device_id: 'WS001', name: 'Updated DB name', latitude: 7.82, longitude: 99.88 });
+  await db.query(`insert into public.sensor_readings(id,device_id,temperature,humidity,wind_speed,battery,recorded_at,water_level)
+    values (83,'WS001',28,80,0,12,now(),0)`);
+  await remove('WS002');
+  dashboardData = await dashboard.getDashboardData();
+  const dashboardStation = dashboardData.stations.find(station => station.id === 'WS001');
+  assert.equal(dashboardStation.name, 'Updated DB name');
+  assert.equal(dashboardStation.lat, 7.82);
+  assert.equal(dashboardStation.lng, 99.88);
+  assert.equal(dashboardData.summary.latestWaterLevel, 0, 'A measured zero is valid');
+  assert.equal(dashboardData.summary.stationsOnline, 1);
+  assert.ok(!dashboardData.stations.some(station => station.id === 'WS002'));
+  configured = false;
+  dashboardData = await dashboard.getDashboardData();
+  assert.equal(dashboardData.stations.length, 0, 'No static station fallback when database is unavailable');
+  assert.equal(dashboardData.summary.stationsOnline, 0);
+  assert.equal(dashboardData.summary.latestWaterLevel, null);
+  console.log('PASS: dashboard uses DB station edits/deletions/latest readings, ignores stale values, accepts measured zero, returns empty stations without DB');
 } finally {
   await client.end();
 }

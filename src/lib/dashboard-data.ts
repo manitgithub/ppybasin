@@ -1,5 +1,5 @@
 import { getPool } from "@/lib/db";
-import { hydroStations } from "@/lib/hydro-stations";
+import { isCurrentStationObservation } from "@/lib/public-situation";
 
 export type Shelter = {
   id: string;
@@ -20,8 +20,9 @@ export type TelemetryStation = {
   province: string;
   lat: number;
   lng: number;
-  level: number;
-  status: "normal" | "watch" | "critical";
+  level: number | null;
+  observedAt: string | null;
+  status: string;
 };
 
 export type DashboardPayload = {
@@ -40,18 +41,12 @@ export type DashboardPayload = {
   };
   summary: {
     stationsOnline: number;
-    latestWaterLevel: number;
+    latestWaterLevel: number | null;
     rainfall24h: number;
     warningAreas: number;
     shelters: number;
   };
 };
-
-const stations: TelemetryStation[] = hydroStations.map((station) => ({
-  ...station,
-  level: 0,
-  status: "normal",
-}));
 
 const fallbackShelters: Shelter[] = [
   {
@@ -85,7 +80,11 @@ const floodArea: [number, number][] = [
 
 function buildPayload(shelters: Shelter[], source: DashboardPayload["source"], databaseSummary: DashboardPayload["databaseSummary"] = {
   riskVillages: null, riskHouseholds: null, openShelters: null, openShelterCapacity: null, confirmedHelpPeople: null, confirmedHelpReports: null,
-}): DashboardPayload {
+}, stations: TelemetryStation[] = []): DashboardPayload {
+  const now = Date.now();
+  const currentStations = stations.filter(station => station.status === "active" && isCurrentStationObservation(station.observedAt, now));
+  const latestWater = currentStations.filter(station => station.level !== null)
+    .sort((a, b) => Date.parse(b.observedAt!) - Date.parse(a.observedAt!))[0];
   return {
     updatedAt: new Date().toISOString(),
     source,
@@ -94,10 +93,10 @@ function buildPayload(shelters: Shelter[], source: DashboardPayload["source"], d
     floodArea,
     databaseSummary,
     summary: {
-      stationsOnline: stations.length,
-      latestWaterLevel: 0,
+      stationsOnline: currentStations.length,
+      latestWaterLevel: latestWater?.level ?? null,
       rainfall24h: 0,
-      warningAreas: stations.filter((station) => station.status !== "normal").length,
+      warningAreas: 0,
       shelters: shelters.length,
     },
   };
@@ -110,7 +109,7 @@ export async function getDashboardData(): Promise<DashboardPayload> {
     return buildPayload(fallbackShelters, "fallback");
   }
 
-  const [shelterResult, villageResult, capacityResult, helpResult] = await Promise.allSettled([
+  const [shelterResult, villageResult, capacityResult, helpResult, stationResult] = await Promise.allSettled([
     db.query<{
       id: string;
       code: string | null;
@@ -157,7 +156,36 @@ export async function getDashboardData(): Promise<DashboardPayload> {
       from public.citizen_reports
       where kind = 'help' and status in ('verified', 'in_progress')
     `),
+    db.query<{
+      device_id: string; name: string | null; waterway: string; district: string; province: string;
+      latitude: number; longitude: number; status: string; water_level: string | null; recorded_at: Date | null;
+    }>(`
+      select d.device_id, d.name, d.latitude, d.longitude, d.status,
+        coalesce(d.metadata->>'waterway', d.location_name, '') as waterway,
+        coalesce(d.metadata->>'district', '') as district,
+        coalesce(d.metadata->>'province', '') as province,
+        latest.water_level, latest.recorded_at
+      from public.sensor_devices d
+      left join lateral (
+        select r.water_level, r.recorded_at
+        from public.sensor_readings r where r.device_id = d.device_id
+        order by r.recorded_at desc, r.received_at desc, r.id desc limit 1
+      ) latest on true
+      where coalesce(d.metadata->>'excluded_from_installation_list', 'false') <> 'true'
+        and coalesce(d.metadata->>'deleted_at', '') = ''
+        and d.latitude is not null and d.longitude is not null
+      order by d.device_id
+    `),
   ]);
+
+  const stations: TelemetryStation[] = stationResult.status === "fulfilled" ? stationResult.value.rows.map(row => ({
+    id: row.device_id, name: row.name || row.device_id,
+    waterway: row.waterway, district: row.district, province: row.province,
+    lat: Number(row.latitude), lng: Number(row.longitude), status: row.status,
+    level: row.water_level === null ? null : Number(row.water_level),
+    observedAt: row.recorded_at?.toISOString() ?? null,
+  })) : [];
+  if (stationResult.status === "rejected") console.error("Unable to load dashboard stations", stationResult.reason);
 
   const villages = villageResult.status === "fulfilled" ? villageResult.value.rows[0] : null;
   const capacity = capacityResult.status === "fulfilled" ? capacityResult.value.rows[0] : null;
@@ -185,9 +213,9 @@ export async function getDashboardData(): Promise<DashboardPayload> {
         updatedAt: row.updated_at?.toISOString() ?? null,
       }));
 
-    return buildPayload(shelters, "database", databaseSummary);
+    return buildPayload(shelters, "database", databaseSummary, stations);
   }
 
   console.error("Unable to load dashboard shelters", shelterResult.reason);
-  return buildPayload(fallbackShelters, "fallback", databaseSummary);
+  return buildPayload(fallbackShelters, "fallback", databaseSummary, stations);
 }

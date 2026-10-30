@@ -455,8 +455,8 @@ function TrackingSituationView({ data }: { data: DashboardPayload }) {
         />
         <MetricCard
           label="ระดับน้ำล่าสุด"
-          value={latestWaterLevel ? `${formatNumber(latestWaterLevel.waterLevelMsl, 2)} ม.รทก.` : `${data.summary.latestWaterLevel.toFixed(2)} ม.`}
-          detail={latestWaterLevel ? `${latestWaterLevel.name} ${formatDateTime(latestWaterLevel.observedAt)}` : "ยังไม่มีระดับน้ำจาก ThaiWater ที่ยืนยันได้"}
+          value={latestWaterLevel ? `${formatNumber(latestWaterLevel.waterLevelMsl, 2)} ม.รทก.` : data.summary.latestWaterLevel !== null ? `${data.summary.latestWaterLevel.toFixed(2)} ม.` : "ยังไม่มีข้อมูล"}
+          detail={latestWaterLevel ? `${latestWaterLevel.name} ${formatDateTime(latestWaterLevel.observedAt)}` : data.summary.latestWaterLevel !== null ? "ข้อมูลล่าสุดจากสถานีตรวจวัดในฐานข้อมูล" : "ยังไม่มีข้อมูลระดับน้ำล่าสุดที่ยืนยันได้"}
           icon={Gauge}
           tone={waterTone}
         />
@@ -1266,7 +1266,7 @@ export default function OperationalView({
       <div className="grid gap-3 md:grid-cols-3">
         <article className="rounded-[8px] bg-white p-5 shadow-sm">
           <p className="text-xs font-extrabold text-slate-500">ระดับน้ำล่าสุด</p>
-          <p className="mt-2 text-3xl font-extrabold text-[#20325c]">{data.summary.latestWaterLevel.toFixed(2)} ม.</p>
+          <p className="mt-2 text-3xl font-extrabold text-[#20325c]">{data.summary.latestWaterLevel !== null ? `${data.summary.latestWaterLevel.toFixed(2)} ม.` : "ยังไม่มีข้อมูล"}</p>
         </article>
         <article className="rounded-[8px] bg-white p-5 shadow-sm">
           <p className="text-xs font-extrabold text-slate-500">ศูนย์พักพิงในระบบ</p>
