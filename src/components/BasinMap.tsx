@@ -22,7 +22,7 @@ import type { FeatureCollection, LineString } from "geojson";
 import styles from "./BasinMap.module.css";
 import StationCatalogMarkers, { StationCatalogFocus, StationCatalogPopup } from "./public/StationCatalogMarkers";
 import type { CatalogStation, FocusedStation, StationCategory } from "@/lib/station-catalog";
-import MapDetailsCard, { mapCoordinates, mapDetailsPopupOptions } from "./public/MapDetailsCard";
+import MapDetailsCard, { mapCoordinates, mapDetailsPopupOptions, type MapDetailMetric } from "./public/MapDetailsCard";
 
 type WaterwayData = {
   waterways: Array<{ id: number; type: string; name: string; points: [number, number][] }>;
@@ -50,6 +50,27 @@ const stationIcon = L.divIcon({
   html: BASIN_MARKER_HTML.stations,
   iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
 });
+const emptyStationIcon = L.divIcon({
+  className: styles.emptyStation,
+  html: BASIN_MARKER_HTML.stations,
+  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+});
+
+function sensorMetrics(station: SensorDevice): MapDetailMetric[] {
+  const reading = station.latest_reading;
+  if (!reading) return [{ label: "ข้อมูลตรวจวัดล่าสุด", value: null }];
+  const numeric = (value: string | number | null | undefined) => value === null || value === undefined || value === "" ? null : Number(value);
+  return [
+    { label: "ระดับน้ำ", value: numeric(reading.water_level), unit: "ม." },
+    { label: "ปริมาณฝนที่อุปกรณ์รายงาน", value: numeric(reading.rainfall), unit: "มม." },
+    { label: "อุณหภูมิ", value: numeric(reading.temperature), unit: "°C" },
+    { label: "ความชื้น", value: numeric(reading.humidity), unit: "%" },
+    { label: "ความเร็วลม", value: numeric(reading.wind_speed), unit: "ม./วินาที" },
+    { label: "ทิศทางลม", value: reading.direction },
+    { label: "แบตเตอรี่", value: numeric(reading.batteryVoltage), unit: "V" },
+    { label: "แรงดันไฟเลี้ยง", value: numeric(reading.switchingVoltage), unit: "V" },
+  ].map(metric => ({ ...metric, observedAt: reading.recorded_at }));
+}
 function rainStationIcon(rainfallMm: number | null, recent: boolean) {
   const available = rainfallMm !== null && Number.isFinite(rainfallMm) && rainfallMm >= 0;
   // Only a formatted finite number enters this static HTML; never source-provided text.
@@ -113,6 +134,7 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
   const [waterways, setWaterways] = useState<WaterwayData | null>(null);
   const [waterwaysError, setWaterwaysError] = useState(false);
   const [stations, setStations] = useState<DatabaseLayer<SensorDevice>>({ points: [], loading: true, error: false, skipped: 0 });
+  const refreshStations = useRef<() => void>(() => {});
   const [shelters, setShelters] = useState<DatabaseLayer<ShelterRecord>>({ points: [], loading: true, error: false, skipped: 0 });
 
   useEffect(() => {
@@ -133,9 +155,21 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         if (!controller.signal.aborted) update({ points: [], loading: false, error: true, skipped: 0 });
       }
     }
-    void load<SensorDevice>("/api/sensor/devices", "devices", (record) => positionAt(record.latitude, record.longitude), setStations);
+    let refreshing = false;
+    const refresh = async () => {
+      if (refreshing || controller.signal.aborted) return;
+      refreshing = true;
+      try {
+        await load<SensorDevice>("/api/sensor/devices", "devices", (record) => positionAt(record.latitude, record.longitude), layer => {
+          setStations(previous => layer.error ? { ...previous, loading: false, error: true } : layer);
+        });
+      } finally { refreshing = false; }
+    };
+    refreshStations.current = () => { void refresh(); };
+    void refresh();
+    const interval = window.setInterval(() => { void refresh(); }, 30000);
     void load<ShelterRecord>("/api/shelters", "shelters", (record) => positionAt(record.lat, record.lng), setShelters, isBasinMapShelter);
-    return () => controller.abort();
+    return () => { controller.abort(); window.clearInterval(interval); };
   }, []);
 
   useEffect(() => {
@@ -257,11 +291,12 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       </>}
 
       {showStations && stationCategory === "all" && stations.points.map(({ record: station, position }) => (
-        <Marker key={station.device_id} position={position} icon={stationIcon} title={`สถานีตรวจวัด ${station.name ?? station.device_id}`}>
+        <Marker key={station.device_id} position={position} icon={station.latest_reading ? stationIcon : emptyStationIcon} title={`สถานีตรวจวัด ${station.name ?? station.device_id} · ${station.latest_reading ? "มีข้อมูลตรวจวัด" : "ยังไม่มีข้อมูล"}`} eventHandlers={{ popupopen: () => refreshStations.current() }}>
           <Popup {...mapDetailsPopupOptions}>
             <MapDetailsCard code={station.device_id} title={station.name || station.device_id} area={station.location_name} now={now} tags={["สถานีตรวจวัด"]}
-              metrics={[{ label: "สถานะอุปกรณ์", value: { active: "ใช้งาน", inactive: "หยุดใช้งาน", maintenance: "บำรุงรักษา" }[station.status] ?? station.status, observedAt: station.last_seen_at }]}
-              metadata={[{ label: "พิกัด", value: mapCoordinates(...position) }]}
+              metrics={sensorMetrics(station)}
+              note={stations.error ? "อัปเดตข้อมูลไม่สำเร็จ กำลังแสดงข้อมูลที่โหลดได้ครั้งก่อน" : undefined}
+              metadata={[{ label: "สถานะอุปกรณ์", value: { active: "ใช้งาน", inactive: "หยุดใช้งาน", maintenance: "บำรุงรักษา" }[station.status] ?? station.status }, { label: "พิกัด", value: mapCoordinates(...position) }]}
               sources={[{ label: "ทะเบียนสถานีตรวจวัดในฐานข้อมูล", url: "/api/sensor/devices" }]} />
           </Popup>
         </Marker>

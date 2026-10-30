@@ -90,7 +90,24 @@ export async function GET() {
         d.last_seen_at,
         d.last_battery,
         d.updated_at,
-        count(r.id)::int as readings_count
+        count(r.id)::int as readings_count,
+        (
+          select json_build_object(
+            'recorded_at', latest.recorded_at,
+            'temperature', latest.temperature,
+            'humidity', latest.humidity,
+            'wind_speed', latest.wind_speed,
+            'direction', latest.direction,
+            'rainfall', latest.rainfall,
+            'water_level', latest.water_level,
+            'batteryVoltage', coalesce(latest.battery_1, latest.battery),
+            'switchingVoltage', latest.battery_2
+          )
+          from public.sensor_readings latest
+          where latest.device_id = d.device_id
+          order by latest.recorded_at desc, latest.received_at desc, latest.id desc
+          limit 1
+        ) as latest_reading
       from public.sensor_devices d
       left join public.sensor_readings r on r.device_id = d.device_id
       where coalesce(d.metadata->>'excluded_from_installation_list', 'false') <> 'true'

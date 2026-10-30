@@ -58,6 +58,7 @@ export type SensorDevice = {
   last_battery: string | number | null;
   updated_at: string;
   readings_count: number;
+  latest_reading?: Pick<SensorReading, "recorded_at" | "temperature" | "humidity" | "wind_speed" | "direction" | "rainfall" | "water_level" | "batteryVoltage" | "switchingVoltage"> | null;
 };
 
 export type SensorDeviceForm = {
