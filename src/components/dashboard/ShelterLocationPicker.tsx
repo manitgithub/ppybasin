@@ -12,6 +12,7 @@ type ShelterLocationPickerProps = {
   onChange: (position: { lat: number; lng: number }) => void;
   helperText?: string;
   markerLabel?: string;
+  maxBounds?: [[number, number], [number, number]];
 };
 
 const defaultCenter: [number, number] = [7.7892, 100.2035];
@@ -33,7 +34,8 @@ function parsePosition(lat: string, lng: string): [number, number] {
   const parsedLat = Number(lat);
   const parsedLng = Number(lng);
 
-  if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
+  if (lat.trim() && lng.trim() && Number.isFinite(parsedLat) && Number.isFinite(parsedLng)
+    && Math.abs(parsedLat) <= 90 && Math.abs(parsedLng) <= 180) {
     return [parsedLat, parsedLng];
   }
 
@@ -70,6 +72,7 @@ export default function ShelterLocationPicker({
   onChange,
   helperText = "คลิกบนแผนที่หรือเลื่อนหมุดเพื่อกำหนดพิกัดศูนย์อพยพ",
   markerLabel = "⌂",
+  maxBounds = paPhayomBounds,
 }: ShelterLocationPickerProps) {
   const position = parsePosition(lat, lng);
   const pin = mapPin(markerLabel);
@@ -82,7 +85,7 @@ export default function ShelterLocationPicker({
           zoom={14}
           minZoom={12}
           maxZoom={18}
-          maxBounds={paPhayomBounds}
+          maxBounds={maxBounds}
           maxBoundsViscosity={0.9}
           scrollWheelZoom
           className="z-0"

@@ -3,8 +3,8 @@
 import { DataSources } from "@/components/DataSource";
 
 import dynamic from "next/dynamic";
-import { BookOpen, PlusCircle, Save, X } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { BookOpen, PlusCircle, Save, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { SensorDevice, SensorDeviceForm } from "@/components/dashboard/types";
 import { sensorAgeLabel } from "@/components/dashboard/utils";
 import { SensorSenderGuide } from "@/components/dashboard/views/SensorDataView";
@@ -26,11 +26,15 @@ function emptyDeviceForm(): SensorDeviceForm {
 }
 
 export default function SensorDeviceManager() {
+  const formRef = useRef<HTMLFormElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
   const [devices, setDevices] = useState<SensorDevice[]>([]);
   const [form, setForm] = useState<SensorDeviceForm>(emptyDeviceForm);
   const [originalDeviceId, setOriginalDeviceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const busy = saving || deletingId !== null;
   const [guideOpen, setGuideOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +86,8 @@ export default function SensorDeviceManager() {
       longitude: device.longitude === null ? "" : String(device.longitude),
       status: device.status,
     });
+    formRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
+    nameRef.current?.focus({ preventScroll: true });
   };
 
   const saveDevice = async (event: FormEvent<HTMLFormElement>) => {
@@ -111,6 +117,27 @@ export default function SensorDeviceManager() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const deleteDevice = async (device: SensorDevice) => {
+    if (busy || !window.confirm(`ลบสถานี ${device.device_id} · ${device.name || device.device_id} หรือไม่?\nสถานีจะหายจากรายการและแผนที่ โดยเก็บข้อมูลตรวจวัดย้อนหลังไว้`)) return;
+    setDeletingId(device.device_id);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/sensor/devices", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ device_id: device.device_id }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error ?? "ลบสถานีไม่สำเร็จ");
+      setDevices(current => current.filter(station => station.device_id !== device.device_id));
+      if (originalDeviceId === device.device_id) { setForm(emptyDeviceForm()); setOriginalDeviceId(null); }
+      setMessage(`ลบสถานี ${device.device_id} แล้ว · เก็บข้อมูลตรวจวัดย้อนหลังไว้`);
+      await loadDevices();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "ลบสถานีไม่สำเร็จ");
+    } finally { setDeletingId(null); }
   };
 
   const activeCount = devices.filter((device) => device.status === "active").length;
@@ -149,6 +176,7 @@ export default function SensorDeviceManager() {
 
       {(error || message) && (
         <div
+          role={error ? "alert" : "status"}
           className={[
             "rounded-[8px] border px-5 py-4 text-sm font-semibold",
             error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -159,23 +187,25 @@ export default function SensorDeviceManager() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[390px_1fr]">
-        <form className="rounded-[8px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/60" onSubmit={saveDevice}>
+        <form ref={formRef} aria-label={originalDeviceId ? `แก้ไขสถานี ${originalDeviceId}` : "เพิ่มสถานี"} className="scroll-mt-24 rounded-[8px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/60" onSubmit={saveDevice}>
           <div className="mb-5 flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-[8px] bg-blue-50 text-blue-700">
               <PlusCircle size={20} />
             </span>
             <div>
-              <h3 className="text-base font-extrabold text-slate-800">เพิ่ม / แก้ไขสถานี</h3>
+              <h3 className="text-base font-extrabold text-slate-800">{originalDeviceId ? `แก้ไขสถานี ${originalDeviceId}` : "เพิ่มสถานี"}</h3>
               <p className="text-xs font-medium text-slate-500">{originalDeviceId ? `กำลังแก้ไข ${originalDeviceId} · เปลี่ยนรหัสได้โดยเก็บข้อมูลเดิม` : "Device ID ต้องตรงกับรหัสที่อุปกรณ์ส่งเข้ามา"}</p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <fieldset className="space-y-4" disabled={busy}>
             <label className="block">
               <span className="text-xs font-extrabold text-slate-500">Device ID</span>
               <input
                 className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-400"
                 placeholder="WS007"
+                required
+                pattern="[A-Za-z0-9_-]{2,64}"
                 value={form.device_id}
                 onChange={(event) => setField("device_id", event.target.value)}
               />
@@ -185,6 +215,8 @@ export default function SensorDeviceManager() {
               <input
                 className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
                 placeholder="สถานีอากาศ..."
+                ref={nameRef}
+                required
                 value={form.name}
                 onChange={(event) => setField("name", event.target.value)}
               />
@@ -204,6 +236,7 @@ export default function SensorDeviceManager() {
                 <input
                   className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
                   placeholder="7.7899"
+                  type="number" step="any" min={-90} max={90}
                   value={form.latitude}
                   onChange={(event) => setField("latitude", event.target.value)}
                 />
@@ -213,6 +246,7 @@ export default function SensorDeviceManager() {
                 <input
                   className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-blue-400"
                   placeholder="100.2065"
+                  type="number" step="any" min={-180} max={180}
                   value={form.longitude}
                   onChange={(event) => setField("longitude", event.target.value)}
                 />
@@ -224,6 +258,7 @@ export default function SensorDeviceManager() {
                 lat={form.latitude}
                 lng={form.longitude}
                 markerLabel="●"
+                maxBounds={[[7.6, 99.7], [8.05, 100.35]]}
                 helperText="คลิกบนแผนที่หรือเลื่อนหมุดเพื่อกำหนดพิกัดสถานีตรวจวัด"
                 onChange={setPosition}
               />
@@ -240,22 +275,23 @@ export default function SensorDeviceManager() {
                 <option value="inactive">inactive</option>
               </select>
             </label>
-          </div>
+          </fieldset>
 
           <div className="mt-5 flex gap-2">
             <button
               className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[8px] bg-[#0879df] px-4 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition hover:bg-[#076bc5] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={saving}
+              disabled={busy}
             >
               <Save size={17} />
-              {saving ? "กำลังบันทึก" : "บันทึกสถานี"}
+              {saving ? "กำลังบันทึก" : originalDeviceId ? "บันทึกการแก้ไข" : "เพิ่มสถานี"}
             </button>
             <button
               type="button"
+              disabled={busy}
               className="h-11 rounded-[8px] border border-slate-200 px-4 text-sm font-extrabold text-slate-600 hover:bg-slate-50"
               onClick={() => { setForm(emptyDeviceForm()); setOriginalDeviceId(null); }}
             >
-              ล้าง
+              {originalDeviceId ? "ยกเลิกแก้ไข" : "ล้าง"}
             </button>
           </div>
         </form>
@@ -325,10 +361,18 @@ export default function SensorDeviceManager() {
                     <td className="px-5 py-4 font-extrabold text-slate-700">{device.readings_count.toLocaleString("th-TH")}</td>
                     <td className="px-5 py-4">
                       <button
+                        type="button"
+                        disabled={busy}
+                        aria-label={`แก้ไขสถานี ${device.device_id}`}
                         className="rounded-[8px] bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 hover:bg-blue-100"
                         onClick={() => editDevice(device)}
                       >
                         แก้ไข
+                      </button>
+                      <button type="button" disabled={busy} aria-label={`ลบสถานี ${device.device_id}`}
+                        className="ml-2 inline-flex min-h-9 items-center gap-1 rounded-[8px] px-3 py-1.5 text-xs font-extrabold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        onClick={() => void deleteDevice(device)}>
+                        <Trash2 size={14} aria-hidden="true" />{deletingId === device.device_id ? "กำลังลบ…" : "ลบ"}
                       </button>
                     </td>
                   </tr>

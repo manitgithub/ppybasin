@@ -118,6 +118,7 @@ export async function GET(request: Request) {
       from public.sensor_devices d
       left join public.sensor_readings r on r.device_id = d.device_id
       where ($1::boolean or coalesce(d.metadata->>'excluded_from_installation_list', 'false') <> 'true')
+        and coalesce(d.metadata->>'deleted_at', '') = ''
       group by d.device_id
       order by d.device_id
     `, [includeHidden]);
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
           latitude = excluded.latitude,
           longitude = excluded.longitude,
           status = excluded.status,
-          metadata = public.sensor_devices.metadata || excluded.metadata,
+          metadata = (public.sensor_devices.metadata - 'deleted_at') || excluded.metadata,
           updated_at = now()
         returning device_id
       `,
@@ -225,5 +226,37 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "Unable to save sensor device" }, { status: 500 });
   } finally {
     client?.release();
+  }
+}
+
+export async function DELETE(request: Request) {
+  let deviceId = "";
+  try {
+    const body = await request.json();
+    deviceId = textValue(body?.device_id);
+  } catch {
+    return Response.json({ ok: false, error: "คำขอลบสถานีไม่ถูกต้อง" }, { status: 400 });
+  }
+  if (!/^[A-Za-z0-9_-]{2,64}$/.test(deviceId)) {
+    return Response.json({ ok: false, error: "รหัสสถานีไม่ถูกต้อง" }, { status: 400 });
+  }
+  const db = getPool();
+  if (!db) return Response.json({ ok: false, error: "เชื่อมต่อฐานข้อมูลไม่ได้" }, { status: 503 });
+  try {
+    // Retain the device identity and readings so ingest cannot recreate a
+    // deleted station on the map, and historical measurements remain intact.
+    const result = await db.query(`
+      update public.sensor_devices
+      set status = 'inactive',
+        metadata = metadata || jsonb_build_object('excluded_from_installation_list', true, 'deleted_at', now()),
+        updated_at = now()
+      where device_id = $1 and coalesce(metadata->>'deleted_at', '') = ''
+      returning device_id
+    `, [deviceId]);
+    if (!result.rowCount) return Response.json({ ok: false, error: "ไม่พบสถานี หรือสถานีถูกลบแล้ว" }, { status: 404 });
+    return Response.json({ ok: true, device_id: deviceId });
+  } catch (error) {
+    console.error("Unable to delete sensor device", error);
+    return Response.json({ ok: false, error: "ลบสถานีไม่สำเร็จ กรุณาลองใหม่" }, { status: 500 });
   }
 }

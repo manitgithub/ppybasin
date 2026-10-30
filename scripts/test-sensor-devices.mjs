@@ -39,7 +39,10 @@ try {
   assert.equal(visible.devices[0].latest_reading.temperature, 28);
   assert.equal((await save({ ...form, original_device_id: 'WS001', device_id: 'lowerCase' })).status, 201);
   assert.equal((await db.query('select device_id from public.sensor_readings')).rows[0].device_id, 'lowerCase', 'Renaming cascades to historical readings and preserves case');
-  assert.equal((await save({ ...form, original_device_id: 'lowerCase', device_id: 'lowerCase', name: 'Edited' })).status, 201);
+  assert.equal((await save({ ...form, original_device_id: 'lowerCase', device_id: 'lowerCase', name: 'Edited', location_name: 'Updated location', latitude: 7.83, longitude: 99.9, status: 'maintenance' })).status, 201);
+  const edited = (await db.query('select name, location_name, latitude, longitude, status from public.sensor_devices where device_id = $1', ['lowerCase'])).rows[0];
+  assert.deepEqual(edited, { name: 'Edited', location_name: 'Updated location', latitude: 7.83, longitude: 99.9, status: 'maintenance' });
+  assert.equal((await db.query('select count(*)::int as count from public.sensor_readings where device_id = $1', ['lowerCase'])).rows[0].count, 1, 'Editing station metadata preserves readings');
   await save({ ...form, device_id: 'OTHER' });
   assert.equal((await save({ ...form, original_device_id: 'lowerCase', device_id: 'OTHER' })).status, 409);
   await db.query(`insert into public.sensor_devices(device_id,metadata) values ('HIDDEN','{"excluded_from_installation_list":true}')`);
