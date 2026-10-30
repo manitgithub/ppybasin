@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql db/migrations/003_sensor_reading_details.sql db/migrations/006_seed_sensor_installation_points.sql db/migrations/012_update_hydro_meteorological_stations.sql db/migrations/013_retire_previous_sensor_stations.sql",
+    "db:migrate:sensors": "node scripts/run-migration.mjs db/migrations/001_sensor_ingest.sql db/migrations/003_sensor_reading_details.sql db/migrations/006_seed_sensor_installation_points.sql db/migrations/012_update_hydro_meteorological_stations.sql db/migrations/013_retire_previous_sensor_stations.sql db/migrations/014_use_ws_sensor_station_ids.sql",
     "db:migrate:shelters": "node scripts/run-migration.mjs db/migrations/004_seed_pa_phayom_shelters.sql",
     "db:import:shelters": "node scripts/import-shelters.mjs",
     "db:migrate:villages": "node scripts/run-migration.mjs db/migrations/005_village_basics.sql",
@@ -26,6 +26,8 @@
     "test:rain-registry": "node scripts/test-rain-registry.mjs",
     "test:rain-interpolation": "node scripts/test-rain-interpolation.mjs",
     "test:station-catalog": "node scripts/test-station-catalog.mjs",
+    "test:station-freshness": "node scripts/test-station-freshness.mjs",
+    "test:sensor-devices": "node scripts/test-sensor-devices.mjs",
     "test:water-series": "node scripts/test-water-series.mjs",
     "test:basin-forecast": "node scripts/test-basin-forecast.mjs"
   },

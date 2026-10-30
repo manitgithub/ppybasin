@@ -66,7 +66,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
     { id: "radar", label: "เรดาร์ฝน · RainViewer", note: "ภาพกลุ่มฝนย้อนหลัง 2 ชั่วโมง", color: "#147ab5" },
     { id: "waterways", label: "เส้นทางน้ำ", note: "แม่น้ำ / คลอง / ทางน้ำย่อย", color: "#1988c6" },
     { id: "cctv", label: "กล้อง ปภ. / กรมชลประทาน", note: `${cctvStations.length} จุด · เลือกดูภาพจากแผงดูกล้อง CCTV`, color: "#475569" },
-    { id: "stations", label: "สถานีตรวจวัด", note: "สีเทา: ยังไม่มีข้อมูล · กดหมุดดูค่าล่าสุด", color: "#2563eb" },
+    { id: "stations", label: "สถานีตรวจวัด", note: "สีเทา: ไม่มีข้อมูล หรือไม่อัปเดตเกิน 2 ชม. · กดหมุดดูค่าล่าสุด", color: "#2563eb" },
     { id: "rain", label: `สถานีวัดน้ำฝน · ${rainStations.length} แห่ง`, note: "ป่าพะยอม · คลองท่าแนะ · สถานีข้างเคียง", color: "#087e96" },
     { id: "rainSurface", label: "ประมาณฝนเชิงพื้นที่", note: "ฝนสะสม 24 ชม. · Thin-plate spline / IDW", color: "#187bb5" },
     { id: "waterLevels", label: "ระดับน้ำล่าสุด", note: "ค่าตรวจวัดจาก ThaiWater", color: "#464ba5" },

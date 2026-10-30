@@ -8,7 +8,7 @@ import type { RainStation, WaterLevelStation } from "@/lib/situation/adapters";
 import type { RegisteredRainStation } from "@/lib/rain-stations";
 import type { RainMethod, RainSurfaceStatus } from "@/lib/rain-interpolation";
 import RainSurfaceLayer from "@/components/public/RainSurfaceLayer";
-import { isRecentObservation } from "@/lib/public-situation";
+import { isCurrentStationObservation } from "@/lib/public-situation";
 import type { RadarOverlay } from "@/lib/rainviewer";
 import type { PublicAlert } from "@/components/public/PublicDashboard";
 import type { SensorDevice, ShelterRecord } from "@/components/dashboard/types";
@@ -23,6 +23,7 @@ import styles from "./BasinMap.module.css";
 import StationCatalogMarkers, { StationCatalogFocus, StationCatalogPopup } from "./public/StationCatalogMarkers";
 import type { CatalogStation, FocusedStation, StationCategory } from "@/lib/station-catalog";
 import MapDetailsCard, { mapCoordinates, mapDetailsPopupOptions, type MapDetailMetric } from "./public/MapDetailsCard";
+import StationWaterHistory from "./public/StationWaterHistory";
 
 type WaterwayData = {
   waterways: Array<{ id: number; type: string; name: string; points: [number, number][] }>;
@@ -45,16 +46,18 @@ function positionAt(lat: unknown, lng: unknown): [number, number] | null {
     ? [latitude, longitude] : null;
 }
 
-const stationIcon = L.divIcon({
-  className: "",
-  html: BASIN_MARKER_HTML.stations,
-  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
-});
-const emptyStationIcon = L.divIcon({
-  className: styles.emptyStation,
-  html: BASIN_MARKER_HTML.stations,
-  iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
-});
+function sensorStationIcon(station: SensorDevice, now: number) {
+  const raw = station.latest_reading?.water_level;
+  const level = raw === null || raw === undefined || typeof raw === "string" && !raw.trim() ? NaN : Number(raw);
+  const available = Number.isFinite(level);
+  const current = isCurrentStationObservation(station.latest_reading?.recorded_at, now);
+  const value = available ? level.toLocaleString("th-TH", { maximumFractionDigits: 2 }) : "—";
+  return L.divIcon({
+    className: `basin-sensor-marker ${styles.rainMarker} ${!available || !current ? `${styles.muted} ${styles.emptyStation}` : ""}`,
+    html: `<span class="${styles.symbol}">${BASIN_MARKER_HTML.stations}</span>${available && current ? `<span class="${styles.value}">${value}<small> ม.</small></span>` : ""}`,
+    iconSize: [72, 50], iconAnchor: [36, 16], popupAnchor: [0, -18],
+  });
+}
 
 function sensorMetrics(station: SensorDevice): MapDetailMetric[] {
   const reading = station.latest_reading;
@@ -67,8 +70,6 @@ function sensorMetrics(station: SensorDevice): MapDetailMetric[] {
     { label: "ความชื้น", value: numeric(reading.humidity), unit: "%" },
     { label: "ความเร็วลม", value: numeric(reading.wind_speed), unit: "ม./วินาที" },
     { label: "ทิศทางลม", value: reading.direction },
-    { label: "แบตเตอรี่", value: numeric(reading.batteryVoltage), unit: "V" },
-    { label: "แรงดันไฟเลี้ยง", value: numeric(reading.switchingVoltage), unit: "V" },
   ].map(metric => ({ ...metric, observedAt: reading.recorded_at }));
 }
 function rainStationIcon(rainfallMm: number | null, recent: boolean) {
@@ -77,7 +78,7 @@ function rainStationIcon(rainfallMm: number | null, recent: boolean) {
   const value = available ? rainfallMm.toLocaleString("th-TH", { maximumFractionDigits: 1 }) : "—";
   return L.divIcon({
     className: `basin-rain-marker ${styles.rainMarker} ${!available || !recent ? styles.muted : ""}`,
-    html: `<span class="${styles.symbol}">${BASIN_MARKER_HTML.rain}</span><span class="${styles.value}">${value}${available ? `<small> มม.</small>` : ""}</span>`,
+    html: `<span class="${styles.symbol}">${BASIN_MARKER_HTML.rain}</span>${available && recent ? `<span class="${styles.value}">${value}<small> มม.</small></span>` : ""}`,
     iconSize: [72, 50], iconAnchor: [36, 16], popupAnchor: [0, -18],
   });
 }
@@ -135,6 +136,7 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
   const [waterwaysError, setWaterwaysError] = useState(false);
   const [stations, setStations] = useState<DatabaseLayer<SensorDevice>>({ points: [], loading: true, error: false, skipped: 0 });
   const refreshStations = useRef<() => void>(() => {});
+  const [openSensorId, setOpenSensorId] = useState<string | null>(null);
   const [shelters, setShelters] = useState<DatabaseLayer<ShelterRecord>>({ points: [], loading: true, error: false, skipped: 0 });
 
   useEffect(() => {
@@ -229,7 +231,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
     ...(showThaNaeBoundary && thaNaeBoundary ? [thaNaeBoundary] : []),
   ]), [boundary, thaNaeBoundary, showBoundary, showThaNaeBoundary]);
   const outsideMask = useMemo(() => basinOutsideMask(selectedBoundary), [selectedBoundary]);
-  const rainIcons = useMemo(() => rainStations.map(station => rainStationIcon(station.rainfallMm, isRecentObservation(station.observedAt, now))), [rainStations, now]);
+  const rainIcons = useMemo(() => rainStations.map(station => rainStationIcon(station.rainfallMm, isCurrentStationObservation(station.observedAt, now))), [rainStations, now]);
+  const sensorIcons = useMemo(() => new Map(stations.points.map(({ record }) => [record.device_id, sensorStationIcon(record, now)])), [stations.points, now]);
   return (
     <>
     {showBoundary && boundaryError && <p role="status" className="absolute right-3 top-16 z-10 max-w-[240px] rounded bg-white p-3 text-xs text-slate-700">โหลดขอบเขตลุ่มน้ำป่าพะยอมไม่ได้ กรุณาโหลดหน้าใหม่</p>}
@@ -290,23 +293,27 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
         />
       </>}
 
-      {showStations && stationCategory === "all" && stations.points.map(({ record: station, position }) => (
-        <Marker key={station.device_id} position={position} icon={station.latest_reading ? stationIcon : emptyStationIcon} title={`สถานีตรวจวัด ${station.name ?? station.device_id} · ${station.latest_reading ? "มีข้อมูลตรวจวัด" : "ยังไม่มีข้อมูล"}`} eventHandlers={{ popupopen: () => refreshStations.current() }}>
+      {showStations && stationCategory === "all" && stations.points.map(({ record: station, position }) => {
+        const current = isCurrentStationObservation(station.latest_reading?.recorded_at, now);
+        const markerTitle = `สถานีตรวจวัด ${station.name ?? station.device_id} · ${!station.latest_reading ? "ยังไม่มีข้อมูล" : current ? "มีข้อมูลตรวจวัด" : "ข้อมูลเก่ากว่า 2 ชั่วโมงหรือเวลาไม่พร้อม"}`;
+        return <Marker key={station.device_id} position={position} icon={sensorIcons.get(station.device_id)} title={markerTitle} ref={marker => { const element = marker?.getElement(); if (element) element.title = markerTitle; }} eventHandlers={{ popupopen: () => { setOpenSensorId(station.device_id); refreshStations.current(); }, popupclose: () => setOpenSensorId(current => current === station.device_id ? null : current) }}>
           <Popup {...mapDetailsPopupOptions}>
             <MapDetailsCard code={station.device_id} title={station.name || station.device_id} area={station.location_name} now={now} tags={["สถานีตรวจวัด"]}
               metrics={sensorMetrics(station)}
               note={stations.error ? "อัปเดตข้อมูลไม่สำเร็จ กำลังแสดงข้อมูลที่โหลดได้ครั้งก่อน" : undefined}
               metadata={[{ label: "สถานะอุปกรณ์", value: { active: "ใช้งาน", inactive: "หยุดใช้งาน", maintenance: "บำรุงรักษา" }[station.status] ?? station.status }, { label: "พิกัด", value: mapCoordinates(...position) }]}
-              sources={[{ label: "ทะเบียนสถานีตรวจวัดในฐานข้อมูล", url: "/api/sensor/devices" }]} />
+              sources={[{ label: "ทะเบียนสถานีตรวจวัดในฐานข้อมูล", url: "/api/sensor/devices" }]}>
+              {openSensorId === station.device_id && <StationWaterHistory key={`${station.device_id}:${station.latest_reading?.recorded_at ?? ""}`} deviceId={station.device_id} />}
+            </MapDetailsCard>
           </Popup>
-        </Marker>
-      ))}
+        </Marker>;
+      })}
       {showRain && (stationCategory === "all" || stationCategory === "rain") && rainStations.map((station, index) => {
         if (stationCategory === "all" && stationCatalog?.some(row => row.code === station.id && row.reservoir)) return null;
         const position = positionAt(station.lat, station.lng);
         const hasRain = station.rainfallMm !== null;
         const title = `${"code" in station ? `${station.code} · ` : ""}${station.name}`;
-        const markerLabel = `ฝนสะสม ${station.accumulationHours ?? 24} ชั่วโมง · ${title} · ${hasRain ? `${station.rainfallMm} มม.${!isRecentObservation(station.observedAt, now) ? " · ข้อมูลเก่าหรือเวลาไม่พร้อม" : ""}` : "ไม่มีข้อมูล"}`;
+        const markerLabel = `ฝนสะสม ${station.accumulationHours ?? 24} ชั่วโมง · ${title} · ${hasRain ? `${station.rainfallMm} มม.${!isCurrentStationObservation(station.observedAt, now) ? " · ข้อมูลเก่ากว่า 2 ชั่วโมงหรือเวลาไม่พร้อม" : ""}` : "ไม่มีข้อมูล"}`;
         return position && <Marker key={`rain-${station.id}`} position={position} icon={rainIcons[index]} title={markerLabel} alt={markerLabel} ref={marker => { if (marker) catalogMarkers.current.set(station.id, marker); else catalogMarkers.current.delete(station.id); }}>
           <Popup {...mapDetailsPopupOptions}>{stationCatalog?.find(row => row.code === station.id) ? <StationCatalogPopup station={stationCatalog.find(row => row.code === station.id)!} now={now} /> : <MapDetailsCard
             code={station.id} title={station.name} area={"area" in station ? station.area : station.district} tags={["น้ำฝน"]} now={now}
@@ -317,7 +324,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       })}
       {!stationCatalog && showWaterLevels && waterLevels.map((station) => {
         const position = positionAt(station.lat, station.lng);
-        return position && <CircleMarker key={`water-${station.id}`} center={position} radius={7} pathOptions={{ color: "#464ba5", fillColor: "#d6d8fa", fillOpacity: .9, weight: 2 }}>
+        const current = isCurrentStationObservation(station.observedAt, now) && Number.isFinite(station.waterLevelMsl ?? station.waterLevelM);
+        return position && <CircleMarker key={`water-${station.id}`} center={position} radius={7} pathOptions={{ color: current ? "#464ba5" : "#637a89", fillColor: current ? "#d6d8fa" : "#c1cdd4", fillOpacity: .9, weight: 2 }}>
           <Popup {...mapDetailsPopupOptions}><MapDetailsCard code={station.code ?? station.id} title={station.name} area={station.river} tags={["ระดับน้ำ"]} now={now}
             metrics={[{ label: "ระดับน้ำ", value: station.waterLevelMsl ?? station.waterLevelM, unit: station.waterLevelMsl !== null ? "ม.รทก." : "ม.", observedAt: station.observedAt }]}
             metadata={[{ label: "หน่วยงาน", value: station.agency }, { label: "พิกัด", value: mapCoordinates(...position) }]}

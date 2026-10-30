@@ -11,6 +11,13 @@ export function observationTime(value: string) {
   return Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized) ? normalized : `${normalized}+07:00`);
 }
 
+export function isCurrentStationObservation(value: string | null | undefined, now: number) {
+  // A date without a measurement time cannot confirm an update within 2 hours.
+  if (!value || /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return false;
+  const time = observationTime(value);
+  return Number.isFinite(time) && time <= now && now - time <= 2 * 3600000;
+}
+
 export function observationLabel(value: string) {
   const time = observationTime(value);
   return Number.isFinite(time) ? new Date(time).toLocaleString("th-TH", {

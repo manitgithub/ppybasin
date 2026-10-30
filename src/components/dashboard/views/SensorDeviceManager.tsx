@@ -28,6 +28,7 @@ function emptyDeviceForm(): SensorDeviceForm {
 export default function SensorDeviceManager() {
   const [devices, setDevices] = useState<SensorDevice[]>([]);
   const [form, setForm] = useState<SensorDeviceForm>(emptyDeviceForm);
+  const [originalDeviceId, setOriginalDeviceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -37,7 +38,7 @@ export default function SensorDeviceManager() {
   const loadDevices = useCallback(async () => {
     try {
       setError(null);
-      const response = await fetch("/api/sensor/devices", { cache: "no-store" });
+      const response = await fetch("/api/sensor/devices?include_hidden=1", { cache: "no-store" });
       const payload = await response.json();
 
       if (!response.ok || !payload.ok) {
@@ -70,6 +71,9 @@ export default function SensorDeviceManager() {
   };
 
   const editDevice = (device: SensorDevice) => {
+    setOriginalDeviceId(device.device_id);
+    setMessage(null);
+    setError(null);
     setForm({
       device_id: device.device_id,
       name: device.name ?? "",
@@ -90,7 +94,7 @@ export default function SensorDeviceManager() {
       const response = await fetch("/api/sensor/devices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, original_device_id: originalDeviceId }),
       });
       const payload = await response.json();
 
@@ -100,6 +104,7 @@ export default function SensorDeviceManager() {
 
       setMessage(`บันทึกสถานี ${payload.device_id} แล้ว`);
       setForm(emptyDeviceForm());
+      setOriginalDeviceId(null);
       await loadDevices();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "บันทึกสถานีไม่สำเร็จ");
@@ -161,7 +166,7 @@ export default function SensorDeviceManager() {
             </span>
             <div>
               <h3 className="text-base font-extrabold text-slate-800">เพิ่ม / แก้ไขสถานี</h3>
-              <p className="text-xs font-medium text-slate-500">ใช้ device_id เดิมเพื่อแก้ไขข้อมูล</p>
+              <p className="text-xs font-medium text-slate-500">{originalDeviceId ? `กำลังแก้ไข ${originalDeviceId} · เปลี่ยนรหัสได้โดยเก็บข้อมูลเดิม` : "Device ID ต้องตรงกับรหัสที่อุปกรณ์ส่งเข้ามา"}</p>
             </div>
           </div>
 
@@ -169,10 +174,10 @@ export default function SensorDeviceManager() {
             <label className="block">
               <span className="text-xs font-extrabold text-slate-500">Device ID</span>
               <input
-                className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-bold uppercase outline-none focus:border-blue-400"
+                className="mt-1 h-11 w-full rounded-[8px] border border-slate-200 px-3 text-sm font-bold outline-none focus:border-blue-400"
                 placeholder="WS007"
                 value={form.device_id}
-                onChange={(event) => setField("device_id", event.target.value.toUpperCase())}
+                onChange={(event) => setField("device_id", event.target.value)}
               />
             </label>
             <label className="block">
@@ -248,7 +253,7 @@ export default function SensorDeviceManager() {
             <button
               type="button"
               className="h-11 rounded-[8px] border border-slate-200 px-4 text-sm font-extrabold text-slate-600 hover:bg-slate-50"
-              onClick={() => setForm(emptyDeviceForm())}
+              onClick={() => { setForm(emptyDeviceForm()); setOriginalDeviceId(null); }}
             >
               ล้าง
             </button>
@@ -294,6 +299,8 @@ export default function SensorDeviceManager() {
                     <td className="px-5 py-4">
                       <p className="font-extrabold text-slate-800">{device.name}</p>
                       <p className="text-xs font-semibold text-slate-500">{device.location_name ?? "-"}</p>
+                      {device.hidden_from_map && <p className="text-xs font-semibold text-amber-700">ซ่อนจากแผนที่ · บันทึกสถานีเพื่อแสดงอีกครั้ง</p>}
+                      {(device.latitude === null || device.longitude === null) && <p className="text-xs font-semibold text-amber-700">ยังไม่มีพิกัด · แก้ไขตำแหน่งเพื่อแสดงบนแผนที่</p>}
                     </td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-500">
                       {device.latitude && device.longitude ? `${Number(device.latitude).toFixed(4)}, ${Number(device.longitude).toFixed(4)}` : "-"}

@@ -6,6 +6,7 @@ import { Marker, Popup, useMap } from "react-leaflet";
 import MapDetailsCard, { mapCoordinates, mapDetailsPopupOptions, type MapDetailMetric } from "./MapDetailsCard";
 import { filterCatalog, stationMetric, type CatalogStation, type FocusedStation, type StationCategory } from "@/lib/station-catalog";
 import styles from "../BasinMap.module.css";
+import { isCurrentStationObservation } from "@/lib/public-situation";
 
 export function StationCatalogPopup({ station, now }: { station: CatalogStation; now: number }) {
   const rain = station.rainReading, water = station.waterReading, reservoir = station.reservoirReading;
@@ -51,13 +52,14 @@ export default function StationCatalogMarkers({ stations, category, showRain, sh
   ), [stations, category, showRain, showWaterLevels]);
   const icons = useMemo(() => visible.map(station => {
     const metric = stationMetric(station, category), available = metric.value !== null && Number.isFinite(metric.value);
+    const current = available && isCurrentStationObservation(metric.observedAt, now);
     const value = available ? metric.value!.toLocaleString("th-TH", { maximumFractionDigits: 2 }) : "—";
     return L.divIcon({
-      className: `catalog-station-marker ${styles.rainMarker} ${!available ? styles.muted : ""}`,
-      html: `<span class="${styles.catalogSymbol}">${station.reservoir ? "อ่าง" : station.flow ? "Q" : "WL"}</span><span class="${styles.value}">${value}${available ? `<small> ${station.reservoir ? "%" : station.flow ? "ลบ.ม./วิ." : "ม."}</small>` : ""}</span>`,
+      className: `catalog-station-marker ${styles.rainMarker} ${!current ? styles.muted : ""}`,
+      html: `<span class="${styles.catalogSymbol}">${station.reservoir ? "อ่าง" : station.flow ? "Q" : "WL"}</span>${current ? `<span class="${styles.value}">${value}<small> ${station.reservoir ? "%" : station.flow ? "ลบ.ม./วิ." : "ม."}</small></span>` : ""}`,
       iconSize: [72, 50], iconAnchor: [36, 16], popupAnchor: [0, -18],
     });
-  }), [visible, category]);
+  }), [visible, category, now]);
   return <>{visible.map((station, index) => <Marker key={station.code} position={[station.lat, station.lng]} icon={icons[index]} title={`${station.code} · ${station.name}`} ref={marker => { if (marker) markers.current.set(station.code, marker); else markers.current.delete(station.code); }}>
     <Popup {...mapDetailsPopupOptions}><StationCatalogPopup station={station} now={now} /></Popup>
   </Marker>)}</>;

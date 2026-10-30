@@ -38,6 +38,12 @@ export default function PublicDashboard({ data, user, embedded = false }: { data
   const [refresh, setRefresh] = useState(0);
   const [loginError, setLoginError] = useState("");
   useEffect(() => {
+    const updateClock = () => setNow(Date.now());
+    const timer = window.setInterval(updateClock, 30_000);
+    document.addEventListener("visibilitychange", updateClock);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", updateClock); };
+  }, []);
+  useEffect(() => {
     if (embedded) return;
     const readTab = () => {
       const hash = window.location.hash.slice(1);

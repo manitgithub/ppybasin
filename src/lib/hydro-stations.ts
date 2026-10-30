@@ -1,7 +1,7 @@
 // Station locations transcribed from the user-provided survey table, 2026-10-14.
 export const hydroStations = [
   {
-    "id": "PPY-01",
+    "id": "WS001",
     "name": "ท่าอ่างป่าพะยอม",
     "waterway": "คลองป่าพะยอม",
     "district": "ป่าพะยอม",
@@ -10,7 +10,7 @@ export const hydroStations = [
     "lng": 99.841004
   },
   {
-    "id": "PPY-02",
+    "id": "WS002",
     "name": "บ้านใต้สะท่อม",
     "waterway": "คลองตลิ่งชัน",
     "district": "ป่าพะยอม",
@@ -19,7 +19,7 @@ export const hydroStations = [
     "lng": 99.891585
   },
   {
-    "id": "PPY-03",
+    "id": "WS003",
     "name": "บ้านพร้าว",
     "waterway": "คลองปันแต",
     "district": "ป่าพะยอม",
@@ -28,7 +28,7 @@ export const hydroStations = [
     "lng": 99.954751
   },
   {
-    "id": "PPY-04",
+    "id": "WS004",
     "name": "บ้านปากคลองเก่า",
     "waterway": "คลองกระถิน",
     "district": "ควนขนุน",
@@ -37,7 +37,7 @@ export const hydroStations = [
     "lng": 100.087279
   },
   {
-    "id": "PPY-05",
+    "id": "WS005",
     "name": "บ้านห้วยน้ำดำ",
     "waterway": "คลองห้วยกรวด",
     "district": "ป่าพะยอม",
@@ -46,7 +46,7 @@ export const hydroStations = [
     "lng": 99.845137
   },
   {
-    "id": "PPY-06",
+    "id": "WS006",
     "name": "บ้านแหลมโตนด",
     "waterway": "คลองแม่ไสย่านหนัด",
     "district": "ควนขนุน",
