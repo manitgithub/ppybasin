@@ -2,7 +2,7 @@ import type { AppUser } from "@/lib/auth";
 import type { ViewId } from "@/components/dashboard/types";
 
 const viewPermissions: Record<ViewId, string[]> = {
-  reports: ["reports:manage", "reports:create"],
+  reports: ["reports:manage", "reports:create", "reports:claim", "roads:manage"],
   dashboard: ["dashboard:view"],
   tracking: ["dashboard:view"],
   "basin-forecast": ["dashboard:view"],
@@ -22,7 +22,7 @@ const viewPermissions: Record<ViewId, string[]> = {
 };
 
 export function canAccessView(user: AppUser, view: ViewId) {
-  if (user.role === "admin") return true;
+  if (user.role === "admin" || (user.role === "volunteer" && (view === "reports" || view === "dashboard"))) return true;
 
   const required = viewPermissions[view];
   return required.length === 0 || required.some((permission) => user.permissions.includes(permission));

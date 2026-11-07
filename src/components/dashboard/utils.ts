@@ -33,6 +33,7 @@ export function sensorAgeLabel(value?: string) {
 
 export function roleLabel(role: UserRole) {
   if (role === "admin") return "ผู้ดูแลระบบ";
+  if (role === "volunteer") return "อาสาสมัคร";
   if (role === "operator") return "เจ้าหน้าที่ปฏิบัติการ";
   return "ผู้ติดตามสถานการณ์";
 }

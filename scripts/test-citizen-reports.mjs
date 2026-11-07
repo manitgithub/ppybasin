@@ -222,3 +222,57 @@ assert.equal((await previewRoute.POST(previewRequest("logged-in", {}, "https://b
 previewEnv.NODE_ENV = "production";
 assert.equal((await previewRoute.POST(previewRequest("logged-in"))).status, 404);
 console.log("PASS: local guest/admin preview, override of development bypass, production/domain/proxy isolation, preview route origin and mode checks");
+
+// Volunteer scope and row-locked claim conflicts.
+const volunteer = { ...owner, role: "volunteer", displayName: "อาสาทดสอบ", permissions: [] };
+assert.equal(reports.canClaimReports(volunteer), true);
+assert.equal(reports.canManageRoads(volunteer), true);
+assert.equal(reports.canManageReports(volunteer), false);
+assert.equal(reports.canClaimReports(owner), false);
+currentUser = volunteer; calls = [];
+assert.equal((await route.GET()).status, 200);
+assert.equal(calls[0].params[0], false);
+assert.equal(calls[0].params[2], true);
+assert.match(calls[0].sql, /r.kind = 'help'/);
+let claimRow = { kind: "help", status: "pending", assigned_to: null };
+let claimStatements = [];
+const claimClient = {
+  query: async (sql, params) => { claimStatements.push({ sql, params }); return { rows: sql.includes("for update") ? [claimRow] : [] }; },
+  release() {},
+};
+const claimRoute = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ connect: async () => claimClient }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports });
+const claimRequest = () => new Request("https://example.test/api/reports", { method: "PATCH", body: JSON.stringify({ id: owner.id, action: "claim", status: "in_progress", note: "" }) });
+assert.equal((await claimRoute.PATCH(claimRequest())).status, 200);
+assert.ok(claimStatements.some(s => s.sql.includes("assigned_to = $2")));
+assert.ok(claimStatements.some(s => s.sql.includes("citizen_report_events")));
+assert.ok(claimStatements.some(s => s.sql === "commit"));
+for (const row of [ { kind: "help", status: "pending", assigned_to: owner.id }, { kind: "flood", status: "pending", assigned_to: null }, { kind: "help", status: "resolved", assigned_to: null } ]) {
+  claimRow = row; claimStatements = [];
+  assert.equal((await claimRoute.PATCH(claimRequest())).status, 409);
+  assert.ok(!claimStatements.some(s => s.sql.startsWith("update")));
+}
+assert.equal((await claimRoute.PATCH(new Request("https://example.test/api/reports", { method: "PATCH", body: JSON.stringify({ id: owner.id, status: "resolved", note: "" }) }))).status, 403);
+const roads = loadTs("src/lib/road-closures.ts");
+const validRoad = { name: "ถนนหน้าวัด", description: "น้ำท่วมสูงผ่านไม่ได้", aLat: 7.8, aLng: 100, bLat: 7.81, bLng: 100.01 };
+assert.ok(roads.validateRoadClosure(validRoad));
+for (const patch of [{ bLat: 7.8, bLng: 100 }, { aLat: 91 }, { bLng: "100" }, { aLat: null }, { description: "" }]) assert.equal(roads.validateRoadClosure({ ...validRoad, ...patch }), null);
+let roadWrites = [];
+const roadApi = loadTs("src/app/api/road-closures/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ query: async (sql, params) => { roadWrites.push({ sql, params }); return { rows: [{ id: owner.id }] }; } }) }, "@/lib/reports": reports, "@/lib/road-closures": roads });
+const roadRequest = (body = validRoad, origin = "https://example.test") => new Request("https://example.test/api/road-closures", { method: "POST", headers: { origin }, body: JSON.stringify(body) });
+currentUser = owner;
+assert.equal((await roadApi.POST(roadRequest())).status, 403);
+currentUser = volunteer;
+assert.equal((await roadApi.POST(roadRequest(validRoad, "https://evil.test"))).status, 403);
+assert.equal((await roadApi.POST(roadRequest({ ...validRoad, bLat: 91 }))).status, 422);
+assert.equal(roadWrites.length, 0);
+assert.equal((await roadApi.POST(roadRequest())).status, 201);
+assert.equal((await roadApi.PATCH(roadRequest({ id: owner.id }))).status, 200);
+console.log("PASS: volunteer queue scope, atomic claim/history, duplicate/closed/non-help rejection, staff-only transitions, road validation, closure authorization, reopening");
+const closedRoad = { id: owner.id, name: "ถนนทดสอบ", aLat: 7.8, aLng: 99.99, bLat: 7.8, bLng: 100.01 };
+let routingCoordinates = [[100, 7.79], [100, 7.82]];
+const routing = loadTs("src/app/api/evacuation-route/route.ts", { "@/lib/db": { getPool: () => ({ query: async () => ({ rows: [closedRoad] }) }) }, "@/lib/road-closures": roads }, { fetch: async () => Response.json({ code: "Ok", routes: [{ distance: 1000, duration: 100, geometry: { type: "LineString", coordinates: routingCoordinates } }] }), AbortSignal });
+const routingRequest = () => new Request("https://example.test/api/evacuation-route", { method: "POST", body: JSON.stringify({ start: [7.79, 100], destination: [7.82, 100] }) });
+assert.equal((await routing.POST(routingRequest())).status, 409);
+routingCoordinates = [[99.97, 7.79], [99.98, 7.82]];
+assert.equal((await routing.POST(routingRequest())).status, 200);
+console.log("PASS: evacuation routing rejects all candidates crossing a closed A–B corridor and accepts a clear route");

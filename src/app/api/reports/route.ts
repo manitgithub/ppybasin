@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { LOCAL_PREVIEW_LINE_ID, LOCAL_PREVIEW_USER_ID } from "@/lib/local-preview";
-import { MAX_REPORT_PHOTOS, MAX_REPORT_PHOTO_BYTES, MAX_REPORT_PHOTOS_BYTES, canCreateReports, canManageReports, isUuid, reportSelect, validateReport } from "@/lib/reports";
+import { MAX_REPORT_PHOTOS, MAX_REPORT_PHOTO_BYTES, MAX_REPORT_PHOTOS_BYTES, canClaimReports, canCreateReports, canManageReports, isUuid, reportSelect, validateReport } from "@/lib/reports";
 
 export const dynamic = "force-dynamic";
 const fail = (error: string, status: number) => Response.json({ ok: false, error }, { status });
@@ -12,7 +12,7 @@ export async function GET() {
   const db = getPool();
   if (!db) return fail("ระบบรับรายงานยังไม่พร้อมใช้งาน", 503);
   try {
-    const result = await db.query(`${reportSelect} where ($1::boolean or r.reporter_id = $2::uuid) order by r.created_at desc limit 100`, [canManageReports(user), isUuid(user.id) ? user.id : null]);
+    const result = await db.query(`${reportSelect} where ($1::boolean or r.reporter_id = $2::uuid or ($3::boolean and r.kind = 'help' and (r.status in ('pending','verified') or r.assigned_to = $2::uuid))) order by r.created_at desc limit 100`, [canManageReports(user), isUuid(user.id) ? user.id : null, canClaimReports(user)]);
     return Response.json({ ok: true, reports: result.rows }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Unable to load citizen reports", error);
@@ -108,10 +108,12 @@ export async function PATCH(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
   const user = await getCurrentUser();
-  if (!user || !canManageReports(user)) return fail("เฉพาะเจ้าหน้าที่ที่มีสิทธิ์จัดการรายงาน", 403);
+  if (!user || (!canManageReports(user) && !canClaimReports(user))) return fail("เฉพาะเจ้าหน้าที่ที่มีสิทธิ์จัดการรายงาน", 403);
   let body;
   try { body = await request.json(); } catch { return fail("ข้อมูลไม่ถูกต้อง", 400); }
   if (!body || typeof body !== "object" || typeof body.id !== "string" || !isUuid(body.id) || typeof body.status !== "string" || typeof body.note !== "string" || body.note.length > 1000) return fail("ข้อมูลไม่ถูกต้อง", 422);
+  const claiming = body.action === "claim";
+  if (claiming ? !canClaimReports(user) : !canManageReports(user)) return fail("ไม่มีสิทธิ์ดำเนินการนี้", 403);
   if (!isUuid(user.id)) return fail("บัญชีจำลองไม่สามารถเปลี่ยนสถานะรายงาน", 403);
   const transitions: Record<string, string[]> = { pending: ["verified", "rejected"], verified: ["in_progress", "resolved", "rejected"], in_progress: ["resolved"], resolved: [], rejected: [] };
   const db = getPool();
@@ -120,8 +122,17 @@ export async function PATCH(request: Request) {
   if (!client) return fail("เชื่อมต่อระบบไม่ได้", 503);
   try {
     await client.query("begin");
-    const result = await client.query("select status from public.citizen_reports where id = $1 for update", [body.id]);
+    const result = await client.query("select status, kind, assigned_to from public.citizen_reports where id = $1 for update", [body.id]);
     if (!result.rows[0]) { await client.query("rollback"); return fail("ไม่พบรายงาน", 404); }
+    if (claiming) {
+      const report = result.rows[0];
+      if (report.kind !== "help" || report.assigned_to || !["pending", "verified"].includes(report.status)) {
+        await client.query("rollback"); return fail("เคสนี้มีผู้รับแล้ว หรือไม่อยู่ในสถานะที่รับได้ กรุณาโหลดใหม่", 409);
+      }
+      await client.query("update public.citizen_reports set assigned_to = $2, claimed_at = now(), status = 'in_progress', updated_at = now() where id = $1", [body.id, user.id]);
+      await client.query("insert into public.citizen_report_events(report_id, actor_id, status, note) values ($1,$2,'in_progress',$3)", [body.id, user.id, `อาสาสมัคร ${user.displayName} รับเคสช่วยเหลือแล้ว`]);
+      await client.query("commit"); return Response.json({ ok: true });
+    }
     if (!transitions[result.rows[0].status]?.includes(body.status)) { await client.query("rollback"); return fail("สถานะเปลี่ยนแล้ว หรือไม่สามารถเปลี่ยนตามลำดับนี้ได้ กรุณาโหลดใหม่", 409); }
     await client.query("update public.citizen_reports set status = $2, updated_at = now() where id = $1", [body.id, body.status]);
     await client.query("insert into public.citizen_report_events(report_id, actor_id, status, note) values ($1,$2,$3,$4)", [body.id, user.id, body.status, body.note.trim()]);

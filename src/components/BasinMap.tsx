@@ -1,5 +1,8 @@
 "use client";
 
+import RoadClosureLayer from "@/components/public/RoadClosureLayer";
+import CitizenReportLayer from "@/components/public/CitizenReportLayer";
+
 import L from "leaflet";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
@@ -354,6 +357,8 @@ function BasinMap({ showWaterways = true, showStations = true, showShelters = tr
       ))}
       {showCctv && <CctvMapMarkers focused={focusedCctv} />}
       <ZoomControl position="bottomright" />
+      <RoadClosureLayer />
+      <CitizenReportLayer />
       <ScaleControl position="bottomleft" imperial={false} />
       <BoundsUpdater boundary={selectedBoundary} navigating={nearby} revision={boundaryViewRevision} />
       {nearby && <NearbyShelterRoute panelContainer={nearbyPanelContainer} shelters={shelters.points.map(({ record }) => record)} loading={shelters.loading} error={shelters.error} />}

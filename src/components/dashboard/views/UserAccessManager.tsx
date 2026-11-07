@@ -8,6 +8,8 @@ import type { AppUser, UserRole, UserStatus } from "@/lib/auth";
 import { formatDate, roleLabel } from "@/components/dashboard/utils";
 
 const permissionOptions = [
+  { id: "reports:claim", label: "รับเคสช่วยเหลือ" },
+  { id: "roads:manage", label: "แจ้งปิดถนนน้ำท่วม A–B" },
   { id: "reports:create", label: "ส่งรายงานภาคสนาม" },
   { id: "reports:manage", label: "จัดการรายงานและคำขอช่วยเหลือ" },
   { id: "dashboard:view", label: "ดู Dashboard" },
@@ -149,6 +151,7 @@ export default function UserAccessManager({ currentUser }: { currentUser: AppUse
                 >
                   <option value="admin">{roleLabel("admin")}</option>
                   <option value="operator">{roleLabel("operator")}</option>
+                  <option value="volunteer">{roleLabel("volunteer")}</option>
                   <option value="viewer">{roleLabel("viewer")}</option>
                 </select>
               </label>

@@ -11,7 +11,9 @@ export const passabilityLabels = { unknown: "ยังไม่ทราบ", pa
 export const assistanceNeeds = ["อพยพ", "อาหารและน้ำดื่ม", "ยารักษาโรค", "ผู้สูงอายุ / ผู้ป่วย", "อื่น ๆ"];
 export const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 export const canManageReports = (user: AppUser) => user.role === "admin" || user.permissions.includes("reports:manage");
-export const canCreateReports = (user: AppUser) => user.role === "admin" || user.role === "viewer" || user.permissions.includes("reports:create");
+export const canClaimReports = (user: AppUser) => user.role === "admin" || user.role === "volunteer" || user.permissions.includes("reports:claim");
+export const canManageRoads = (user: AppUser) => user.role === "admin" || user.role === "volunteer" || user.permissions.includes("roads:manage");
+export const canCreateReports = (user: AppUser) => user.role === "admin" || user.role === "viewer" || user.role === "volunteer" || user.permissions.includes("reports:create");
 
 export type CitizenReport = {
   id: string;
@@ -28,6 +30,9 @@ export type CitizenReport = {
   peopleCount: number | null;
   needs: string[];
   status: keyof typeof reportStatuses;
+  assignedTo: string | null;
+  assignedName: string | null;
+  claimedAt: string | null;
   createdAt: string;
   hasPhoto: boolean;
   photos: { id: string; filename: string }[];
@@ -36,6 +41,8 @@ export type CitizenReport = {
 
 export const reportSelect = `select r.id, r.kind, r.place, r.latitude, r.longitude,
   r.observed_at as "observedAt", r.passability, r.water_depth as "waterDepth", r.description,
+  r.assigned_to as "assignedTo", r.claimed_at as "claimedAt",
+  (select u.display_name from public.app_users u where u.id = r.assigned_to) as "assignedName",
   r.contact_name as "contactName", r.contact_phone as "contactPhone",
   r.people_count as "peopleCount", r.needs, r.status, r.created_at as "createdAt",
   exists(select 1 from public.citizen_report_photos p where p.report_id = r.id) as "hasPhoto",
@@ -65,4 +72,21 @@ export function validateReport(form: FormData) {
   if (kind === "help" && (peopleCount === null || !Number.isInteger(peopleCount) || peopleCount < 1 || peopleCount > 10000 || !needs.length)) return { error: "ระบุจำนวนผู้ต้องการความช่วยเหลือและสิ่งที่ต้องการ" };
   if (needs.some((need) => !assistanceNeeds.includes(need))) return { error: "รายการความช่วยเหลือไม่ถูกต้อง" };
   return { value: { kind, place, description, contactName, contactPhone, submissionKey, passability, waterDepth, observedAt, latitude, longitude, peopleCount: kind === "help" ? peopleCount : null, needs: kind === "help" ? [...new Set(needs)] : [] } };
+}
+
+/** How long a request has been waiting: minutes for the first hour, then "รอนานกว่า N ชม." */
+export function waitLabel(createdAt: string, now: number) {
+  const minutes = Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 60_000));
+  if (minutes < 1) return { text: "เมื่อสักครู่", overdue: false };
+  if (minutes < 60) return { text: `${minutes} นาทีที่แล้ว`, overdue: false };
+  return { text: `รอนานกว่า ${Math.floor(minutes / 60)} ชม.`, overdue: true };
+}
+
+/** Plain elapsed time for reports that are not waiting for help. */
+export function agoLabel(createdAt: string, now: number) {
+  const minutes = Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 60_000));
+  if (minutes < 1) return "เมื่อสักครู่";
+  if (minutes < 60) return `${minutes} นาทีที่แล้ว`;
+  const hours = Math.floor(minutes / 60);
+  return hours < 24 ? `${hours} ชม.ที่แล้ว` : `${Math.floor(hours / 24)} วันที่แล้ว`;
 }

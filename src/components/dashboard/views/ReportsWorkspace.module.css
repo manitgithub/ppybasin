@@ -1,0 +1,100 @@
+/* Staff workspace for citizen reports, road closures and field reports. */
+.workspace { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid #d4e0e5; overflow-x: auto; }
+.tab { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; color: #4d6576; font-size: 15px; font-weight: 650; white-space: nowrap; }
+.tab:hover { color: #17658a; }
+.tabActive { color: #12506f; border-bottom-color: #17658a; }
+.tabCount { min-width: 22px; padding: 0 7px; border-radius: 999px; background: #e3ecf1; color: #24546f; font-size: 12px; line-height: 22px; text-align: center; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.header h2 { font-size: 20px; font-weight: 750; margin: 0; }
+.header p { font-size: 13px; color: #5b7180; margin: 4px 0 0; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid #c9d8e0; border-radius: 999px; background: #fff; color: #2d4b5d; font-size: 14px; font-weight: 600; }
+.chip b { font-variant-numeric: tabular-nums; font-weight: 750; }
+.chipActive { background: #17658a; border-color: #17658a; color: #f5fafc; }
+
+.toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.search { position: relative; }
+.search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #607784; pointer-events: none; }
+.search input { width: 100%; min-height: 46px; padding: 0 14px 0 40px; border: 1px solid #c3d3dc; border-radius: 6px; background: #fff; font-size: 15px; }
+.select { min-height: 46px; padding: 0 12px; border: 1px solid #c3d3dc; border-radius: 6px; background: #fff; font-size: 15px; }
+.resultCount { font-size: 13px; color: #5b7180; margin: 0; }
+
+.list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.card { background: #fff; border: 1px solid #d6e2e7; border-left-width: 5px; border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.cardHelp { border-left-color: #12506f; }
+.cardTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+.status-pending { background: #eceff3; color: #3d4f5e; }
+.status-verified { background: #e2edf7; color: #2c618e; }
+.status-in_progress { background: #e1eef4; color: #12506f; }
+.status-resolved { background: #e6f1e9; color: #2e6849; }
+.status-rejected { background: #efeff0; color: #5d6266; }
+.kindBadge { background: #f2f5f7; color: #3d5666; }
+.kindHelp { background: #12506f; color: #f5fafc; }
+.time { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #607784; }
+.overdue { padding: 2px 8px; border-radius: 4px; background: #12506f; color: #f5fafc; font-weight: 700; }
+.place { font-size: 18px; font-weight: 750; line-height: 1.4; margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; margin: 0; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 12px; color: #607784; }
+.facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; color: #1d3a4d; overflow-wrap: anywhere; }
+.description { font-size: 14px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #2a4558; }
+.contact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; background: #f3f7f9; border-radius: 6px; font-size: 14px; }
+.contactLink { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid #c9d8e0; border-radius: 6px; background: #fff; color: #17658a; font-weight: 650; text-decoration: none; }
+.contactLink:hover { background: #edf5f9; }
+.photos { display: flex; gap: 8px; overflow-x: auto; }
+.photos a { flex: 0 0 auto; }
+.photos img { width: 96px; height: 72px; object-fit: cover; border-radius: 5px; border: 1px solid #d6e2e7; }
+.assigned { font-size: 14px; margin: 0; }
+.history summary { min-height: 40px; display: flex; align-items: center; font-size: 13px; color: #32627e; cursor: pointer; }
+.timeline { border-left: 2px solid #ccdbe3; margin: 8px 0 0 6px; padding-left: 16px; font-size: 13px; }
+.timeline li { padding-bottom: 12px; }
+.timeline small { display: block; color: #607784; font-size: 12px; }
+.timeline p { margin: 2px 0 0; }
+.receipt { font-size: 11px; color: #7a8d98; overflow-wrap: anywhere; }
+
+.actions { border-top: 1px solid #e1e9ed; padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.actions textarea { width: 100%; min-height: 64px; padding: 10px 12px; border: 1px solid #c3d3dc; border-radius: 6px; font-size: 14px; resize: vertical; }
+.actionButtons { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; padding: 0 16px; border-radius: 6px; font-size: 14px; font-weight: 700; border: 1px solid #c9d8e0; background: #f7fafb; color: #245973; }
+.btn:hover:not(:disabled) { background: #edf3f6; }
+.btnPrimary { background: #17658a; border-color: #17658a; color: #f5fafc; }
+.btnPrimary:hover:not(:disabled) { background: #124e6b; }
+.btnSafe { background: #257450; border-color: #257450; color: #f4faf6; }
+.btnSafe:hover:not(:disabled) { background: #1d5d40; }
+.btnQuiet { background: #fff; color: #5d6266; }
+.hint { font-size: 12px; color: #607784; margin: 0; }
+.error { padding: 10px 12px; border-radius: 6px; background: #f8ece8; color: #8a3a2c; font-size: 14px; margin: 0; }
+.notice { padding: 10px 12px; border-radius: 6px; background: #e6f1e9; color: #2e6849; font-size: 14px; margin: 0; }
+.empty { text-align: center; padding: 36px 18px; border: 1px dashed #cad9e1; border-radius: 8px; background: #fbfdfe; }
+.empty h3 { font-size: 17px; font-weight: 700; margin: 0; }
+.empty p { font-size: 14px; color: #5e7786; margin: 8px 0 0; }
+
+/* Road closures */
+.closureList { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.closure { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; background: #fff; border: 1px solid #d6e2e7; border-left: 5px solid #b82828; border-radius: 8px; }
+.closure h3 { font-size: 16px; font-weight: 700; margin: 0; }
+.closure p { font-size: 13px; margin: 3px 0 0; color: #3d5666; }
+.closureForm { background: #fff; border: 1px solid #d6e2e7; border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.closureForm label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 650; }
+.closureForm input, .closureForm textarea { min-height: 46px; padding: 10px 12px; border: 1px solid #c3d3dc; border-radius: 6px; font-size: 15px; font-weight: 400; }
+.pickers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.pickers fieldset { min-width: 0; border: 1px solid #e1e9ed; border-radius: 8px; padding: 12px; }
+.pickers legend { padding: 0 6px; font-size: 14px; font-weight: 700; }
+.pickers :global(.citizen-map) { height: 320px; min-height: 280px; }
+.pickers :global(.citizen-map-loading) { min-height: 280px; }
+.segment { min-width: 0; border: 1px solid #e1e9ed; border-radius: 8px; padding: 12px; }
+.segment legend { padding: 0 6px; font-size: 14px; font-weight: 700; }
+.pointValue { font-size: 13px; color: #3d5666; margin: 8px 0 0; }
+
+@media (min-width: 900px) {
+  .toolbar { grid-template-columns: minmax(0, 1fr) 220px; }
+  .list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .pickers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .closureList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

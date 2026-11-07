@@ -3,7 +3,7 @@
 import { DataSources } from "@/components/DataSource";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { canManageReports, passabilityLabels, waterDepthLabels, reportKinds, reportStatuses, type CitizenReport } from "@/lib/reports";
+import { canClaimReports, canManageReports, passabilityLabels, waterDepthLabels, reportKinds, reportStatuses, type CitizenReport } from "@/lib/reports";
 import type { AppUser } from "@/lib/auth";
 
 export default function ReportList({ user }: { user: AppUser | null }) {
@@ -24,10 +24,10 @@ export default function ReportList({ user }: { user: AppUser | null }) {
   useEffect(() => { if (user) { const timer = setTimeout(() => void load(), 0); return () => clearTimeout(timer); } }, [user, load]);
   if (!user) return <div className="citizen-empty"><h2>ติดตามรายงานของคุณ</h2><p>เข้าสู่ระบบด้วยบัญชี LINE เดิมเพื่อดูสถานะและข้อความจากเจ้าหน้าที่</p><a className="citizen-primary" href="/api/auth/line/start?returnTo=%2F%23mine">เข้าสู่ระบบด้วย LINE</a></div>;
 
-  async function update(id: string, status: string, note: string) {
+  async function update(id: string, status: string, note: string, action?: "claim") {
     setBusy(id); setError("");
     try {
-      const response = await fetch("/api/reports", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status, note }) });
+      const response = await fetch("/api/reports", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status, note, action }) });
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error);
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : "เปลี่ยนสถานะไม่ได้"); } finally { setBusy(null); }
@@ -35,7 +35,7 @@ export default function ReportList({ user }: { user: AppUser | null }) {
   const transitions = { pending: ["verified", "rejected"], verified: ["in_progress", "resolved", "rejected"], in_progress: ["resolved"], resolved: [], rejected: [] } as const;
   return <section className="report-list">
     <DataSources sources={[{ label: "รายงานจากประชาชนและสถานะที่เจ้าหน้าที่บันทึก · เข้าถึงตามสิทธิ์ผู้ใช้งาน", url: "/api/reports" }]} />
-    <div className="citizen-section-heading"><div><h2>{manage ? "รายงานจากประชาชน" : "รายงานของฉัน"}</h2><p>แสดง 100 รายการล่าสุด · ข้อมูลส่วนบุคคลไม่เผยแพร่ต่อสาธารณะ</p></div><button className="citizen-secondary" onClick={load} disabled={loading}><RefreshCw size={17} />โหลดใหม่</button></div>
+    <div className="citizen-section-heading"><div><h2>{manage ? "รายงานจากประชาชน" : canClaimReports(user) ? "เคสช่วยเหลือและรายงานของฉัน" : "รายงานของฉัน"}</h2><p>แสดง 100 รายการล่าสุด · ข้อมูลส่วนบุคคลไม่เผยแพร่ต่อสาธารณะ</p></div><button className="citizen-secondary" onClick={load} disabled={loading}><RefreshCw size={17} />โหลดใหม่</button></div>
     <label className="citizen-field">สถานะ<select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="all">ทั้งหมด</option>{Object.entries(reportStatuses).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
     {error && <p className="citizen-error" role="alert">{error}</p>}
     {loading ? <p role="status">กำลังโหลดรายงาน…</p> : !error && !reports.filter((r) => filter === "all" || r.status === filter).length ? <div className="citizen-empty"><h3>ยังไม่มีรายงานในรายการนี้</h3><p>เมื่อส่งรายงานแล้ว คุณจะติดตามความคืบหน้าได้ที่นี่</p></div> : reports.filter((r) => filter === "all" || r.status === filter).map((r) => <article className="report-item" key={r.id}>
@@ -47,6 +47,8 @@ export default function ReportList({ user }: { user: AppUser | null }) {
         {/* Private image requests must keep the user's session cookies. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`/api/reports/${r.id}/photo?photoId=${photo.id}`} alt={`รูปประกอบที่ ${index + 1}: ${photo.filename}`} loading="lazy" /><span>รูปที่ {index + 1}</span></a>)}</div>}<ol className="report-timeline">{r.events.map((event, i) => <li key={i}><b>{reportStatuses[event.status]}</b><small>{new Date(event.createdAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</small>{event.note && <p>{event.note}</p>}</li>)}</ol></details>
+      {r.assignedTo && <p>ผู้รับเคส: <strong>{r.assignedName ?? "อาสาสมัคร"}</strong>{r.assignedTo === user.id ? " (คุณ)" : ""}</p>}
+      {canClaimReports(user) && r.kind === "help" && !r.assignedTo && ["pending", "verified"].includes(r.status) && <button className="citizen-primary" disabled={busy !== null} onClick={() => void update(r.id, "in_progress", "", "claim")}>{busy === r.id ? "กำลังรับเคส…" : "รับเคสช่วยเหลือ"}</button>}
       {manage && transitions[r.status].length > 0 && <form className="staff-review" onSubmit={(e) => { e.preventDefault(); const data = new FormData(e.currentTarget); void update(r.id, String(data.get("status")), String(data.get("note"))); }}><label className="citizen-field">เปลี่ยนสถานะ<select name="status">{transitions[r.status].map((status) => <option key={status} value={status}>{reportStatuses[status]}</option>)}</select></label><label className="citizen-field">บันทึกถึงผู้แจ้ง<textarea name="note" maxLength={1000} rows={2} placeholder="ระบุสิ่งที่ตรวจสอบหรือความคืบหน้า" /></label><button className="citizen-primary" disabled={busy !== null}>{busy === r.id ? "กำลังบันทึก…" : "บันทึกสถานะ"}</button></form>}
     </article>)}
   </section>;

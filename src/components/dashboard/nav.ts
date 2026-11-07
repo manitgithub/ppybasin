@@ -7,7 +7,6 @@ import {
   FileText,
   Home,
   Hospital,
-  Map,
   RadioTower,
   Settings,
   Sun,
@@ -24,7 +23,8 @@ export const navItems: NavItem[] = [
   { id: "water", label: "ระดับน้ำ–น้ำท่า", icon: Waves },
   { id: "drought", label: "เฝ้าระวังภัยแล้ง", icon: Sun },
   { id: "forecast", label: "คาดการณ์และแจ้งเตือน", icon: AlertTriangle },
-  { id: "evacuation-map", label: "แผนที่และเส้นทางอพยพ", icon: Map },
+  // Hidden for now: evacuation map view. Restore this line to show it in the menu again.
+  // { id: "evacuation-map", label: "แผนที่และเส้นทางอพยพ", icon: Map },
   { id: "shelters", label: "ศูนย์อพยพ", icon: Hospital },
   {
     id: "sensor-devices",

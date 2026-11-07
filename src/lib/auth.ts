@@ -6,7 +6,7 @@ import { allowsLocalPreview, LOCAL_PREVIEW_COOKIE, LOCAL_PREVIEW_LINE_ID, LOCAL_
 export const SESSION_COOKIE = "ppybasin_session";
 const bypassPermissions = ["dashboard:view", "users:manage", "sensors:manage", "alerts:manage"];
 
-export type UserRole = "admin" | "operator" | "viewer";
+export type UserRole = "admin" | "operator" | "volunteer" | "viewer";
 export type UserStatus = "active" | "disabled";
 
 export type AppUser = {

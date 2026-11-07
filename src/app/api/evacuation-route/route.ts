@@ -1,3 +1,6 @@
+import { getPool } from "@/lib/db";
+import { roadClosureSelect, type RoadClosure } from "@/lib/road-closures";
+
 type Coordinate = [number, number];
 
 type RouteRequest = {
@@ -105,6 +108,21 @@ export async function POST(request: Request) {
   if (!start || !destination) return Response.json({ ok: false, error: "Invalid coordinates" }, { status: 422 });
 
   try {
+    const db = getPool();
+    if (!db) return Response.json({ ok: false, error: "ตรวจสอบข้อมูลถนนปิดไม่ได้ กรุณาลองใหม่" }, { status: 503 });
+    const closures = await db.query<RoadClosure>(roadClosureSelect);
+    // Treat the reported A–B segment as a narrow blocked corridor (roughly 25 m either side).
+    const closureAreas: Coordinate[][] = [];
+    for (const c of closures.rows) {
+      const dx = (c.bLng - c.aLng) * Math.cos(c.aLat * Math.PI / 180);
+      const dy = c.bLat - c.aLat;
+      const length = Math.hypot(dx, dy);
+      if (!length) continue;
+      const latOffset = dx / length * 0.000225;
+      const lngOffset = -dy / length * 0.000225 / Math.cos(c.aLat * Math.PI / 180);
+      closureAreas.push([[c.aLat + latOffset,c.aLng + lngOffset], [c.bLat + latOffset,c.bLng + lngOffset], [c.bLat - latOffset,c.bLng - lngOffset], [c.aLat - latOffset,c.aLng - lngOffset]]);
+    }
+    floodAreas.push(...closureAreas);
     const directRoutes = await fetchRoutes([start, destination], true);
     const candidates: RouteCandidate[] = directRoutes.map((route) => ({ route, kind: "direct" }));
 
@@ -171,6 +189,9 @@ export async function POST(request: Request) {
       .map((candidate) => ({ ...candidate, intersectsFlood: floodAreas.length > 0 && routeTouchesFlood(candidate.route, floodAreas) }))
       .sort((a, b) => Number(a.intersectsFlood) - Number(b.intersectsFlood) || a.route.duration - b.route.duration || a.route.distance - b.route.distance);
     const selected = ranked[0];
+    if (closureAreas.length && routeTouchesFlood(selected.route, closureAreas)) {
+      return Response.json({ ok: false, error: "ไม่พบเส้นทางที่หลีกเลี่ยงช่วงถนนปิดได้ กรุณาเลือกปลายทางอื่น" }, { status: 409 });
+    }
     const safeAlternatives = ranked.filter((candidate) => !candidate.intersectsFlood).length;
 
     return Response.json({

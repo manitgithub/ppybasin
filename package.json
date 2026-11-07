@@ -29,7 +29,8 @@
     "test:station-freshness": "node scripts/test-station-freshness.mjs",
     "test:sensor-devices": "node scripts/test-sensor-devices.mjs",
     "test:water-series": "node scripts/test-water-series.mjs",
-    "test:basin-forecast": "node scripts/test-basin-forecast.mjs"
+    "test:basin-forecast": "node scripts/test-basin-forecast.mjs",
+    "db:migrate:volunteers": "node scripts/run-migration.mjs db/migrations/002_auth_line.sql db/migrations/009_citizen_reports.sql db/migrations/010_report_water_depth.sql db/migrations/011_multiple_report_photos.sql db/migrations/016_volunteer_operations.sql"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
