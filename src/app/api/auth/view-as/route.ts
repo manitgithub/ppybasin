@@ -1,14 +1,14 @@
 import { cookies } from "next/headers";
 import { getActualUser } from "@/lib/auth";
 import { availableViewRoles, isUserRole, VIEW_AS_COOKIE } from "@/lib/view-as";
+import { isSameOriginRequest } from "@/lib/same-origin";
 
 export const dynamic = "force-dynamic";
 const fail = (error: string, status: number) => Response.json({ ok: false, error }, { status });
 
 /** Switch which role the signed-in account previews. Only roles at or below the real role are accepted. */
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
+  if (!isSameOriginRequest(request)) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
   const user = await getActualUser();
   if (!user) return fail("กรุณาเข้าสู่ระบบ", 401);
   let body: { role?: unknown };

@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { LOCAL_PREVIEW_LINE_ID, LOCAL_PREVIEW_USER_ID } from "@/lib/local-preview";
 import { MAX_REPORT_PHOTOS, MAX_REPORT_PHOTO_BYTES, MAX_REPORT_PHOTOS_BYTES, canClaimReports, canCreateReports, canManageReports, isUuid, reportSelect, validateReport } from "@/lib/reports";
+import { isSameOriginRequest } from "@/lib/same-origin";
 
 export const dynamic = "force-dynamic";
 const fail = (error: string, status: number) => Response.json({ ok: false, error }, { status });
@@ -21,8 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
+  if (!isSameOriginRequest(request)) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
   const user = await getCurrentUser();
   if (!user) return fail("กรุณาเข้าสู่ระบบก่อนส่งรายงาน", 401);
   if (!canCreateReports(user)) return fail("บัญชีนี้ไม่มีสิทธิ์ส่งรายงาน", 403);
@@ -105,8 +105,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
+  if (!isSameOriginRequest(request)) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
   const user = await getCurrentUser();
   if (!user || (!canManageReports(user) && !canClaimReports(user))) return fail("เฉพาะเจ้าหน้าที่ที่มีสิทธิ์จัดการรายงาน", 403);
   let body;

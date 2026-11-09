@@ -12,7 +12,18 @@ function loadTs(file, imports = {}, globals = {}) {
   return exports;
 }
 const localPreview = loadTs("src/lib/local-preview.ts");
+const sameOrigin = loadTs("src/lib/same-origin.ts");
 const reports = loadTs("src/lib/reports.ts");
+// Same-origin check behind a reverse proxy: the app sees its internal URL, the browser sends the public origin.
+const proxied = (origin, headers = {}) => new Request("http://0.0.0.0:3010/api/reports", { method: "POST", headers: { origin, ...headers } });
+assert.equal(sameOrigin.isSameOriginRequest(proxied("https://basinuat.horusai.pro", { host: "basinuat.horusai.pro" })), true);
+assert.equal(sameOrigin.isSameOriginRequest(proxied("https://basinuat.horusai.pro", { host: "ppybasin-app:3010", "x-forwarded-host": "basinuat.horusai.pro" })), true);
+assert.equal(sameOrigin.isSameOriginRequest(proxied("https://evil.example", { host: "basinuat.horusai.pro" })), false);
+assert.equal(sameOrigin.isSameOriginRequest(proxied("https://basinuat.horusai.pro.evil.example", { host: "basinuat.horusai.pro" })), false);
+assert.equal(sameOrigin.isSameOriginRequest(proxied("null", { host: "basinuat.horusai.pro" })), false);
+assert.equal(sameOrigin.isSameOriginRequest(new Request("https://basinuat.horusai.pro/api/reports", { method: "POST" })), true);
+assert.equal(sameOrigin.isSameOriginRequest(new Request("http://localhost:3000/api/reports", { method: "POST", headers: { origin: "http://localhost:3000" } })), true);
+console.log("PASS: same-origin check accepts the public host behind a reverse proxy and rejects other sites");
 const owner = { id: "62b7b51b-0e13-43a6-bc5b-39904757054a", role: "viewer", permissions: ["dashboard:view"] };
 const staff = { ...owner, role: "operator", permissions: ["reports:manage"] };
 function form(patch = {}) {
@@ -41,7 +52,7 @@ assert.equal(reports.canCreateReports(owner), true);
 let currentUser = null;
 let calls = [];
 const db = { query: async (sql, params) => { calls.push({ sql, params }); return { rows: [] }; } };
-const route = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => db }, "@/lib/local-preview": localPreview, "@/lib/reports": reports });
+const route = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => db }, "@/lib/local-preview": localPreview, "@/lib/reports": reports, "@/lib/same-origin": sameOrigin });
 assert.equal((await route.GET()).status, 401);
 assert.equal((await route.POST(new Request("https://example.test/api/reports", { method: "POST", body: form() }))).status, 401);
 currentUser = owner;
@@ -56,7 +67,7 @@ assert.equal((await route.GET()).status, 200);
 assert.equal(calls[0].params[0], true);
 currentUser = owner;
 assert.equal((await route.POST(new Request("https://example.test/api/reports", { method: "POST", headers: { origin: "https://other.test" }, body: form() }))).status, 403);
-const photo = loadTs("src/app/api/reports/[id]/photo/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => db }, "@/lib/local-preview": localPreview, "@/lib/reports": reports });
+const photo = loadTs("src/app/api/reports/[id]/photo/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => db }, "@/lib/local-preview": localPreview, "@/lib/reports": reports, "@/lib/same-origin": sameOrigin });
 calls = [];
 assert.equal((await photo.GET(new Request("https://example.test"), { params: Promise.resolve({ id: owner.id }) })).status, 404);
 assert.equal(calls[0].params[1], false);
@@ -80,7 +91,7 @@ const client = {
   },
   release: () => statements.push("release"),
 };
-const transactional = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ connect: async () => client }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports });
+const transactional = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ connect: async () => client }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports, "@/lib/same-origin": sameOrigin });
 currentUser = owner;
 assert.equal((await transactional.POST(new Request("https://example.test/api/reports", { method: "POST", body: form() }))).status, 201);
 assert.ok(statements.includes("commit"));
@@ -166,7 +177,7 @@ const failingPhotoClient = { release: client.release, query: async (sql, params)
   if (sql.startsWith("insert into public.citizen_report_photos") && params[4] === 1) throw new Error("simulated second-photo failure");
   return client.query(sql, params);
 } };
-const failingPhotosRoute = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => owner }, "@/lib/db": { getPool: () => ({ connect: async () => failingPhotoClient }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports });
+const failingPhotosRoute = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => owner }, "@/lib/db": { getPool: () => ({ connect: async () => failingPhotoClient }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports, "@/lib/same-origin": sameOrigin });
 console.error = () => {};
 try { assert.equal((await failingPhotosRoute.POST(new Request("https://example.test/api/reports", { method: "POST", body: multiplePhotos }))).status, 503); } finally { console.error = oldError; }
 assert.ok(statements.includes("rollback"));
@@ -260,6 +271,7 @@ const viewAsRoute = loadTs("src/app/api/auth/view-as/route.ts", {
   "next/headers": { cookies: async () => cookieStore },
   "@/lib/auth": { getActualUser: async () => viewAsActual },
   "@/lib/view-as": viewAs,
+  "@/lib/same-origin": sameOrigin,
 }, { process: { env: { NODE_ENV: "test" } } });
 const viewAsRequest = (role, origin = "https://basin.example.test") => new Request("https://basin.example.test/api/auth/view-as", { method: "POST", headers: { "Content-Type": "application/json", origin }, body: JSON.stringify({ role }) });
 assert.equal((await viewAsRoute.POST(viewAsRequest("viewer"))).status, 200);
@@ -292,7 +304,7 @@ const claimClient = {
   query: async (sql, params) => { claimStatements.push({ sql, params }); return { rows: sql.includes("for update") ? [claimRow] : [] }; },
   release() {},
 };
-const claimRoute = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ connect: async () => claimClient }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports });
+const claimRoute = loadTs("src/app/api/reports/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ connect: async () => claimClient }) }, "@/lib/local-preview": localPreview, "@/lib/reports": reports, "@/lib/same-origin": sameOrigin });
 const claimRequest = () => new Request("https://example.test/api/reports", { method: "PATCH", body: JSON.stringify({ id: owner.id, action: "claim", status: "in_progress", note: "" }) });
 assert.equal((await claimRoute.PATCH(claimRequest())).status, 200);
 assert.ok(claimStatements.some(s => s.sql.includes("assigned_to = $2")));
@@ -309,7 +321,7 @@ const validRoad = { name: "ถนนหน้าวัด", description: "น้
 assert.ok(roads.validateRoadClosure(validRoad));
 for (const patch of [{ bLat: 7.8, bLng: 100 }, { aLat: 91 }, { bLng: "100" }, { aLat: null }, { description: "" }]) assert.equal(roads.validateRoadClosure({ ...validRoad, ...patch }), null);
 let roadWrites = [];
-const roadApi = loadTs("src/app/api/road-closures/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ query: async (sql, params) => { roadWrites.push({ sql, params }); return { rows: [{ id: owner.id }] }; } }) }, "@/lib/reports": reports, "@/lib/road-closures": roads });
+const roadApi = loadTs("src/app/api/road-closures/route.ts", { "@/lib/auth": { getCurrentUser: async () => currentUser }, "@/lib/db": { getPool: () => ({ query: async (sql, params) => { roadWrites.push({ sql, params }); return { rows: [{ id: owner.id }] }; } }) }, "@/lib/reports": reports, "@/lib/road-closures": roads, "@/lib/same-origin": sameOrigin });
 const roadRequest = (body = validRoad, origin = "https://example.test") => new Request("https://example.test/api/road-closures", { method: "POST", headers: { origin }, body: JSON.stringify(body) });
 currentUser = owner;
 assert.equal((await roadApi.POST(roadRequest())).status, 403);

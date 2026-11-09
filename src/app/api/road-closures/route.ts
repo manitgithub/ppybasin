@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { canManageRoads, isUuid } from "@/lib/reports";
 import { roadClosureSelect, validateRoadClosure } from "@/lib/road-closures";
+import { isSameOriginRequest } from "@/lib/same-origin";
 export const dynamic = "force-dynamic";
 const fail = (error: string, status: number) => Response.json({ ok: false, error }, { status });
 export async function GET() {
@@ -13,8 +14,7 @@ export async function GET() {
   } catch { return fail("โหลดข้อมูลปิดถนนไม่สำเร็จ", 503); }
 }
 async function mutate(request: Request, reopen: boolean) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
+  if (!isSameOriginRequest(request)) return fail("ไม่อนุญาตคำขอจากเว็บไซต์อื่น", 403);
   const user = await getCurrentUser();
   if (!user || !canManageRoads(user)) return fail("ต้องมีสิทธิ์อาสาสมัครหรือจัดการถนน", 403);
   if (!isUuid(user.id)) return fail("บัญชีจำลองไม่สามารถบันทึกข้อมูล", 403);
