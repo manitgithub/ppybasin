@@ -2,9 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { cloneElement, Fragment, useCallback, useMemo, useState } from "react";
+import { cloneElement, Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { GIS_SOURCE_URL, gisLayers, landuseLegend, type GisLayerStatus } from "@/lib/gis-layers";
-import { Camera, ChartNoAxesCombined, ChevronDown, ClipboardList, CloudRain, Home, Layers, LogIn, Navigation, Phone, Plus, Sun, Waves } from "lucide-react";
+import { Camera, ChartNoAxesCombined, ChevronDown, ClipboardList, CloudRain, CloudSun, Ellipsis, Home, Layers, LogIn, MapPin, Navigation, Phone, Plus, Sun, Waves, X } from "lucide-react";
 import { cctvStations } from "@/lib/cctv-stations";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { DataSources } from "@/components/DataSource";
@@ -20,6 +20,14 @@ import type { SituationPayload } from "@/lib/situation/adapters";
 import { registeredRainStations, localStations } from "@/lib/public-situation";
 import type { PublicAlert } from "./PublicDashboard";
 import styles from "./PublicMapHome.module.css";
+
+type MobilePanel = "layers" | "stations" | "weather" | "more";
+const mobilePanels: { id: MobilePanel; label: string; icon: typeof Layers }[] = [
+  { id: "layers", label: "ชั้นข้อมูล", icon: Layers },
+  { id: "stations", label: "สถานี", icon: MapPin },
+  { id: "weather", label: "อากาศ", icon: CloudSun },
+  { id: "more", label: "เพิ่มเติม", icon: Ellipsis },
+];
 
 const BasinMap = dynamic(() => import("@/components/BasinMap"), {
   ssr: false,
@@ -39,6 +47,14 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
   loginError: string;
   navigate: (tab: "home" | "map" | "nearby" | "report" | "mine" | "drought" | "water" | "forecast" | "windy") => void;
 }) {
+  // Phones: the map stays clear and each tool panel opens on demand as a bottom sheet.
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel | null>(null);
+  useEffect(() => {
+    if (!mobilePanel) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMobilePanel(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobilePanel]);
   const [layers, setLayers] = useState({ waterways: true, stations: true, shelters: true, alerts: true, boundary: true, thanaeBoundary: false, rain: true, rainSurface: false, waterLevels: true, radar: !nearby, cctv: true });
   const [nearbyPanelContainer, setNearbyPanelContainer] = useState<HTMLDivElement | null>(null);
   const [stationCategory, setStationCategory] = useState<StationCategory>("all");
@@ -49,6 +65,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
     setLayers(current => ({ ...current, rain: true, waterLevels: true }));
   }
   function chooseStation(station: CatalogStation) {
+    setMobilePanel(null);
     setLayers(current => ({ ...current, rain: true, waterLevels: true }));
     setFocusedStation(current => ({ code: station.code, lat: station.lat, lng: station.lng, revision: (current?.revision ?? 0) + 1 }));
   }
@@ -113,17 +130,22 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
         <a href={signedIn ? "/api/auth/logout" : "/api/auth/line/start"}><LogIn size={17} />{signedIn ? "ออกจากระบบ" : "เข้าสู่ระบบ"}</a>
       </div>
     </header>}
-    <main className={`${styles.map} ${nearby ? styles.nearby : styles.withSituation}`} aria-label="แผนที่ลุ่มน้ำป่าพะยอมและคลองท่าแนะ">
+    <main data-mobile-panel={nearby ? undefined : mobilePanel ?? "none"} className={`${styles.map} ${nearby ? styles.nearby : styles.withSituation}`} aria-label="แผนที่ลุ่มน้ำป่าพะยอมและคลองท่าแนะ">
       <BasinMap nearbyPanelContainer={nearbyPanelContainer} stationCatalog={catalog} stationCategory={stationCategory} focusedStation={focusedStation} rainSurface={layers.rainSurface ? { method: rainMethod, opacity: rainOpacity } : null} onRainSurfaceStatus={setSurfaceStatus} showThaNaeBoundary={layers.thanaeBoundary} boundaryViewRevision={boundaryViewRevision} gisSelected={gisSelected} onGisStatus={onGisStatus} focusedCctv={focusedCctv} showCctv={layers.cctv} radar={radar.overlay} onRadarTileError={radar.onTileError} rainStations={rainStations} waterLevels={localStations(situation?.thaiWater.waterLevels ?? [])} showRain={layers.rain} showWaterLevels={layers.waterLevels} now={now} showWaterways={layers.waterways} showStations={layers.stations} nearby={nearby} showShelters={nearby || layers.shelters} showAlerts={layers.alerts} showBoundary={layers.boundary} alerts={alerts} />
       {!nearby && layerPanel}
       {!nearby && <PublicSituationSummary situation={situation} now={now} loading={loading} failed={errors.includes("ข้อมูลตรวจวัด")} onRefresh={onRefresh} />}
       {loginError && <p className={styles.error} role="alert">{loginError}</p>}
-      <div className={styles.mapInfo}>
+      {!nearby && <div className={styles.mobileTools} role="toolbar" aria-label="เครื่องมือแผนที่">
+        {mobilePanels.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-pressed={mobilePanel === id} aria-controls="map-tools-sheet" onClick={() => setMobilePanel(current => current === id ? null : id)}><Icon size={18} aria-hidden />{label}</button>)}
+      </div>}
+      <div className={styles.mapInfo} id="map-tools-sheet">
+        {!nearby && <div className={styles.sheetHeader}><strong>{mobilePanels.find(panel => panel.id === mobilePanel)?.label}</strong><button type="button" onClick={() => setMobilePanel(null)} aria-label="ปิดแผง แล้วกลับไปดูแผนที่"><X size={18} aria-hidden />ปิด</button></div>}
         {nearby && <div ref={setNearbyPanelContainer} className={styles.nearbyPanelHost} />}
         {nearby && layerPanel}
-        {!nearby && <WindyWeather onFullPage={embedded ? undefined : () => navigate("windy")} />}
-        {!nearby && <div className={styles.mobileLayers}>{cloneElement(layerPanel, { open: false })}</div>}
-        <StationCatalogPanel stations={catalog} category={stationCategory} onCategory={chooseCategory} onSelect={chooseStation} focusedCode={focusedStation?.code} now={now} />
+        {!nearby && <div data-panel="weather" className={styles.panelGroup}><WindyWeather onFullPage={embedded ? undefined : () => navigate("windy")} /></div>}
+        {!nearby && <div data-panel="layers" className={styles.mobileLayers}>{cloneElement(layerPanel, { open: true })}</div>}
+        <div data-panel="stations" className={styles.panelGroup}><StationCatalogPanel stations={catalog} category={stationCategory} onCategory={chooseCategory} onSelect={chooseStation} focusedCode={focusedStation?.code} now={now} /></div>
+        <div data-panel="more" className={styles.panelGroup}>
         <details className={styles.toolPanel}>
           <summary><span><Camera size={18} />ดูกล้อง CCTV · {cctvStations.length} จุด</span><ChevronDown size={16} /></summary>
           <div className={styles.cctvLinks}>{cctvStations.map(station => <button key={station.code} type="button" onClick={event => {
@@ -131,6 +153,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
             setFocusedCctv(current => ({ code: station.code, revision: (current?.revision ?? 0) + 1 }));
             const panel = event.currentTarget.closest("details");
             if (panel) panel.open = false;
+            setMobilePanel(null);
           }}>ดู {station.code} · {station.name} ({station.providerLabel})</button>)}</div>
         </details>
         {layers.radar && <details className={styles.toolPanel}>
@@ -158,6 +181,7 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
           <Link href="/privacy">ความเป็นส่วนตัว</Link>
         </div>
       </details>
+        </div>
       </div>
       {!embedded && <nav className={styles.nav} aria-label="เมนูหลัก">
         <button type="button" aria-current={!nearby ? "page" : undefined} onClick={() => navigate("home")}><Home size={19} /><span>หน้าหลัก</span></button>

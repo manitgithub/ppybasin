@@ -14,6 +14,7 @@ import DashboardHome from "@/components/dashboard/views/DashboardHome";
 import PublicDashboard from "@/components/public/PublicDashboard";
 import reportStyles from "@/components/public/PublicDashboard.module.css";
 import ReportsWorkspace from "@/components/dashboard/views/ReportsWorkspace";
+import { RoleSwitcher, ViewAsBanner } from "@/components/dashboard/RoleSwitcher";
 import DroughtMonitor from "@/components/DroughtMonitor";
 
 const ViewLoader = () => (
@@ -189,7 +190,7 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
   const currentDateText = currentDateTime ? thaiDateFormatter.format(currentDateTime) : "-- --- ----";
 
   if (!currentUser || currentUser.role === "viewer") {
-    return <PublicDashboard data={data} user={currentUser} />;
+    return <>{currentUser && <ViewAsBanner user={currentUser} />}<PublicDashboard data={data} user={currentUser} /></>;
   }
 
   return (
@@ -254,16 +255,10 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
         </nav>
         <div className="m-3 rounded-[8px] bg-[#092844] p-3">
           <p className="mb-3 text-xs font-extrabold text-white">ระดับผู้ใช้งานในระบบ</p>
-          <button className="mb-6 flex w-full items-center gap-2 rounded-[7px] bg-[#0d3b63] px-2 py-2 text-left">
-            <span className="grid size-8 place-items-center rounded-[6px] bg-[#1487e8] text-white">
-              <CircleUser size={18} />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-xs font-extrabold text-white">{roleLabel(currentUser.role)}</span>
-            <ChevronDown size={14} />
-          </button>
+          <RoleSwitcher user={currentUser} />
           <div className="mb-7 text-center">
             <p className="truncate text-sm font-extrabold text-white">{currentUser.displayName}</p>
-            <p className="mt-1 text-[11px] font-bold text-slate-300">{roleLabel(currentUser.role)}</p>
+            <p className="mt-1 text-[11px] font-bold text-slate-300">{roleLabel(currentUser.actualRole ?? currentUser.role)}</p>
           </div>
           <button
             className="flex h-10 w-full items-center justify-center gap-2 rounded-[7px] border border-white/15 bg-white/5 text-xs font-extrabold text-white"
@@ -319,6 +314,7 @@ export default function DashboardShell({ initialData, initialUser }: DashboardSh
           </div>
         </header>
 
+        <ViewAsBanner user={currentUser} withSidebar />
         <main className="p-3">
           <DashboardContent activeView={activeView} data={data} currentUser={currentUser} openShelters={openShelters} />
         </main>

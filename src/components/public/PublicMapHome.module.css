@@ -202,3 +202,40 @@
   .nav { width: calc(100% - 24px); max-width: 760px; }
   .nav button { flex: 1; min-width: 0; flex-direction: column; padding-inline: 4px; font-size: 10px; }
 }
+
+/* ---- Phone layout: keep the map clear; tools open one at a time as a bottom sheet. ---- */
+.panelGroup { display: contents; }
+.mobileTools, .sheetHeader { display: none; }
+@media (max-width: 600px) {
+  .withSituation .mobileTools { display: grid; position: absolute; z-index: 520; top: 10px; left: 10px; right: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .mobileTools button { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; min-height: 44px; padding: 0 6px; white-space: nowrap; border: 1px solid #c8d9e2; border-radius: 999px; background: #f8fbfcf2; color: #193145; font-size: 11.5px; font-weight: 700; box-shadow: 0 2px 8px #102e4326; cursor: pointer; }
+  .mobileTools button svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .mobileTools button[aria-pressed="true"] { background: #17658a; border-color: #17658a; color: #f5fafc; }
+
+  .withSituation .mapInfo { display: none; top: auto; left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom)); width: 100%; max-height: min(60%, calc(100% - 66px - 64px - env(safe-area-inset-bottom))); z-index: 530; gap: 10px; padding: 0 12px 14px; overflow-y: auto; overscroll-behavior: contain; background: #f8fbfc; border-radius: 14px 14px 0 0; box-shadow: 0 -6px 22px #102e4338; }
+  .withSituation .mapInfo:has(.toolPanel[open]), .withSituation .mapInfo:has(.sources[open]), .withSituation .mapInfo:has([data-station-catalog][open]) { width: 100%; }
+  .withSituation:not([data-mobile-panel="none"]) .mapInfo { display: flex; }
+  .withSituation .mapInfo > [data-panel] { display: none; }
+  .withSituation[data-mobile-panel="layers"] .mapInfo > [data-panel="layers"],
+  .withSituation[data-mobile-panel="stations"] .mapInfo > [data-panel="stations"],
+  .withSituation[data-mobile-panel="weather"] .mapInfo > [data-panel="weather"] { display: block; }
+  .withSituation[data-mobile-panel="more"] .mapInfo > [data-panel="more"] { display: flex; flex-direction: column; gap: 8px; }
+  .withSituation .sheetHeader { display: flex; position: sticky; top: 0; z-index: 2; flex-shrink: 0; align-items: center; justify-content: space-between; min-height: 54px; margin: 0 -12px; padding: 6px 12px; background: #f8fbfc; border-bottom: 1px solid #dce6eb; font-size: 15px; }
+  .withSituation .sheetHeader::before { content: ""; position: absolute; top: 5px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: #c3d3dc; }
+  .sheetHeader button { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 14px; border-radius: 8px; background: #e5edf1; color: #193145; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .withSituation .mobileLayers .layers { max-height: none; border: 0; box-shadow: none; }
+  .withSituation .mobileLayers .layers > summary { display: none; }
+
+  /* While a sheet is open it replaces the rain summary; otherwise the summary stays compact. */
+  .withSituation:not([data-mobile-panel="none"]) .situation { display: none; }
+  .withSituation .situation { bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .withSituation .metrics { padding: 6px 0; }
+  .withSituation .metrics strong { font-size: 16px; line-height: 1.35; }
+  .withSituation .metrics p, .withSituation .metrics time, .withSituation .metrics > div > small { display: none; }
+  .withSituation :global(.leaflet-bottom), .withSituation :global(.leaflet-bottom.leaflet-left) { bottom: 210px; }
+}
+@media (max-width: 600px) {
+  /* The layer count box repeats what the layer sheet shows; hide it on phones (loading status stays). */
+  .withSituation > div[role="status"]:not(.loading) { display: none; }
+  .withSituation :global(.leaflet-control-attribution) { max-height: 18px; max-width: calc(100vw - 70px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}

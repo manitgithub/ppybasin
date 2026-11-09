@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { cookies, headers } from "next/headers";
 import { getPool } from "@/lib/db";
 import { allowsLocalPreview, LOCAL_PREVIEW_COOKIE, LOCAL_PREVIEW_LINE_ID, LOCAL_PREVIEW_USER_ID } from "@/lib/local-preview";
+import { applyViewAs, VIEW_AS_COOKIE } from "@/lib/view-as";
 
 export const SESSION_COOKIE = "ppybasin_session";
 const bypassPermissions = ["dashboard:view", "users:manage", "sensors:manage", "alerts:manage"];
@@ -21,6 +22,10 @@ export type AppUser = {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** The account's real role when it is previewing a lower role. */
+  actualRole?: UserRole;
+  /** Roles this account may preview (always includes its real role). */
+  availableRoles?: UserRole[];
 };
 
 type UserRow = {
@@ -107,7 +112,15 @@ export function authConfigError() {
   return null;
 }
 
+/** The signed-in user as seen by the app, with any "view as" role preview applied. */
 export async function getCurrentUser(): Promise<AppUser | null> {
+  const user = await getActualUser();
+  if (!user) return null;
+  return applyViewAs(user, (await cookies()).get(VIEW_AS_COOKIE)?.value);
+}
+
+/** The signed-in user's real account, ignoring any role preview. */
+export async function getActualUser(): Promise<AppUser | null> {
   const headerStore = await headers();
   const localPreview = allowsLocalPreview(process.env.NODE_ENV, headerStore.get("host"), headerStore.get("x-forwarded-host"));
   const previewMode = localPreview ? (await cookies()).get(LOCAL_PREVIEW_COOKIE)?.value : undefined;

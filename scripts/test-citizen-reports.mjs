@@ -181,6 +181,7 @@ assert.equal(localPreview.allowsLocalPreview("development", "example.com", "loca
 assert.equal(localPreview.allowsLocalPreview("development", "localhost:3000", "example.com"), false);
 console.log("PASS: local development access, IPv4/IPv6 loopback, production/domain/forwarded-host exclusion");
 
+const viewAs = loadTs("src/lib/view-as.ts");
 const previewEnv = { NODE_ENV: "development", AUTH_BYPASS: "true" };
 let previewHeaders = new Headers({ host: "localhost:3000" });
 const previewAuth = loadTs("src/lib/auth.ts", {
@@ -188,6 +189,7 @@ const previewAuth = loadTs("src/lib/auth.ts", {
   "next/headers": { cookies: async () => cookieStore, headers: async () => previewHeaders },
   "@/lib/db": { getPool: () => undefined },
   "@/lib/local-preview": localPreview,
+  "@/lib/view-as": viewAs,
 }, { process: { env: previewEnv } });
 jar.set(localPreview.LOCAL_PREVIEW_COOKIE, "guest");
 assert.equal(await previewAuth.getCurrentUser(), null);
@@ -222,6 +224,56 @@ assert.equal((await previewRoute.POST(previewRequest("logged-in", {}, "https://b
 previewEnv.NODE_ENV = "production";
 assert.equal((await previewRoute.POST(previewRequest("logged-in"))).status, 404);
 console.log("PASS: local guest/admin preview, override of development bypass, production/domain/proxy isolation, preview route origin and mode checks");
+
+// "View as" role preview: may only lower access, never raise it, and is applied on the server.
+const adminUser = { id: "a", role: "admin", permissions: [] };
+const operatorUser = { id: "o", role: "operator", permissions: ["dashboard:view", "reports:manage", "users:manage"] };
+const volunteerUser = { id: "v", role: "volunteer", permissions: ["dashboard:view", "reports:create"] };
+const viewerUser = { id: "c", role: "viewer", permissions: ["dashboard:view", "reports:create"] };
+assert.deepEqual([...viewAs.availableViewRoles("admin")], ["admin", "operator", "volunteer", "viewer"]);
+assert.deepEqual([...viewAs.availableViewRoles("operator")], ["operator", "viewer"]);
+assert.deepEqual([...viewAs.availableViewRoles("viewer")], ["viewer"]);
+assert.equal(viewAs.applyViewAs(adminUser, undefined).role, "admin");
+assert.equal(viewAs.applyViewAs(adminUser, undefined).actualRole, "admin");
+assert.equal(viewAs.applyViewAs(adminUser, "bogus").role, "admin");
+const adminAsVolunteer = viewAs.applyViewAs(adminUser, "volunteer");
+assert.equal(adminAsVolunteer.role, "volunteer");
+assert.equal(adminAsVolunteer.actualRole, "admin");
+assert.ok(adminAsVolunteer.permissions.includes("reports:claim") && !adminAsVolunteer.permissions.includes("users:manage"));
+assert.equal(reports.canManageReports(adminAsVolunteer), false);
+assert.equal(reports.canClaimReports(adminAsVolunteer), true);
+const adminAsViewer = viewAs.applyViewAs(adminUser, "viewer");
+assert.equal(reports.canManageReports(adminAsViewer) || reports.canClaimReports(adminAsViewer) || reports.canManageRoads(adminAsViewer), false);
+assert.equal(viewAs.applyViewAs(operatorUser, "admin").role, "operator", "operators cannot escalate to admin");
+assert.equal(viewAs.applyViewAs(operatorUser, "volunteer").role, "operator", "operators cannot gain volunteer-only access");
+assert.deepEqual([...viewAs.applyViewAs(operatorUser, "viewer").permissions], ["dashboard:view"], "non-admins keep only permissions they already hold");
+assert.equal(viewAs.applyViewAs(volunteerUser, "operator").role, "volunteer");
+assert.equal(viewAs.applyViewAs(viewerUser, "admin").role, "viewer");
+previewEnv.NODE_ENV = "development";
+jar.set(localPreview.LOCAL_PREVIEW_COOKIE, "logged-in");
+jar.set(viewAs.VIEW_AS_COOKIE, "volunteer");
+assert.equal((await previewAuth.getCurrentUser()).role, "volunteer");
+assert.equal((await previewAuth.getActualUser()).role, "admin");
+jar.delete(viewAs.VIEW_AS_COOKIE);
+let viewAsActual = adminUser;
+const viewAsRoute = loadTs("src/app/api/auth/view-as/route.ts", {
+  "next/headers": { cookies: async () => cookieStore },
+  "@/lib/auth": { getActualUser: async () => viewAsActual },
+  "@/lib/view-as": viewAs,
+}, { process: { env: { NODE_ENV: "test" } } });
+const viewAsRequest = (role, origin = "https://basin.example.test") => new Request("https://basin.example.test/api/auth/view-as", { method: "POST", headers: { "Content-Type": "application/json", origin }, body: JSON.stringify({ role }) });
+assert.equal((await viewAsRoute.POST(viewAsRequest("viewer"))).status, 200);
+assert.equal(jar.get(viewAs.VIEW_AS_COOKIE), "viewer");
+assert.equal((await viewAsRoute.POST(viewAsRequest("admin"))).status, 200);
+assert.equal(jar.has(viewAs.VIEW_AS_COOKIE), false, "returning to the real role clears the preview");
+assert.equal((await viewAsRoute.POST(viewAsRequest("viewer", "https://outside.example.test"))).status, 403);
+assert.equal((await viewAsRoute.POST(viewAsRequest("superuser"))).status, 403);
+viewAsActual = operatorUser;
+assert.equal((await viewAsRoute.POST(viewAsRequest("admin"))).status, 403);
+assert.equal(jar.has(viewAs.VIEW_AS_COOKIE), false);
+viewAsActual = null;
+assert.equal((await viewAsRoute.POST(viewAsRequest("viewer"))).status, 401);
+console.log("PASS: view-as role preview only lowers access, server applies it, route rejects escalation, foreign origins and guests");
 
 // Volunteer scope and row-locked claim conflicts.
 const volunteer = { ...owner, role: "volunteer", displayName: "อาสาทดสอบ", permissions: [] };
