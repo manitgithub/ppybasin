@@ -24,8 +24,8 @@ const SituationMap = dynamic(() => import("@/components/public/SituationMap"), {
 
 type Tab = "windy" | "forecast" | "water" | "home" | "map" | "nearby" | "report" | "mine" | "drought";
 export type PublicAlert = { id: string; title: string; areaName: string; message: string; severity: string; latitude: number; longitude: number; approvedAt: string };
-const tabs = [{ id: "home", label: "หน้าหลัก", icon: Home }, { id: "water", label: "ระดับน้ำ–น้ำท่า", icon: Waves }, { id: "forecast", label: "คาดการณ์", icon: ChartNoAxesCombined }, { id: "drought", label: "เฝ้าระวังภัยแล้ง", icon: Sun }, { id: "nearby", label: "ศูนย์ใกล้ฉัน", icon: Navigation }, { id: "report", label: "แจ้งเหตุ", icon: Plus }, { id: "mine", label: "รายงานของฉัน", icon: ClipboardList }] as const;
-const titles = { windy: "Windy", forecast: "คาดการณ์", water: "ระดับน้ำ–น้ำท่า", drought: "เฝ้าระวังภัยแล้ง", home: "ติดตามสถานการณ์ป่าพะยอม", map: "แผนที่สถานการณ์และศูนย์อพยพ", report: "แจ้งเหตุและขอความช่วยเหลือ", mine: "ติดตามรายงานของคุณ", nearby: "ศูนย์อพยพใกล้ฉัน" };
+const tabs = [{ id: "home", label: "หน้าหลัก", icon: Home }, { id: "water", label: "ระดับน้ำ–น้ำท่า", icon: Waves }, { id: "forecast", label: "คาดการณ์", icon: ChartNoAxesCombined }, { id: "drought", label: "เฝ้าระวังภัยแล้ง", icon: Sun }, { id: "nearby", label: "ศูนย์ใกล้ฉัน", icon: Navigation }, { id: "report", label: "แจ้งเหตุ", icon: Plus }] as const;
+const titles = { windy: "Windy", forecast: "คาดการณ์", water: "ระดับน้ำ–น้ำท่า", drought: "เฝ้าระวังภัยแล้ง", home: "ติดตามสถานการณ์ป่าพะยอม", map: "แผนที่สถานการณ์และศูนย์อพยพ", report: "แจ้งเหตุและขอความช่วยเหลือ", mine: "แจ้งเหตุและติดตามรายงาน", nearby: "ศูนย์อพยพใกล้ฉัน" };
 
 export default function PublicDashboard({ data, user, embedded = false }: { data: DashboardPayload; user: AppUser | null; embedded?: boolean }) {
   const [dashboard, setDashboard] = useState(data);
@@ -80,18 +80,20 @@ export default function PublicDashboard({ data, user, embedded = false }: { data
     const timer = setInterval(() => { if (document.visibilityState === "visible") void load(); }, 300_000);
     return () => { controller.abort(); clearInterval(timer); };
   }, [refresh]);
+  // "แจ้งเหตุ" and "รายงานของฉัน" share one menu item; #mine stays as a deep link (LINE login return).
+  const isActive = (id: Tab) => tab === id || (id === "report" && tab === "mine");
   function navigate(id: Tab) { window.history.replaceState(null, "", `#${id}`); setTab(id); window.scrollTo({ top: 0, behavior: "instant" }); }
   const confirmedShelters = dashboard.source === "database" ? dashboard.shelters.filter((s) => s.status === "open" && s.updatedAt && now - Date.parse(s.updatedAt) <= 6 * 3600000 && Date.parse(s.updatedAt) <= now) : [];
   const waters = situation?.thaiWater.waterLevels ?? [];
   if (embedded || tab === "home" || tab === "nearby") return <PublicMapHome embedded={embedded} nearby={tab === "nearby"} signedIn={!!user} situation={situation} now={now} onRefresh={() => setRefresh((value) => value + 1)} alerts={alerts} loading={loading} errors={errors} loginError={loginError} navigate={navigate} />;
-  return <div className={`citizen-app ${styles.root} ${tab === "water" ? styles.waterWorkspace : ""} ${tab === "report" ? styles.fullscreen : ""} ${tab === "drought" ? styles.drought : (tab === "water" || tab === "forecast" || tab === "windy") ? styles.water : ""}`}>
+  return <div className={`citizen-app ${styles.root} ${tab === "water" ? styles.waterWorkspace : ""} ${tab === "report" || tab === "mine" ? styles.fullscreen : ""} ${tab === "drought" ? styles.drought : (tab === "water" || tab === "forecast" || tab === "windy") ? styles.water : ""}`}>
     <header className="citizen-header"><Link href="/" className="citizen-brand"><Waves size={29} /><span>ป่าพะยอม<strong>SMART BASIN</strong></span></Link><div className="citizen-header-actions"><a href="tel:1784" className="hotline"><Phone size={16} />1784</a>{user ? <a href="/api/auth/logout">ออกจากระบบ</a> : <a href="/api/auth/line/start">เข้าสู่ระบบ</a>}</div></header>
     <div className="citizen-container">
       <div className="citizen-topline"><span><ShieldCheck size={15} />ผู้ติดตามสถานการณ์{user ? ` · ${user.displayName}` : " ·"}</span><span>ลุ่มน้ำป่าพะยอม / พัทลุง</span></div>
-      <nav className="citizen-desktop-nav" aria-label="เมนูหลัก">{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => navigate(id)} aria-current={tab === id ? "page" : undefined} className={tab === id ? "active" : ""}><Icon size={18} />{label}</button>)}</nav>
+      <nav className="citizen-desktop-nav" aria-label="เมนูหลัก">{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => navigate(id)} aria-current={isActive(id) ? "page" : undefined} className={isActive(id) ? "active" : ""}><Icon size={18} />{label}</button>)}</nav>
       <main id="citizen-main">
         {loginError && <p className="citizen-error" role="alert">{loginError}</p>}
-        {tab !== "drought" && tab !== "water" && tab !== "forecast" && tab !== "windy" && <div className="citizen-page-heading"><div><p className="citizen-eyebrow">PA PHAYOM · FLOOD WATCH</p><h1>{titles[tab]}</h1><p>{tab === "report" ? "ระบุสิ่งที่พบ เพื่อให้เจ้าหน้าที่ตรวจสอบและประสานงาน" : "ข้อมูลสำหรับติดตามและประสานงานในพื้นที่"}</p></div></div>}
+        {tab !== "drought" && tab !== "water" && tab !== "forecast" && tab !== "windy" && <div className="citizen-page-heading"><div><p className="citizen-eyebrow">PA PHAYOM · FLOOD WATCH</p><h1>{titles[tab]}</h1><p>{tab === "report" ? "ระบุสิ่งที่พบ เพื่อให้เจ้าหน้าที่ตรวจสอบและประสานงาน" : tab === "mine" ? "ดูสถานะและข้อความจากเจ้าหน้าที่สำหรับรายงานที่คุณส่ง" : "ข้อมูลสำหรับติดตามและประสานงานในพื้นที่"}</p></div></div>}
         {tab === "map" && <section className="citizen-map-section"><p className="citizen-data-note">แสดงสถานีที่มีพิกัด ประกาศที่อนุมัติแล้ว และศูนย์ที่ยืนยันเปิดภายใน 6 ชั่วโมง เส้นทางเข้าถึงต้องตรวจสอบกับเจ้าหน้าที่พื้นที่</p><SituationMap waters={waters} alerts={alerts} shelters={confirmedShelters} /><DataSources sources={[
             { label: "ThaiWater / สสน. · สถานีระดับน้ำ", url: situation?.sources.find((source) => source.id === "thaiwater-waterlevel")?.url ?? "https://api-v3.thaiwater.net/api/v1/thaiwater30/provinces/waterlevel?province_code=93" },
             { label: "ประกาศที่เจ้าหน้าที่ตรวจสอบและอนุมัติในระบบ", url: "/api/flood-alerts?public=1" },
@@ -101,11 +103,15 @@ export default function PublicDashboard({ data, user, embedded = false }: { data
         {tab === "forecast" && <ForecastMonitor onBack={() => navigate("home")} />}
         {tab === "water" && <WaterMonitor onBack={() => navigate("home")} />}
         {tab === "drought" && <DroughtMonitor />}
+        {(tab === "report" || tab === "mine") && <div className="report-switch" role="tablist" aria-label="แจ้งเหตุหรือดูรายงานของฉัน">
+          <button type="button" role="tab" aria-selected={tab === "report"} className={tab === "report" ? "active" : ""} onClick={() => navigate("report")}><Plus size={18} aria-hidden />แจ้งเหตุใหม่</button>
+          <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "active" : ""} onClick={() => navigate("mine")}><ClipboardList size={18} aria-hidden />รายงานของฉัน</button>
+        </div>}
         {tab === "report" && <ReportForm user={user} />}
         {tab === "mine" && <ReportList user={user} />}
       </main>
       <footer className="citizen-footer">SMART BASIN · ข้อมูลเพื่อการติดตามสถานการณ์ลุ่มน้ำป่าพะยอม<a href="/privacy">ความเป็นส่วนตัว</a></footer>
     </div>
-    <nav className="citizen-mobile-nav" aria-label="เมนูหลักบนมือถือ">{tabs.map(({ id, label, icon: Icon }) => <button key={id} aria-current={tab === id ? "page" : undefined} className={tab === id ? "active" : ""} onClick={() => navigate(id)}><Icon size={21} /><span>{label === "เฝ้าระวังภัยแล้ง" ? "ภัยแล้ง" : label === "รายงานของฉัน" ? "รายงานฉัน" : label}</span></button>)}</nav>
+    <nav className="citizen-mobile-nav" aria-label="เมนูหลักบนมือถือ">{tabs.map(({ id, label, icon: Icon }) => <button key={id} aria-current={isActive(id) ? "page" : undefined} className={isActive(id) ? "active" : ""} onClick={() => navigate(id)}><Icon size={21} /><span>{label === "เฝ้าระวังภัยแล้ง" ? "ภัยแล้ง" : label}</span></button>)}</nav>
   </div>;
 }

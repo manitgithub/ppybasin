@@ -239,3 +239,17 @@
   .withSituation > div[role="status"]:not(.loading) { display: none; }
   .withSituation :global(.leaflet-control-attribution) { max-height: 18px; max-width: calc(100vw - 70px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 }
+
+/* ---- Phone layout for "ศูนย์ใกล้ฉัน": map first, location + route in a short bottom sheet. ---- */
+@media (max-width: 600px) {
+  .root .nearby .mapInfo { top: auto; left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom)); width: 100%; max-height: 46%; gap: 8px; padding: 14px 12px 12px; overflow-y: auto; overscroll-behavior: contain; background: #f8fbfc; border-radius: 14px 14px 0 0; box-shadow: 0 -6px 22px #102e4338; z-index: 520; }
+  .root .nearby .mapInfo::before { content: ""; display: block; flex-shrink: 0; width: 36px; height: 4px; margin: -6px auto 2px; border-radius: 2px; background: #c3d3dc; }
+  /* Station browsing and extra tools are not needed to reach a shelter; the home map keeps them. */
+  .root .nearby .mapInfo > [data-panel="stations"], .root .nearby .mapInfo > [data-panel="more"] { display: none; }
+  .root .nearby .mapInfo > .nearbyPanelHost > * { border: 0; box-shadow: none; padding: 0; background: transparent; }
+  .root .nearby .mapInfo .layers { width: 100%; }
+  .root .nearby .mapInfo .layers[open] { max-height: 40dvh; }
+  .nearby :global(.leaflet-bottom), .nearby :global(.leaflet-bottom.leaflet-left) { bottom: calc(46% + 8px); }
+  .nearby :global(.leaflet-control-attribution) { max-height: 18px; max-width: calc(100vw - 70px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .nearby > div[role="status"]:not(.loading) { display: none; }
+}

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { cloneElement, Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { GIS_SOURCE_URL, gisLayers, landuseLegend, type GisLayerStatus } from "@/lib/gis-layers";
-import { Camera, ChartNoAxesCombined, ChevronDown, ClipboardList, CloudRain, CloudSun, Ellipsis, Home, Layers, LogIn, MapPin, Navigation, Phone, Plus, Sun, Waves, X } from "lucide-react";
+import { Camera, ChartNoAxesCombined, ChevronDown, CloudRain, CloudSun, Ellipsis, Home, Layers, LogIn, MapPin, Navigation, Phone, Plus, Sun, Waves, X } from "lucide-react";
 import { cctvStations } from "@/lib/cctv-stations";
 import { BASIN_MARKER_HTML } from "@/lib/basin-map-symbols";
 import { DataSources } from "@/components/DataSource";
@@ -190,7 +190,6 @@ export default function PublicMapHome({ alerts, loading, errors, loginError, nav
         <button type="button" onClick={() => navigate("drought")}><Sun size={19} /><span>ภัยแล้ง</span></button>
         <button type="button" aria-current={nearby ? "page" : undefined} onClick={() => navigate("nearby")}><Navigation size={19} /><span>ศูนย์ใกล้ฉัน</span></button>
         <button type="button" onClick={() => navigate("report")}><Plus size={20} /><span>แจ้งเหตุ</span></button>
-        <button type="button" onClick={() => navigate("mine")}><ClipboardList size={19} /><span>รายงานฉัน</span></button>
       </nav>}
     </main>
   </div>;

@@ -262,3 +262,8 @@
 .waterWorkspace :global(.citizen-topline) { display: none; }
 .waterWorkspace :global(.citizen-header) { min-height: 56px; padding-block: 8px; }
 .waterWorkspace :global(.citizen-desktop-nav) { margin-block: 0; padding-block: 8px; }
+
+/* One menu item for reporting: switch between a new report and "my reports". */
+.root :global(.report-switch) { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; flex-shrink: 0; margin: 0 0 18px; padding: 4px; background: #e5edf1; border-radius: 10px; max-width: 520px; }
+.root :global(.report-switch button) { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; border-radius: 7px; font-size: 15px; font-weight: 650; color: #3d5666; }
+.root :global(.report-switch button.active) { background: #fff; color: #12506f; font-weight: 750; box-shadow: 0 1px 4px #102e4322; }
